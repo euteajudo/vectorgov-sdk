@@ -1,0 +1,146 @@
+"""
+Cliente HTTP interno do VectorGov SDK.
+"""
+
+import time
+from typing import Optional, Any
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
+import json
+
+from vectorgov.exceptions import (
+    VectorGovError,
+    AuthError,
+    RateLimitError,
+    ValidationError,
+    ServerError,
+    ConnectionError,
+    TimeoutError,
+)
+
+
+class HTTPClient:
+    """Cliente HTTP minimalista (sem dependências externas)."""
+
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str,
+        timeout: int = 30,
+        max_retries: int = 3,
+        retry_delay: float = 1.0,
+    ):
+        self.base_url = base_url.rstrip("/")
+        self.api_key = api_key
+        self.timeout = timeout
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
+
+    def _get_headers(self) -> dict[str, str]:
+        """Retorna headers padrão para requisições."""
+        return {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "User-Agent": "vectorgov-python/0.1.0",
+            "Accept": "application/json",
+        }
+
+    def _handle_error(self, status_code: int, response_body: str) -> None:
+        """Converte erros HTTP em exceções apropriadas."""
+        try:
+            error_data = json.loads(response_body)
+            message = error_data.get("detail", error_data.get("message", response_body))
+        except json.JSONDecodeError:
+            message = response_body
+
+        if status_code == 401:
+            raise AuthError(message)
+        elif status_code == 429:
+            retry_after = None
+            if isinstance(error_data, dict):
+                retry_after = error_data.get("retry_after")
+            raise RateLimitError(message, retry_after=retry_after)
+        elif status_code == 400:
+            field = error_data.get("field") if isinstance(error_data, dict) else None
+            raise ValidationError(message, field=field)
+        elif status_code >= 500:
+            raise ServerError(message)
+        else:
+            raise VectorGovError(message, status_code=status_code)
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        data: Optional[dict] = None,
+        params: Optional[dict] = None,
+    ) -> dict[str, Any]:
+        """Faz uma requisição HTTP.
+
+        Args:
+            method: GET, POST, etc.
+            path: Caminho da API (ex: /sdk/search)
+            data: Dados para enviar no body (JSON)
+            params: Query parameters
+
+        Returns:
+            Response JSON como dicionário
+
+        Raises:
+            VectorGovError: Em caso de erro
+        """
+        url = f"{self.base_url}{path}"
+
+        # Adiciona query params
+        if params:
+            query_string = "&".join(f"{k}={v}" for k, v in params.items() if v is not None)
+            if query_string:
+                url = f"{url}?{query_string}"
+
+        # Prepara body
+        body = None
+        if data:
+            body = json.dumps(data).encode("utf-8")
+
+        # Tenta com retry
+        last_error = None
+        for attempt in range(self.max_retries):
+            try:
+                request = Request(
+                    url,
+                    data=body,
+                    headers=self._get_headers(),
+                    method=method,
+                )
+
+                with urlopen(request, timeout=self.timeout) as response:
+                    response_body = response.read().decode("utf-8")
+                    return json.loads(response_body)
+
+            except HTTPError as e:
+                response_body = e.read().decode("utf-8")
+                self._handle_error(e.code, response_body)
+
+            except URLError as e:
+                last_error = ConnectionError(f"Erro de conexão: {e.reason}")
+                if attempt < self.max_retries - 1:
+                    time.sleep(self.retry_delay * (attempt + 1))
+                continue
+
+            except TimeoutError:
+                last_error = TimeoutError()
+                if attempt < self.max_retries - 1:
+                    time.sleep(self.retry_delay * (attempt + 1))
+                continue
+
+        if last_error:
+            raise last_error
+        raise VectorGovError("Erro desconhecido na requisição")
+
+    def get(self, path: str, params: Optional[dict] = None) -> dict[str, Any]:
+        """Requisição GET."""
+        return self.request("GET", path, params=params)
+
+    def post(self, path: str, data: Optional[dict] = None) -> dict[str, Any]:
+        """Requisição POST."""
+        return self.request("POST", path, data=data)

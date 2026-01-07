@@ -1,0 +1,82 @@
+site_name: VectorGov SDK
+site_url: https://docs.vectorgov.io
+site_description: SDK Python para acessar bases de conhecimento jurídico VectorGov
+site_author: VectorGov
+
+repo_name: vectorgov/vectorgov-sdk
+repo_url: https://github.com/vectorgov/vectorgov-sdk
+
+theme:
+  name: material
+  language: pt-BR
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Modo escuro
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Modo claro
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search:
+      lang: pt
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: false
+            show_root_heading: true
+            show_category_heading: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Início: index.md
+  - Guias:
+    - Início Rápido: guides/quickstart.md
+    - Modos de Busca: guides/search-modes.md
+    - Integração com LLMs: guides/llm-integration.md
+    - Filtros: guides/filters.md
+    - Tratamento de Erros: guides/error-handling.md
+  - Referência da API:
+    - Cliente: api/client.md
+    - Modelos: api/models.md
+    - Formatters: api/formatters.md
+    - Exceções: api/exceptions.md
+  - OpenAPI: openapi/index.md
+  - Changelog: changelog.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/vectorgov
+  version:
+    provider: mike
