@@ -13,6 +13,7 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
 ## Índice
 
 - [Instalação](#instalação)
+  - [Instalação com Extras](#instalação-com-extras-opcionais)
 - [Início Rápido](#início-rápido)
 - **Modelos Comerciais (APIs Pagas)**
   - [OpenAI (GPT-4)](#openai)
@@ -44,6 +45,28 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
 ```bash
 pip install vectorgov
 ```
+
+### Instalação com Extras (Opcionais)
+
+Algumas integrações requerem dependências adicionais. Instale conforme sua necessidade:
+
+| Extra | Comando | Descrição |
+|-------|---------|-----------|
+| **LangChain** | `pip install 'vectorgov[langchain]'` | Retriever e Tool para LangChain |
+| **LangGraph** | `pip install 'vectorgov[langgraph]'` | Ferramenta para agentes ReAct |
+| **Google ADK** | `pip install 'vectorgov[google-adk]'` | Toolset para Google Agent Dev Kit |
+| **Transformers** | `pip install 'vectorgov[transformers]'` | RAG com modelos HuggingFace locais |
+| **MCP Server** | `pip install 'vectorgov[mcp]'` | Servidor MCP para Claude Desktop |
+| **Tudo** | `pip install 'vectorgov[all]'` | Todas as dependências acima |
+
+> **Nota:** A integração com **Ollama** não requer extras - usa apenas a biblioteca padrão do Python.
+
+> **Nota:** Para usar **OpenAI**, **Gemini** ou **Claude**, instale as bibliotecas separadamente:
+> ```bash
+> pip install openai          # Para OpenAI GPT
+> pip install google-generativeai  # Para Google Gemini
+> pip install anthropic       # Para Anthropic Claude
+> ```
 
 ## Início Rápido
 
