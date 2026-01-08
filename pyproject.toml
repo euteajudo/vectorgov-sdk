@@ -24,7 +24,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 keywords = ["vectorgov", "rag", "retrieval", "legal", "ai", "llm"]
-dependencies = []
+dependencies = [
+    "httpx>=0.24.0",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -40,9 +42,9 @@ google = ["google-generativeai>=0.3"]
 
 [project.urls]
 Homepage = "https://vectorgov.io"
-Documentation = "https://docs.vectorgov.io"
-Repository = "https://github.com/vectorgov/vectorgov-python"
-Issues = "https://github.com/vectorgov/vectorgov-python/issues"
+Documentation = "https://vectorgov.io"
+Repository = "https://github.com/euteajudo/vectorgov-sdk"
+Issues = "https://github.com/euteajudo/vectorgov-sdk/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
