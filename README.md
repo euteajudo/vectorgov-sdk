@@ -8,6 +8,37 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+---
+
+## Índice
+
+- [Instalação](#instalação)
+- [Início Rápido](#início-rápido)
+- **Modelos Comerciais (APIs Pagas)**
+  - [OpenAI (GPT-4)](#openai)
+  - [Google Gemini](#google-gemini)
+  - [Anthropic Claude](#anthropic-claude)
+- **Modelos Open-Source (Gratuitos)**
+  - [Ollama (Recomendado)](#integração-com-ollama)
+  - [HuggingFace Transformers](#integração-com-huggingface-transformers)
+- **Frameworks de Agentes**
+  - [Function Calling](#function-calling-agentes)
+  - [LangChain](#integração-com-langchain)
+  - [LangGraph](#integração-com-langgraph)
+  - [Google ADK](#integração-com-google-adk)
+- **Integrações**
+  - [Servidor MCP](#servidor-mcp-claude-desktop-cursor-etc)
+- **Configuração**
+  - [Modos de Busca](#modos-de-busca)
+  - [Filtros](#filtros)
+  - [Formatação de Resultados](#formatação-de-resultados)
+  - [System Prompts](#system-prompts-customizados)
+  - [Feedback](#feedback)
+  - [Tratamento de Erros](#tratamento-de-erros)
+- [Obter sua API Key](#obter-sua-api-key)
+
+---
+
 ## Instalação
 
 ```bash
@@ -30,22 +61,17 @@ for hit in results:
     print(f"{hit.source}: {hit.text[:200]}...")
 ```
 
-## Integração com LLMs
+---
 
-O VectorGov foi projetado para você usar o LLM de sua preferência. Instale a biblioteca do provedor desejado:
+# 💰 Modelos Comerciais (APIs Pagas)
+
+Use LLMs de provedores comerciais para geração de respostas. Requer API key do provedor.
+
+## OpenAI
 
 ```bash
-# OpenAI
 pip install openai
-
-# Google Gemini
-pip install google-generativeai
-
-# Anthropic Claude
-pip install anthropic
 ```
-
-### OpenAI
 
 ```python
 from vectorgov import VectorGov
@@ -67,7 +93,11 @@ response = openai_client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-### Google Gemini
+## Google Gemini
+
+```bash
+pip install google-generativeai
+```
 
 ```python
 from vectorgov import VectorGov
@@ -94,7 +124,11 @@ response = model.generate_content(user_prompt)
 print(response.text)
 ```
 
-### Anthropic Claude
+## Anthropic Claude
+
+```bash
+pip install anthropic
+```
 
 ```python
 from vectorgov import VectorGov
@@ -118,6 +152,211 @@ response = client.messages.create(
 
 print(response.content[0].text)
 ```
+
+---
+
+# 🆓 Modelos Open-Source (Gratuitos)
+
+Use LLMs locais gratuitos para RAG sem custos de API. Ideal para desenvolvimento, prototipagem ou produção com controle total.
+
+## Integração com Ollama
+
+**Recomendado** - Forma mais simples de rodar LLMs localmente.
+
+### Instalação
+
+```bash
+# 1. Instale o Ollama: https://ollama.ai/
+# 2. Baixe um modelo
+ollama pull qwen3:8b
+```
+
+Não precisa de dependências extras do Python!
+
+### Pipeline RAG Simples
+
+```python
+from vectorgov import VectorGov
+from vectorgov.integrations.ollama import create_rag_pipeline
+
+vg = VectorGov(api_key="vg_xxx")
+
+# Cria pipeline RAG com Ollama
+rag = create_rag_pipeline(vg, model="qwen3:8b")
+
+# Usa como função
+resposta = rag("Quais os critérios de julgamento na licitação?")
+print(resposta)
+```
+
+### Classe VectorGovOllama
+
+```python
+from vectorgov import VectorGov
+from vectorgov.integrations.ollama import VectorGovOllama
+
+vg = VectorGov(api_key="vg_xxx")
+rag = VectorGovOllama(vg, model="qwen3:8b", top_k=5)
+
+response = rag.ask("O que é ETP?")
+
+print(response.answer)
+print(response.sources)      # Lista de fontes
+print(response.latency_ms)   # Latência total
+print(response.model)        # Modelo usado
+```
+
+### Modelos Recomendados (Ollama)
+
+| Modelo | RAM | Qualidade | Português | Comando |
+|--------|-----|-----------|-----------|---------|
+| `qwen2.5:0.5b` | 1GB | Básica | Bom | `ollama pull qwen2.5:0.5b` |
+| `qwen2.5:3b` | 4GB | Boa | Muito Bom | `ollama pull qwen2.5:3b` |
+| `qwen2.5:7b` | 8GB | Muito Boa | **Excelente** | `ollama pull qwen2.5:7b` |
+| `qwen3:8b` | 8GB | **Excelente** | **Excelente** | `ollama pull qwen3:8b` |
+| `llama3.2:3b` | 4GB | Boa | Bom | `ollama pull llama3.2:3b` |
+
+```python
+from vectorgov.integrations.ollama import list_models, get_recommended_models
+
+# Lista modelos instalados
+print(list_models())
+
+# Lista modelos recomendados
+for name, info in get_recommended_models().items():
+    print(f"{name}: {info['description']}")
+```
+
+### Chat com Histórico
+
+```python
+from vectorgov.integrations.ollama import VectorGovOllama
+
+rag = VectorGovOllama(vg, model="qwen3:8b")
+
+messages = [
+    {"role": "user", "content": "O que é ETP?"}
+]
+
+response = rag.chat(messages, use_rag=True)
+print(response)
+
+# Continua a conversa
+messages.append({"role": "assistant", "content": response})
+messages.append({"role": "user", "content": "E quando pode ser dispensado?"})
+
+response2 = rag.chat(messages, use_rag=True)
+print(response2)
+```
+
+---
+
+## Integração com HuggingFace Transformers
+
+Use modelos do HuggingFace Hub diretamente no Python.
+
+### Instalação
+
+```bash
+pip install 'vectorgov[transformers]'
+# ou
+pip install vectorgov transformers torch accelerate
+```
+
+### Pipeline RAG Simples
+
+```python
+from vectorgov import VectorGov
+from vectorgov.integrations.transformers import create_rag_pipeline
+from transformers import pipeline
+
+# Inicializa
+vg = VectorGov(api_key="vg_xxx")
+llm = pipeline("text-generation", model="Qwen/Qwen2.5-3B-Instruct", device_map="auto")
+
+# Cria pipeline RAG
+rag = create_rag_pipeline(vg, llm, top_k=5, max_new_tokens=512)
+
+# Usa como função
+resposta = rag("Quais os critérios de julgamento na licitação?")
+print(resposta)
+```
+
+### Classe VectorGovRAG
+
+```python
+from vectorgov import VectorGov
+from vectorgov.integrations.transformers import VectorGovRAG
+from transformers import pipeline
+
+vg = VectorGov(api_key="vg_xxx")
+llm = pipeline("text-generation", model="meta-llama/Llama-3.2-3B-Instruct", device_map="auto")
+
+rag = VectorGovRAG(vg, llm, top_k=5, temperature=0.1)
+
+response = rag.ask("O que é ETP?")
+
+print(response.answer)
+print(response.sources)      # Lista de fontes usadas
+print(response.latency_ms)   # Tempo de busca
+```
+
+### Modelos Recomendados (HuggingFace)
+
+| Modelo | VRAM | Qualidade | Português |
+|--------|------|-----------|-----------|
+| `meta-llama/Llama-3.2-1B-Instruct` | 2GB | Básica | Bom |
+| `Qwen/Qwen2.5-3B-Instruct` | 6GB | Boa | **Excelente** |
+| `meta-llama/Llama-3.2-3B-Instruct` | 6GB | Boa | Bom |
+| `Qwen/Qwen2.5-7B-Instruct` | 14GB | Muito Boa | **Excelente** |
+| `microsoft/Phi-3-mini-4k-instruct` | 4GB | Boa | Razoável |
+
+```python
+from vectorgov.integrations.transformers import get_recommended_models
+
+# Lista modelos com detalhes
+for name, info in get_recommended_models().items():
+    print(f"{name}: {info['vram_gb']}GB, {info['portuguese']}")
+```
+
+### Rodando sem GPU (CPU)
+
+```python
+from transformers import pipeline
+import torch
+
+# Força CPU com modelo leve
+llm = pipeline(
+    "text-generation",
+    model="meta-llama/Llama-3.2-1B-Instruct",
+    device="cpu",
+    torch_dtype=torch.float32,
+)
+```
+
+### Modelo Quantizado (4-bit)
+
+```python
+from transformers import pipeline, BitsAndBytesConfig
+import torch
+
+# Quantização 4-bit (usa ~4GB VRAM para modelo 7B)
+quantization_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_compute_dtype=torch.float16,
+)
+
+llm = pipeline(
+    "text-generation",
+    model="Qwen/Qwen2.5-7B-Instruct",
+    model_kwargs={"quantization_config": quantization_config},
+    device_map="auto",
+)
+```
+
+---
+
+# 🤖 Frameworks de Agentes
 
 ## Function Calling (Agentes)
 
@@ -194,14 +433,12 @@ model = genai.GenerativeModel(
 response = model.generate_content("O que é ETP?")
 ```
 
-## Integração com LangChain
+---
 
-Instale as dependências:
+## Integração com LangChain
 
 ```bash
 pip install 'vectorgov[langchain]'
-# ou
-pip install vectorgov langchain langchain-core
 ```
 
 ### VectorGovRetriever
@@ -272,16 +509,12 @@ executor = AgentExecutor(agent=agent, tools=[tool])
 result = executor.invoke({"input": "O que diz a lei sobre ETP?"})
 ```
 
+---
+
 ## Integração com LangGraph
-
-LangGraph é o framework da LangChain para construir agentes com estado. O VectorGov integra nativamente.
-
-### Instalação
 
 ```bash
 pip install 'vectorgov[langgraph]'
-# ou
-pip install vectorgov langgraph langchain-openai
 ```
 
 ### ReAct Agent
@@ -349,16 +582,12 @@ result = graph.invoke({"query": "Quais os critérios de julgamento?"})
 print(result["response"])
 ```
 
+---
+
 ## Integração com Google ADK
-
-O Google ADK (Agent Development Kit) é o framework do Google para construir agentes de IA.
-
-### Instalação
 
 ```bash
 pip install 'vectorgov[google-adk]'
-# ou
-pip install vectorgov google-adk
 ```
 
 ### Ferramenta de Busca
@@ -409,221 +638,9 @@ response = agent.run("Quais os critérios de julgamento na licitação?")
 print(response)
 ```
 
-### Agente Customizado
+---
 
-```python
-from vectorgov.integrations.google_adk import create_search_tool
-from google.adk.agents import Agent
-
-search = create_search_tool(
-    api_key="vg_xxx",
-    top_k=10,
-    mode="precise",
-)
-
-agent = Agent(
-    name="licitacao_expert",
-    model="gemini-2.0-flash",
-    instruction="""Você é um especialista em licitações públicas.
-Consulte sempre a legislação antes de responder.
-Cite artigos específicos nas suas respostas.""",
-    tools=[search],
-)
-
-response = agent.run("Como funciona o sistema de registro de preços?")
-print(response)
-```
-
-## Integração com HuggingFace Transformers
-
-Use modelos locais gratuitos do HuggingFace para RAG sem custos de API de LLM.
-
-### Instalação
-
-```bash
-pip install 'vectorgov[transformers]'
-# ou
-pip install vectorgov transformers torch accelerate
-```
-
-### Pipeline RAG Simples
-
-```python
-from vectorgov import VectorGov
-from vectorgov.integrations.transformers import create_rag_pipeline
-from transformers import pipeline
-
-# Inicializa
-vg = VectorGov(api_key="vg_xxx")
-llm = pipeline("text-generation", model="Qwen/Qwen2.5-3B-Instruct", device_map="auto")
-
-# Cria pipeline RAG
-rag = create_rag_pipeline(vg, llm, top_k=5, max_new_tokens=512)
-
-# Usa como função
-resposta = rag("Quais os critérios de julgamento na licitação?")
-print(resposta)
-```
-
-### Classe VectorGovRAG
-
-```python
-from vectorgov import VectorGov
-from vectorgov.integrations.transformers import VectorGovRAG
-from transformers import pipeline
-
-vg = VectorGov(api_key="vg_xxx")
-llm = pipeline("text-generation", model="meta-llama/Llama-3.2-3B-Instruct", device_map="auto")
-
-rag = VectorGovRAG(vg, llm, top_k=5, temperature=0.1)
-
-response = rag.ask("O que é ETP?")
-
-print(response.answer)
-print(response.sources)  # Lista de fontes usadas
-print(response.latency_ms)  # Tempo de busca
-```
-
-### Modelos Recomendados
-
-| Modelo | VRAM | Qualidade | Português |
-|--------|------|-----------|-----------|
-| `meta-llama/Llama-3.2-1B-Instruct` | 2GB | Básica | Bom |
-| `Qwen/Qwen2.5-3B-Instruct` | 6GB | Boa | **Excelente** |
-| `meta-llama/Llama-3.2-3B-Instruct` | 6GB | Boa | Bom |
-| `Qwen/Qwen2.5-7B-Instruct` | 14GB | Muito Boa | **Excelente** |
-| `microsoft/Phi-3-mini-4k-instruct` | 4GB | Boa | Razoável |
-
-```python
-from vectorgov.integrations.transformers import get_recommended_models
-
-# Lista modelos com detalhes
-for name, info in get_recommended_models().items():
-    print(f"{name}: {info['vram_gb']}GB, {info['portuguese']}")
-```
-
-### Rodando sem GPU (CPU)
-
-```python
-from transformers import pipeline
-import torch
-
-# Força CPU com modelo leve
-llm = pipeline(
-    "text-generation",
-    model="meta-llama/Llama-3.2-1B-Instruct",
-    device="cpu",
-    torch_dtype=torch.float32,
-)
-```
-
-### Modelo Quantizado (4-bit)
-
-```python
-from transformers import pipeline, BitsAndBytesConfig
-import torch
-
-# Quantização 4-bit (usa ~4GB VRAM para modelo 7B)
-quantization_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_compute_dtype=torch.float16,
-)
-
-llm = pipeline(
-    "text-generation",
-    model="Qwen/Qwen2.5-7B-Instruct",
-    model_kwargs={"quantization_config": quantization_config},
-    device_map="auto",
-)
-```
-
-## Integração com Ollama
-
-Use modelos locais via [Ollama](https://ollama.ai/) para RAG 100% local e gratuito.
-
-### Instalação do Ollama
-
-```bash
-# Instale o Ollama: https://ollama.ai/
-# Baixe um modelo
-ollama pull qwen2.5:7b
-```
-
-### Pipeline RAG Simples
-
-```python
-from vectorgov import VectorGov
-from vectorgov.integrations.ollama import create_rag_pipeline
-
-vg = VectorGov(api_key="vg_xxx")
-
-# Cria pipeline RAG com Ollama
-rag = create_rag_pipeline(vg, model="qwen2.5:7b")
-
-# Usa como função
-resposta = rag("Quais os critérios de julgamento na licitação?")
-print(resposta)
-```
-
-### Classe VectorGovOllama
-
-```python
-from vectorgov import VectorGov
-from vectorgov.integrations.ollama import VectorGovOllama
-
-vg = VectorGov(api_key="vg_xxx")
-rag = VectorGovOllama(vg, model="qwen3:8b", top_k=5)
-
-response = rag.ask("O que é ETP?")
-
-print(response.answer)
-print(response.sources)  # Lista de fontes
-print(response.latency_ms)  # Latência total
-print(response.model)  # Modelo usado
-```
-
-### Modelos Recomendados
-
-| Modelo | RAM | Qualidade | Português | Comando |
-|--------|-----|-----------|-----------|---------|
-| `qwen2.5:0.5b` | 1GB | Básica | Bom | `ollama pull qwen2.5:0.5b` |
-| `qwen2.5:3b` | 4GB | Boa | Muito Bom | `ollama pull qwen2.5:3b` |
-| `qwen2.5:7b` | 8GB | Muito Boa | **Excelente** | `ollama pull qwen2.5:7b` |
-| `qwen3:8b` | 8GB | **Excelente** | **Excelente** | `ollama pull qwen3:8b` |
-| `llama3.2:3b` | 4GB | Boa | Bom | `ollama pull llama3.2:3b` |
-
-```python
-from vectorgov.integrations.ollama import list_models, get_recommended_models
-
-# Lista modelos instalados
-print(list_models())
-
-# Lista modelos recomendados
-for name, info in get_recommended_models().items():
-    print(f"{name}: {info['description']}")
-```
-
-### Chat com Histórico
-
-```python
-from vectorgov.integrations.ollama import VectorGovOllama
-
-rag = VectorGovOllama(vg, model="qwen3:8b")
-
-messages = [
-    {"role": "user", "content": "O que é ETP?"}
-]
-
-response = rag.chat(messages, use_rag=True)
-print(response)
-
-# Continua a conversa
-messages.append({"role": "assistant", "content": response})
-messages.append({"role": "user", "content": "E quando pode ser dispensado?"})
-
-response2 = rag.chat(messages, use_rag=True)
-print(response2)
-```
+# 🔌 Integrações
 
 ## Servidor MCP (Claude Desktop, Cursor, etc.)
 
@@ -694,13 +711,9 @@ O servidor MCP expõe três ferramentas para Claude:
 | `list_available_documents` | Lista documentos disponíveis na base |
 | `get_article_text` | Obtém texto completo de um artigo específico |
 
-### Exemplo de Uso no Claude
+---
 
-Após configurar o servidor, você pode perguntar ao Claude:
-
-> "Quais os critérios de julgamento previstos na Lei 14.133?"
-
-O Claude automaticamente usará a ferramenta `search_legislation` para buscar a informação na base VectorGov.
+# ⚙️ Configuração
 
 ## Modos de Busca
 
@@ -861,6 +874,8 @@ vg = VectorGov(
     default_mode="precise",                   # Modo padrão
 )
 ```
+
+---
 
 ## Obter sua API Key
 
