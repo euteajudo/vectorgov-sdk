@@ -66,9 +66,18 @@ genai.configure(api_key="sua_google_key")
 query = "O que é ETP?"
 results = vg.search(query)
 
-model = genai.GenerativeModel("gemini-1.5-flash")
-response = model.generate_content(results.to_prompt(query))
+# Monta o prompt
+messages = results.to_messages(query)
+system_prompt = messages[0]["content"]
+user_prompt = messages[1]["content"]
 
+# Cria o modelo com system instruction
+model = genai.GenerativeModel(
+    model_name="gemini-2.0-flash",
+    system_instruction=system_prompt
+)
+
+response = model.generate_content(user_prompt)
 print(response.text)
 ```
 

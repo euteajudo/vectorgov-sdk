@@ -35,15 +35,21 @@ def main():
     print(f"      Encontrados {results.total} resultados em {results.latency_ms}ms")
     print("\n[2/2] Gerando resposta com Gemini...")
 
-    # Gerar resposta
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    response = model.generate_content(
-        results.to_prompt(query),
+    # Monta o prompt
+    messages = results.to_messages(query)
+    system_prompt = messages[0]["content"]
+    user_prompt = messages[1]["content"]
+
+    # Gerar resposta com system instruction nativo
+    model = genai.GenerativeModel(
+        model_name="gemini-2.0-flash",
+        system_instruction=system_prompt,
         generation_config=genai.GenerationConfig(
             temperature=0.3,
             max_output_tokens=1000,
         ),
     )
+    response = model.generate_content(user_prompt)
 
     # Exibir resposta
     print("\n" + "=" * 60)
