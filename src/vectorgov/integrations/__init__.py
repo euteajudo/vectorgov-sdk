@@ -9,6 +9,7 @@ Este módulo fornece integrações prontas para usar com:
 - LangGraph
 - Google ADK (Agent Development Kit)
 - HuggingFace Transformers (modelos locais)
+- Ollama (modelos locais via API)
 
 Exemplo com OpenAI:
     >>> from vectorgov import VectorGov
@@ -38,6 +39,13 @@ Exemplo com Transformers (modelos locais):
     >>> vg = VectorGov(api_key="vg_xxx")
     >>> llm = pipeline("text-generation", model="Qwen/Qwen2.5-3B-Instruct")
     >>> rag = create_rag_pipeline(vg, llm)
+    >>> response = rag("O que é ETP?")
+
+Exemplo com Ollama (modelos locais):
+    >>> from vectorgov import VectorGov
+    >>> from vectorgov.integrations.ollama import create_rag_pipeline
+    >>> vg = VectorGov(api_key="vg_xxx")
+    >>> rag = create_rag_pipeline(vg, model="qwen3:8b")
     >>> response = rag("O que é ETP?")
 """
 

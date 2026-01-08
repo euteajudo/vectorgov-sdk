@@ -537,6 +537,94 @@ llm = pipeline(
 )
 ```
 
+## Integração com Ollama
+
+Use modelos locais via [Ollama](https://ollama.ai/) para RAG 100% local e gratuito.
+
+### Instalação do Ollama
+
+```bash
+# Instale o Ollama: https://ollama.ai/
+# Baixe um modelo
+ollama pull qwen2.5:7b
+```
+
+### Pipeline RAG Simples
+
+```python
+from vectorgov import VectorGov
+from vectorgov.integrations.ollama import create_rag_pipeline
+
+vg = VectorGov(api_key="vg_xxx")
+
+# Cria pipeline RAG com Ollama
+rag = create_rag_pipeline(vg, model="qwen2.5:7b")
+
+# Usa como função
+resposta = rag("Quais os critérios de julgamento na licitação?")
+print(resposta)
+```
+
+### Classe VectorGovOllama
+
+```python
+from vectorgov import VectorGov
+from vectorgov.integrations.ollama import VectorGovOllama
+
+vg = VectorGov(api_key="vg_xxx")
+rag = VectorGovOllama(vg, model="qwen3:8b", top_k=5)
+
+response = rag.ask("O que é ETP?")
+
+print(response.answer)
+print(response.sources)  # Lista de fontes
+print(response.latency_ms)  # Latência total
+print(response.model)  # Modelo usado
+```
+
+### Modelos Recomendados
+
+| Modelo | RAM | Qualidade | Português | Comando |
+|--------|-----|-----------|-----------|---------|
+| `qwen2.5:0.5b` | 1GB | Básica | Bom | `ollama pull qwen2.5:0.5b` |
+| `qwen2.5:3b` | 4GB | Boa | Muito Bom | `ollama pull qwen2.5:3b` |
+| `qwen2.5:7b` | 8GB | Muito Boa | **Excelente** | `ollama pull qwen2.5:7b` |
+| `qwen3:8b` | 8GB | **Excelente** | **Excelente** | `ollama pull qwen3:8b` |
+| `llama3.2:3b` | 4GB | Boa | Bom | `ollama pull llama3.2:3b` |
+
+```python
+from vectorgov.integrations.ollama import list_models, get_recommended_models
+
+# Lista modelos instalados
+print(list_models())
+
+# Lista modelos recomendados
+for name, info in get_recommended_models().items():
+    print(f"{name}: {info['description']}")
+```
+
+### Chat com Histórico
+
+```python
+from vectorgov.integrations.ollama import VectorGovOllama
+
+rag = VectorGovOllama(vg, model="qwen3:8b")
+
+messages = [
+    {"role": "user", "content": "O que é ETP?"}
+]
+
+response = rag.chat(messages, use_rag=True)
+print(response)
+
+# Continua a conversa
+messages.append({"role": "assistant", "content": response})
+messages.append({"role": "user", "content": "E quando pode ser dispensado?"})
+
+response2 = rag.chat(messages, use_rag=True)
+print(response2)
+```
+
 ## Servidor MCP (Claude Desktop, Cursor, etc.)
 
 O VectorGov pode funcionar como servidor MCP (Model Context Protocol), permitindo integração direta com Claude Desktop, Cursor, Windsurf e outras ferramentas compatíveis.

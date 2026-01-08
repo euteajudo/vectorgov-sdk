@@ -7,6 +7,28 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-01-08
+
+### Adicionado
+
+- **Integração Ollama** - RAG com modelos locais via Ollama:
+  - Novo módulo `vectorgov.integrations.ollama`
+  - `create_rag_pipeline()` - Cria pipeline RAG simples com Ollama
+  - `VectorGovOllama` - Classe completa com respostas estruturadas
+  - `OllamaResponse` - Resposta com answer, sources, latency, model
+  - `check_ollama_available()` - Verifica se Ollama está rodando
+  - `list_models()` - Lista modelos disponíveis no Ollama
+  - `generate()` - Função de baixo nível para geração
+  - `get_recommended_models()` - Lista modelos recomendados
+  - `chat()` - Chat com histórico de mensagens
+  - Exemplo `13_ollama_local.py` com 6 casos de uso
+- Sem dependências extras necessárias (usa apenas urllib)
+- Compatível com qualquer modelo do Ollama (qwen, llama, mistral, etc.)
+
+### Alterado
+
+- Documentação atualizada com seção Ollama
+
 ## [0.5.0] - 2025-01-08
 
 ### Adicionado
@@ -150,7 +172,8 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - Retry automático com backoff exponencial
 - Timeout configurável
 
-[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.2.0...v0.3.0
