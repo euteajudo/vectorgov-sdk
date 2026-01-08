@@ -7,6 +7,18 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.1.2] - 2025-01-08
+
+### Adicionado
+
+- Exemplo completo de integração com Anthropic Claude (`examples/04_claude.py`)
+- Instruções de instalação das bibliotecas de LLM no README (openai, google-generativeai, anthropic)
+
+### Alterado
+
+- Exemplo do Claude agora usa `system` parameter separado (formato correto da API)
+- Melhorada documentação de integração com todos os LLMs
+
 ## [0.1.1] - 2025-01-08
 
 ### Alterado
@@ -45,6 +57,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - Retry automático com backoff exponencial
 - Timeout configurável
 
-[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/euteajudo/vectorgov-sdk/releases/tag/v0.1.0

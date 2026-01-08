@@ -27,17 +27,22 @@ def main():
     print(f"Pergunta: {query}")
     print("\n[1/2] Buscando contexto no VectorGov...")
 
-    # Buscar contexto
-    results = vg.search(query, top_k=5)
+    # Buscar contexto (modo precise para análise detalhada)
+    results = vg.search(query, mode="precise")
 
     print(f"      Encontrados {results.total} resultados em {results.latency_ms}ms")
     print("\n[2/2] Gerando resposta com Claude...")
 
+    # Monta o prompt
+    messages = results.to_messages(query)
+
     # Gerar resposta com Claude
+    # Nota: Claude usa o parâmetro 'system' separado das messages
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=1024,
-        messages=results.to_messages(query),
+        system=messages[0]["content"],  # System prompt separado
+        messages=[{"role": "user", "content": messages[1]["content"]}],
     )
 
     # Exibir resposta

@@ -32,6 +32,19 @@ for hit in results:
 
 ## Integração com LLMs
 
+O VectorGov foi projetado para você usar o LLM de sua preferência. Instale a biblioteca do provedor desejado:
+
+```bash
+# OpenAI
+pip install openai
+
+# Google Gemini
+pip install google-generativeai
+
+# Anthropic Claude
+pip install anthropic
+```
+
 ### OpenAI
 
 ```python
@@ -39,15 +52,15 @@ from vectorgov import VectorGov
 from openai import OpenAI
 
 vg = VectorGov(api_key="vg_xxx")
-openai = OpenAI()
+openai_client = OpenAI(api_key="sk-xxx")
 
 # Buscar contexto
 query = "Quais os critérios de julgamento na licitação?"
 results = vg.search(query)
 
 # Gerar resposta
-response = openai.chat.completions.create(
-    model="gpt-4o",
+response = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
     messages=results.to_messages(query)
 )
 
@@ -88,15 +101,19 @@ from vectorgov import VectorGov
 from anthropic import Anthropic
 
 vg = VectorGov(api_key="vg_xxx")
-client = Anthropic()
+client = Anthropic(api_key="sk-ant-xxx")
 
-query = "Quais documentos compõem o ETP?"
+query = "O que é ETP?"
 results = vg.search(query)
+
+# Monta o prompt
+messages = results.to_messages(query)
 
 response = client.messages.create(
     model="claude-sonnet-4-20250514",
     max_tokens=1024,
-    messages=results.to_messages(query)
+    system=messages[0]["content"],  # System prompt separado
+    messages=[{"role": "user", "content": messages[1]["content"]}]
 )
 
 print(response.content[0].text)
