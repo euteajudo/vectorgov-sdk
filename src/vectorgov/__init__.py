@@ -62,7 +62,7 @@ from vectorgov.formatters import (
     create_rag_prompt,
 )
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 __all__ = [
     # Cliente principal
     "VectorGov",

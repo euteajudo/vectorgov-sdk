@@ -7,6 +7,28 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.5.0] - 2025-01-08
+
+### Adicionado
+
+- **Integração HuggingFace Transformers** - RAG com modelos locais gratuitos:
+  - Novo módulo `vectorgov.integrations.transformers`
+  - `create_rag_pipeline()` - Cria pipeline RAG simples (função)
+  - `VectorGovRAG` - Classe completa com histórico e fontes
+  - `RAGResponse` - Resposta estruturada com answer, sources, latency
+  - `format_prompt_for_transformers()` - Formata prompts para diferentes templates
+  - `get_recommended_models()` - Lista modelos recomendados para português
+  - `estimate_vram_usage()` - Estima uso de VRAM por modelo
+  - Exemplo `12_transformers_local.py` com 6 casos de uso
+  - Suporte a modelos quantizados (4-bit com bitsandbytes)
+  - Suporte a CPU-only para ambientes sem GPU
+- Extra de instalação: `pip install 'vectorgov[transformers]'`
+- Documentação completa com tabela de modelos recomendados
+
+### Alterado
+
+- Módulo `all` agora inclui dependências Transformers (torch, accelerate)
+
 ## [0.4.0] - 2025-01-08
 
 ### Adicionado
@@ -128,7 +150,8 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - Retry automático com backoff exponencial
 - Timeout configurável
 
-[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.1.2...v0.2.0

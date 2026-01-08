@@ -8,6 +8,7 @@ Este módulo fornece integrações prontas para usar com:
 - LangChain
 - LangGraph
 - Google ADK (Agent Development Kit)
+- HuggingFace Transformers (modelos locais)
 
 Exemplo com OpenAI:
     >>> from vectorgov import VectorGov
@@ -29,6 +30,15 @@ Exemplo com Google ADK:
     >>> from google.adk.agents import Agent
     >>> tool = create_search_tool(api_key="vg_xxx")
     >>> agent = Agent(model="gemini-2.0-flash", tools=[tool])
+
+Exemplo com Transformers (modelos locais):
+    >>> from vectorgov import VectorGov
+    >>> from vectorgov.integrations.transformers import create_rag_pipeline
+    >>> from transformers import pipeline
+    >>> vg = VectorGov(api_key="vg_xxx")
+    >>> llm = pipeline("text-generation", model="Qwen/Qwen2.5-3B-Instruct")
+    >>> rag = create_rag_pipeline(vg, llm)
+    >>> response = rag("O que é ETP?")
 """
 
 from vectorgov.integrations.tools import (

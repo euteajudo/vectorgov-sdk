@@ -434,6 +434,109 @@ response = agent.run("Como funciona o sistema de registro de preços?")
 print(response)
 ```
 
+## Integração com HuggingFace Transformers
+
+Use modelos locais gratuitos do HuggingFace para RAG sem custos de API de LLM.
+
+### Instalação
+
+```bash
+pip install 'vectorgov[transformers]'
+# ou
+pip install vectorgov transformers torch accelerate
+```
+
+### Pipeline RAG Simples
+
+```python
+from vectorgov import VectorGov
+from vectorgov.integrations.transformers import create_rag_pipeline
+from transformers import pipeline
+
+# Inicializa
+vg = VectorGov(api_key="vg_xxx")
+llm = pipeline("text-generation", model="Qwen/Qwen2.5-3B-Instruct", device_map="auto")
+
+# Cria pipeline RAG
+rag = create_rag_pipeline(vg, llm, top_k=5, max_new_tokens=512)
+
+# Usa como função
+resposta = rag("Quais os critérios de julgamento na licitação?")
+print(resposta)
+```
+
+### Classe VectorGovRAG
+
+```python
+from vectorgov import VectorGov
+from vectorgov.integrations.transformers import VectorGovRAG
+from transformers import pipeline
+
+vg = VectorGov(api_key="vg_xxx")
+llm = pipeline("text-generation", model="meta-llama/Llama-3.2-3B-Instruct", device_map="auto")
+
+rag = VectorGovRAG(vg, llm, top_k=5, temperature=0.1)
+
+response = rag.ask("O que é ETP?")
+
+print(response.answer)
+print(response.sources)  # Lista de fontes usadas
+print(response.latency_ms)  # Tempo de busca
+```
+
+### Modelos Recomendados
+
+| Modelo | VRAM | Qualidade | Português |
+|--------|------|-----------|-----------|
+| `meta-llama/Llama-3.2-1B-Instruct` | 2GB | Básica | Bom |
+| `Qwen/Qwen2.5-3B-Instruct` | 6GB | Boa | **Excelente** |
+| `meta-llama/Llama-3.2-3B-Instruct` | 6GB | Boa | Bom |
+| `Qwen/Qwen2.5-7B-Instruct` | 14GB | Muito Boa | **Excelente** |
+| `microsoft/Phi-3-mini-4k-instruct` | 4GB | Boa | Razoável |
+
+```python
+from vectorgov.integrations.transformers import get_recommended_models
+
+# Lista modelos com detalhes
+for name, info in get_recommended_models().items():
+    print(f"{name}: {info['vram_gb']}GB, {info['portuguese']}")
+```
+
+### Rodando sem GPU (CPU)
+
+```python
+from transformers import pipeline
+import torch
+
+# Força CPU com modelo leve
+llm = pipeline(
+    "text-generation",
+    model="meta-llama/Llama-3.2-1B-Instruct",
+    device="cpu",
+    torch_dtype=torch.float32,
+)
+```
+
+### Modelo Quantizado (4-bit)
+
+```python
+from transformers import pipeline, BitsAndBytesConfig
+import torch
+
+# Quantização 4-bit (usa ~4GB VRAM para modelo 7B)
+quantization_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_compute_dtype=torch.float16,
+)
+
+llm = pipeline(
+    "text-generation",
+    model="Qwen/Qwen2.5-7B-Instruct",
+    model_kwargs={"quantization_config": quantization_config},
+    device_map="auto",
+)
+```
+
 ## Servidor MCP (Claude Desktop, Cursor, etc.)
 
 O VectorGov pode funcionar como servidor MCP (Model Context Protocol), permitindo integração direta com Claude Desktop, Cursor, Windsurf e outras ferramentas compatíveis.
