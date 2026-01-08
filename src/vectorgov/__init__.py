@@ -29,6 +29,18 @@ Com LangChain:
     >>> from vectorgov.integrations.langchain import VectorGovRetriever
     >>> retriever = VectorGovRetriever(api_key="vg_xxx")
     >>> docs = retriever.invoke("O que é ETP?")
+
+Com MCP (Claude Desktop, Cursor, etc.):
+    Execute `vectorgov-mcp` ou configure no claude_desktop_config.json:
+    {
+        "mcpServers": {
+            "vectorgov": {
+                "command": "uvx",
+                "args": ["vectorgov-mcp"],
+                "env": {"VECTORGOV_API_KEY": "vg_xxx"}
+            }
+        }
+    }
 """
 
 from vectorgov.client import VectorGov
@@ -50,7 +62,7 @@ from vectorgov.formatters import (
     create_rag_prompt,
 )
 
-__version__ = "0.2.0"
+__version__ = "0.4.0"
 __all__ = [
     # Cliente principal
     "VectorGov",

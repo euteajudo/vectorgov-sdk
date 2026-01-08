@@ -272,6 +272,245 @@ executor = AgentExecutor(agent=agent, tools=[tool])
 result = executor.invoke({"input": "O que diz a lei sobre ETP?"})
 ```
 
+## Integração com LangGraph
+
+LangGraph é o framework da LangChain para construir agentes com estado. O VectorGov integra nativamente.
+
+### Instalação
+
+```bash
+pip install 'vectorgov[langgraph]'
+# ou
+pip install vectorgov langgraph langchain-openai
+```
+
+### ReAct Agent
+
+```python
+from vectorgov.integrations.langgraph import create_vectorgov_tool
+from langgraph.prebuilt import create_react_agent
+from langchain_openai import ChatOpenAI
+
+# Criar ferramenta VectorGov
+tool = create_vectorgov_tool(api_key="vg_xxx", top_k=5)
+
+# Criar agente ReAct
+llm = ChatOpenAI(model="gpt-4o-mini")
+agent = create_react_agent(llm, tools=[tool])
+
+# Executar
+result = agent.invoke({"messages": [("user", "O que é ETP?")]})
+print(result["messages"][-1].content)
+```
+
+### Grafo RAG Customizado
+
+```python
+from vectorgov.integrations.langgraph import create_retrieval_node, VectorGovState
+from langgraph.graph import StateGraph, START, END
+from langchain_openai import ChatOpenAI
+
+# Nó de retrieval VectorGov
+retrieval_node = create_retrieval_node(api_key="vg_xxx", top_k=5)
+
+# Nó de geração
+def generate(state: VectorGovState) -> dict:
+    llm = ChatOpenAI(model="gpt-4o-mini")
+    context = state.get("context", "")
+    query = state.get("query", "")
+    response = llm.invoke(f"Contexto: {context}\n\nPergunta: {query}")
+    return {"response": response.content}
+
+# Construir grafo
+builder = StateGraph(dict)
+builder.add_node("retrieve", retrieval_node)
+builder.add_node("generate", generate)
+builder.add_edge(START, "retrieve")
+builder.add_edge("retrieve", "generate")
+builder.add_edge("generate", END)
+
+graph = builder.compile()
+
+# Executar
+result = graph.invoke({"query": "Quando o ETP pode ser dispensado?"})
+print(result["response"])
+```
+
+### Grafo RAG Pré-configurado
+
+```python
+from vectorgov.integrations.langgraph import create_legal_rag_graph
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(model="gpt-4o-mini")
+graph = create_legal_rag_graph(llm=llm, api_key="vg_xxx")
+
+result = graph.invoke({"query": "Quais os critérios de julgamento?"})
+print(result["response"])
+```
+
+## Integração com Google ADK
+
+O Google ADK (Agent Development Kit) é o framework do Google para construir agentes de IA.
+
+### Instalação
+
+```bash
+pip install 'vectorgov[google-adk]'
+# ou
+pip install vectorgov google-adk
+```
+
+### Ferramenta de Busca
+
+```python
+from vectorgov.integrations.google_adk import create_search_tool
+
+# Criar ferramenta
+search = create_search_tool(api_key="vg_xxx", top_k=5)
+
+# Testar diretamente (sem agente)
+result = search("O que é ETP?")
+print(result)
+```
+
+### Toolset Completo
+
+```python
+from vectorgov.integrations.google_adk import VectorGovToolset
+
+toolset = VectorGovToolset(api_key="vg_xxx")
+
+# Lista ferramentas disponíveis
+for tool in toolset.get_tools():
+    print(f"- {tool.__name__}")
+# - search_brazilian_legislation
+# - list_legal_documents
+# - get_article_text
+
+# Usar com agente ADK
+from google.adk.agents import Agent
+
+agent = Agent(
+    name="legal_assistant",
+    model="gemini-2.0-flash",
+    tools=toolset.get_tools(),
+)
+```
+
+### Agente ADK Pré-configurado
+
+```python
+from vectorgov.integrations.google_adk import create_legal_agent
+
+agent = create_legal_agent(api_key="vg_xxx")
+
+response = agent.run("Quais os critérios de julgamento na licitação?")
+print(response)
+```
+
+### Agente Customizado
+
+```python
+from vectorgov.integrations.google_adk import create_search_tool
+from google.adk.agents import Agent
+
+search = create_search_tool(
+    api_key="vg_xxx",
+    top_k=10,
+    mode="precise",
+)
+
+agent = Agent(
+    name="licitacao_expert",
+    model="gemini-2.0-flash",
+    instruction="""Você é um especialista em licitações públicas.
+Consulte sempre a legislação antes de responder.
+Cite artigos específicos nas suas respostas.""",
+    tools=[search],
+)
+
+response = agent.run("Como funciona o sistema de registro de preços?")
+print(response)
+```
+
+## Servidor MCP (Claude Desktop, Cursor, etc.)
+
+O VectorGov pode funcionar como servidor MCP (Model Context Protocol), permitindo integração direta com Claude Desktop, Cursor, Windsurf e outras ferramentas compatíveis.
+
+### Instalação
+
+```bash
+pip install 'vectorgov[mcp]'
+```
+
+### Configuração no Claude Desktop
+
+Adicione ao arquivo `claude_desktop_config.json`:
+
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+```json
+{
+    "mcpServers": {
+        "vectorgov": {
+            "command": "uvx",
+            "args": ["vectorgov-mcp"],
+            "env": {
+                "VECTORGOV_API_KEY": "vg_sua_chave_aqui"
+            }
+        }
+    }
+}
+```
+
+Ou se instalou via pip:
+
+```json
+{
+    "mcpServers": {
+        "vectorgov": {
+            "command": "vectorgov-mcp",
+            "env": {
+                "VECTORGOV_API_KEY": "vg_sua_chave_aqui"
+            }
+        }
+    }
+}
+```
+
+### Executar Manualmente
+
+```bash
+# Via uvx (sem instalar)
+uvx vectorgov-mcp
+
+# Via pip (após instalar)
+vectorgov-mcp
+
+# Via Python
+python -m vectorgov.mcp
+```
+
+### Ferramentas Disponíveis
+
+O servidor MCP expõe três ferramentas para Claude:
+
+| Ferramenta | Descrição |
+|------------|-----------|
+| `search_legislation` | Busca semântica em legislação brasileira |
+| `list_available_documents` | Lista documentos disponíveis na base |
+| `get_article_text` | Obtém texto completo de um artigo específico |
+
+### Exemplo de Uso no Claude
+
+Após configurar o servidor, você pode perguntar ao Claude:
+
+> "Quais os critérios de julgamento previstos na Lei 14.133?"
+
+O Claude automaticamente usará a ferramenta `search_legislation` para buscar a informação na base VectorGov.
+
 ## Modos de Busca
 
 | Modo | Descrição | Latência | Uso Recomendado |

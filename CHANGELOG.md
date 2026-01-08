@@ -7,6 +7,54 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-01-08
+
+### Adicionado
+
+- **Integração LangGraph** - Framework para construir agentes com estado:
+  - Novo módulo `vectorgov.integrations.langgraph`
+  - `create_vectorgov_tool()` - Cria ferramenta LangChain para agentes ReAct
+  - `create_retrieval_node()` - Nó de retrieval para grafos customizados
+  - `create_legal_rag_graph()` - Grafo RAG pré-configurado
+  - `VectorGovState` - TypedDict para gerenciamento de estado
+  - Exemplo `10_langgraph_react.py` com 3 casos de uso
+- **Integração Google ADK** - Agent Development Kit do Google:
+  - Novo módulo `vectorgov.integrations.google_adk`
+  - `create_search_tool()` - Ferramenta de busca para agentes ADK
+  - `create_list_documents_tool()` - Ferramenta para listar documentos
+  - `create_get_article_tool()` - Ferramenta para obter artigo específico
+  - `VectorGovToolset` - Classe que agrupa todas as ferramentas
+  - `create_legal_agent()` - Helper para criar agente pré-configurado
+  - Exemplo `11_google_adk_agent.py` com 4 casos de uso
+- Extras de instalação:
+  - `pip install 'vectorgov[langgraph]'`
+  - `pip install 'vectorgov[google-adk]'`
+
+### Alterado
+
+- Módulo `all` agora inclui dependências LangGraph e Google ADK
+- Documentação atualizada com seções de LangGraph e Google ADK
+
+## [0.3.0] - 2025-01-08
+
+### Adicionado
+
+- **Servidor MCP** - Integração com Claude Desktop, Cursor e outras ferramentas MCP:
+  - Novo módulo `vectorgov.mcp` com servidor MCP completo
+  - Comando CLI `vectorgov-mcp` para executar o servidor
+  - Suporte a `python -m vectorgov.mcp`
+  - Ferramentas MCP:
+    - `search_legislation` - Busca semântica em legislação
+    - `list_available_documents` - Lista documentos disponíveis
+    - `get_article_text` - Obtém texto de artigo específico
+  - Recurso MCP `legislation://info` com informações da base
+  - Documentação de configuração no Claude Desktop
+- Extra de instalação: `pip install 'vectorgov[mcp]'`
+
+### Alterado
+
+- Módulo `all` agora inclui dependência MCP
+
 ## [0.2.0] - 2025-01-08
 
 ### Adicionado
@@ -80,7 +128,9 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - Retry automático com backoff exponencial
 - Timeout configurável
 
-[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.1.0...v0.1.1
