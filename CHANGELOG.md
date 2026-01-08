@@ -7,6 +7,14 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-01-08
+
+### Alterado
+
+- Atualizado exemplo do Google Gemini para usar `gemini-2.0-flash`
+- Exemplo do Gemini agora usa `system_instruction` nativo
+- Melhorada documentação de integração com LLMs
+
 ## [0.1.0] - 2025-01-07
 
 ### Adicionado
@@ -37,5 +45,6 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - Retry automático com backoff exponencial
 - Timeout configurável
 
-[Unreleased]: https://github.com/vectorgov/vectorgov-sdk/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/vectorgov/vectorgov-sdk/releases/tag/v0.1.0
+[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/euteajudo/vectorgov-sdk/releases/tag/v0.1.0
