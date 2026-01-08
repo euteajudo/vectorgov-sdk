@@ -5,10 +5,12 @@ Cliente principal do VectorGov SDK.
 import os
 from typing import Optional, Union
 
+import json
 from vectorgov._http import HTTPClient
 from vectorgov.config import SDKConfig, SearchMode, MODE_CONFIG, SYSTEM_PROMPTS
 from vectorgov.models import SearchResult, Hit, Metadata
 from vectorgov.exceptions import ValidationError, AuthError
+from vectorgov.integrations import tools as tool_utils
 
 
 class VectorGov:
@@ -254,3 +256,129 @@ class VectorGov:
 
     def __repr__(self) -> str:
         return f"VectorGov(base_url='{self._config.base_url}')"
+
+    # =========================================================================
+    # Métodos de Integração com Function Calling
+    # =========================================================================
+
+    def to_openai_tool(self) -> dict:
+        """Retorna a ferramenta VectorGov no formato OpenAI Function Calling.
+
+        Returns:
+            Dicionário com a definição da ferramenta
+
+        Exemplo:
+            >>> from openai import OpenAI
+            >>> vg = VectorGov(api_key="vg_xxx")
+            >>> client = OpenAI()
+            >>>
+            >>> response = client.chat.completions.create(
+            ...     model="gpt-4o",
+            ...     messages=[{"role": "user", "content": "O que é ETP?"}],
+            ...     tools=[vg.to_openai_tool()],
+            ... )
+        """
+        return tool_utils.to_openai_tool()
+
+    def to_anthropic_tool(self) -> dict:
+        """Retorna a ferramenta VectorGov no formato Anthropic Claude Tools.
+
+        Returns:
+            Dicionário com a definição da ferramenta
+
+        Exemplo:
+            >>> from anthropic import Anthropic
+            >>> vg = VectorGov(api_key="vg_xxx")
+            >>> client = Anthropic()
+            >>>
+            >>> response = client.messages.create(
+            ...     model="claude-sonnet-4-20250514",
+            ...     messages=[{"role": "user", "content": "O que é ETP?"}],
+            ...     tools=[vg.to_anthropic_tool()],
+            ... )
+        """
+        return tool_utils.to_anthropic_tool()
+
+    def to_google_tool(self) -> dict:
+        """Retorna a ferramenta VectorGov no formato Google Gemini Function Calling.
+
+        Returns:
+            Dicionário com a definição da ferramenta
+
+        Exemplo:
+            >>> import google.generativeai as genai
+            >>> vg = VectorGov(api_key="vg_xxx")
+            >>>
+            >>> model = genai.GenerativeModel(
+            ...     model_name="gemini-2.0-flash",
+            ...     tools=[vg.to_google_tool()],
+            ... )
+        """
+        return tool_utils.to_google_tool()
+
+    def execute_tool_call(
+        self,
+        tool_call: any,
+        mode: Optional[Union[SearchMode, str]] = None,
+    ) -> str:
+        """Executa uma chamada de ferramenta e retorna o resultado formatado.
+
+        Este método aceita tool_calls de OpenAI, Anthropic ou Gemini e executa
+        a busca apropriada.
+
+        Args:
+            tool_call: Objeto de tool_call do LLM (OpenAI, Anthropic ou dict)
+            mode: Modo de busca opcional (fast, balanced, precise)
+
+        Returns:
+            String formatada com os resultados para passar de volta ao LLM
+
+        Exemplo com OpenAI:
+            >>> response = client.chat.completions.create(...)
+            >>> if response.choices[0].message.tool_calls:
+            ...     tool_call = response.choices[0].message.tool_calls[0]
+            ...     result = vg.execute_tool_call(tool_call)
+            ...     # Passa 'result' de volta para o LLM na próxima mensagem
+
+        Exemplo com Anthropic:
+            >>> response = client.messages.create(...)
+            >>> for block in response.content:
+            ...     if block.type == "tool_use":
+            ...         result = vg.execute_tool_call(block)
+        """
+        # Extrai argumentos dependendo do tipo de tool_call
+        arguments = self._extract_tool_arguments(tool_call)
+
+        # Parseia argumentos
+        query, filters, top_k = tool_utils.parse_tool_arguments(arguments)
+
+        # Executa busca
+        result = self.search(query=query, top_k=top_k, mode=mode, filters=filters)
+
+        # Formata resposta
+        return tool_utils.format_tool_response(result)
+
+    def _extract_tool_arguments(self, tool_call: any) -> dict:
+        """Extrai argumentos de diferentes formatos de tool_call."""
+        # OpenAI format
+        if hasattr(tool_call, "function") and hasattr(tool_call.function, "arguments"):
+            args = tool_call.function.arguments
+            return json.loads(args) if isinstance(args, str) else args
+
+        # Anthropic format
+        if hasattr(tool_call, "input"):
+            return tool_call.input if isinstance(tool_call.input, dict) else {}
+
+        # Dict format (Gemini ou manual)
+        if isinstance(tool_call, dict):
+            if "function" in tool_call and "arguments" in tool_call["function"]:
+                args = tool_call["function"]["arguments"]
+                return json.loads(args) if isinstance(args, str) else args
+            if "args" in tool_call:
+                return tool_call["args"]
+            return tool_call
+
+        raise ValueError(
+            f"Formato de tool_call não reconhecido: {type(tool_call)}. "
+            "Esperado: OpenAI ChatCompletionMessageToolCall, Anthropic ToolUseBlock, ou dict"
+        )

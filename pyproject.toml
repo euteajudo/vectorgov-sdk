@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vectorgov"
-version = "0.1.2"
+version = "0.2.0"
 description = "SDK Python para acessar bases de conhecimento jurídico VectorGov"
 readme = "README.md"
 license = {text = "MIT"}
@@ -39,6 +39,14 @@ dev = [
 openai = ["openai>=1.0"]
 anthropic = ["anthropic>=0.18"]
 google = ["google-generativeai>=0.3"]
+langchain = ["langchain>=0.1.0", "langchain-core>=0.1.0"]
+all = [
+    "openai>=1.0",
+    "anthropic>=0.18",
+    "google-generativeai>=0.3",
+    "langchain>=0.1.0",
+    "langchain-core>=0.1.0",
+]
 
 [project.urls]
 Homepage = "https://vectorgov.io"

@@ -119,6 +119,159 @@ response = client.messages.create(
 print(response.content[0].text)
 ```
 
+## Function Calling (Agentes)
+
+O VectorGov pode ser usado como ferramenta em agentes de IA. O LLM decide automaticamente quando consultar a legislação.
+
+### OpenAI Function Calling
+
+```python
+from vectorgov import VectorGov
+from openai import OpenAI
+
+vg = VectorGov(api_key="vg_xxx")
+client = OpenAI()
+
+# Primeira chamada - GPT decide se precisa consultar legislação
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Quais os critérios de julgamento?"}],
+    tools=[vg.to_openai_tool()],  # Registra VectorGov como ferramenta
+)
+
+# Se GPT quiser usar a ferramenta
+if response.choices[0].message.tool_calls:
+    tool_call = response.choices[0].message.tool_calls[0]
+    result = vg.execute_tool_call(tool_call)  # Executa busca
+
+    # Segunda chamada com o resultado
+    final = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "user", "content": "Quais os critérios de julgamento?"},
+            response.choices[0].message,
+            {"role": "tool", "tool_call_id": tool_call.id, "content": result},
+        ],
+    )
+    print(final.choices[0].message.content)
+```
+
+### Anthropic Claude Tools
+
+```python
+from vectorgov import VectorGov
+from anthropic import Anthropic
+
+vg = VectorGov(api_key="vg_xxx")
+client = Anthropic()
+
+response = client.messages.create(
+    model="claude-sonnet-4-20250514",
+    messages=[{"role": "user", "content": "O que é ETP?"}],
+    tools=[vg.to_anthropic_tool()],
+)
+
+# Processar tool_use se houver
+for block in response.content:
+    if block.type == "tool_use":
+        result = vg.execute_tool_call(block)
+```
+
+### Google Gemini Function Calling
+
+```python
+from vectorgov import VectorGov
+import google.generativeai as genai
+
+vg = VectorGov(api_key="vg_xxx")
+genai.configure(api_key="sua_key")
+
+model = genai.GenerativeModel(
+    model_name="gemini-2.0-flash",
+    tools=[vg.to_google_tool()],
+)
+
+response = model.generate_content("O que é ETP?")
+```
+
+## Integração com LangChain
+
+Instale as dependências:
+
+```bash
+pip install 'vectorgov[langchain]'
+# ou
+pip install vectorgov langchain langchain-core
+```
+
+### VectorGovRetriever
+
+```python
+from vectorgov.integrations.langchain import VectorGovRetriever
+from langchain.chains import RetrievalQA
+from langchain_openai import ChatOpenAI
+
+# Criar retriever
+retriever = VectorGovRetriever(api_key="vg_xxx", top_k=5)
+
+# Usar com RetrievalQA
+qa = RetrievalQA.from_chain_type(
+    llm=ChatOpenAI(model="gpt-4o-mini"),
+    retriever=retriever,
+)
+
+answer = qa.invoke("Quando o ETP pode ser dispensado?")
+print(answer["result"])
+```
+
+### Com LCEL (LangChain Expression Language)
+
+```python
+from vectorgov.integrations.langchain import VectorGovRetriever
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+from langchain_openai import ChatOpenAI
+
+retriever = VectorGovRetriever(api_key="vg_xxx")
+llm = ChatOpenAI(model="gpt-4o-mini")
+
+prompt = ChatPromptTemplate.from_template("""
+Contexto: {context}
+
+Pergunta: {question}
+""")
+
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+chain = (
+    {"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | prompt
+    | llm
+    | StrOutputParser()
+)
+
+answer = chain.invoke("O que é ETP?")
+```
+
+### VectorGovTool para Agentes
+
+```python
+from vectorgov.integrations.langchain import VectorGovTool
+from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain_openai import ChatOpenAI
+
+tool = VectorGovTool(api_key="vg_xxx")
+llm = ChatOpenAI(model="gpt-4o")
+
+# Criar agente com a ferramenta
+agent = create_openai_tools_agent(llm, [tool], prompt)
+executor = AgentExecutor(agent=agent, tools=[tool])
+
+result = executor.invoke({"input": "O que diz a lei sobre ETP?"})
+```
+
 ## Modos de Busca
 
 | Modo | Descrição | Latência | Uso Recomendado |

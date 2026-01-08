@@ -14,6 +14,21 @@ Com OpenAI:
     ...     model="gpt-4o",
     ...     messages=results.to_messages("O que é ETP?")
     ... )
+
+Com Function Calling:
+    >>> tools = [vg.to_openai_tool()]
+    >>> response = openai.chat.completions.create(
+    ...     model="gpt-4o",
+    ...     messages=[{"role": "user", "content": "O que é ETP?"}],
+    ...     tools=tools,
+    ... )
+    >>> if response.choices[0].message.tool_calls:
+    ...     result = vg.execute_tool_call(response.choices[0].message.tool_calls[0])
+
+Com LangChain:
+    >>> from vectorgov.integrations.langchain import VectorGovRetriever
+    >>> retriever = VectorGovRetriever(api_key="vg_xxx")
+    >>> docs = retriever.invoke("O que é ETP?")
 """
 
 from vectorgov.client import VectorGov
@@ -35,7 +50,7 @@ from vectorgov.formatters import (
     create_rag_prompt,
 )
 
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 __all__ = [
     # Cliente principal
     "VectorGov",

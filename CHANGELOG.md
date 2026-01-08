@@ -7,6 +7,29 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-01-08
+
+### Adicionado
+
+- **Function Calling** - Integração com ferramentas de LLMs:
+  - `vg.to_openai_tool()` - Ferramenta para OpenAI Function Calling
+  - `vg.to_anthropic_tool()` - Ferramenta para Claude Tools
+  - `vg.to_google_tool()` - Ferramenta para Gemini Function Calling
+  - `vg.execute_tool_call()` - Executa tool_call de qualquer provedor
+- **LangChain Integration** - Novo módulo `vectorgov.integrations.langchain`:
+  - `VectorGovRetriever` - Retriever compatível com LangChain
+  - `VectorGovTool` - Ferramenta para agentes LangChain
+  - `to_langchain_documents()` - Converte resultados para Documents
+- Novos exemplos:
+  - `08_function_calling_openai.py` - Agente OpenAI com VectorGov como tool
+  - `09_langchain_retriever.py` - Integração completa com LangChain
+- Extras de instalação: `pip install 'vectorgov[langchain]'` ou `'vectorgov[all]'`
+
+### Alterado
+
+- Módulo `integrations` agora é a casa de todas as integrações com frameworks
+- JSON Schema padronizado para Function Calling em `TOOL_SCHEMA`
+
 ## [0.1.2] - 2025-01-08
 
 ### Adicionado
@@ -57,7 +80,8 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - Retry automático com backoff exponencial
 - Timeout configurável
 
-[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/euteajudo/vectorgov-sdk/releases/tag/v0.1.0
