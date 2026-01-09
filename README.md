@@ -15,6 +15,7 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
 - [Instalação](#instalação)
   - [Instalação com Extras](#instalação-com-extras-opcionais)
 - [Início Rápido](#início-rápido)
+- [Streaming (Tempo Real)](#streaming-tempo-real)
 - **Modelos Comerciais (APIs Pagas)**
   - [OpenAI (GPT-4)](#openai)
   - [Google Gemini](#google-gemini)
@@ -81,7 +82,61 @@ results = vg.search("Quando o ETP pode ser dispensado?")
 
 # Ver resultados
 for hit in results:
-    print(f"{hit.source}: {hit.text[:200]}...")
+    print(f"{hit.source}: {hit.text}")
+```
+
+> **Nota:** O SDK retorna o **texto completo** de cada chunk em `hit.text`. Não há limite de caracteres - você recebe todo o conteúdo do artigo/parágrafo/inciso recuperado.
+
+---
+
+## Streaming (Tempo Real)
+
+Obtenha respostas em tempo real com o método `ask_stream()`. Ideal para interfaces de chat interativas.
+
+```python
+from vectorgov import VectorGov
+
+vg = VectorGov(api_key="vg_xxx")
+
+for chunk in vg.ask_stream("O que é ETP?"):
+    if chunk.type == "token":
+        # Exibe cada token conforme é gerado
+        print(chunk.content, end="", flush=True)
+    elif chunk.type == "retrieval":
+        # Notificação de busca concluída
+        print(f"[Recuperados {chunk.chunks} documentos em {chunk.time_ms}ms]")
+    elif chunk.type == "complete":
+        # Resposta completa com citações
+        print(f"\n\n📚 Fontes: {len(chunk.citations)} citações")
+```
+
+### Tipos de Eventos
+
+| Evento | Descrição | Campos |
+|--------|-----------|--------|
+| `start` | Início do processamento | `query` |
+| `retrieval` | Busca concluída | `chunks`, `time_ms` |
+| `token` | Token da resposta | `content` |
+| `complete` | Resposta finalizada | `citations`, `query_hash` |
+| `error` | Erro no processamento | `message` |
+
+### Exemplo com Interface
+
+```python
+import sys
+
+for chunk in vg.ask_stream("Quando o ETP pode ser dispensado?"):
+    if chunk.type == "start":
+        print("🔍 Buscando...", file=sys.stderr)
+    elif chunk.type == "retrieval":
+        print(f"📄 {chunk.chunks} documentos encontrados", file=sys.stderr)
+    elif chunk.type == "token":
+        print(chunk.content, end="", flush=True)
+    elif chunk.type == "complete":
+        print(f"\n\n---\n📚 {len(chunk.citations)} citações", file=sys.stderr)
+    elif chunk.type == "error":
+        print(f"❌ Erro: {chunk.message}", file=sys.stderr)
+        break
 ```
 
 ---
