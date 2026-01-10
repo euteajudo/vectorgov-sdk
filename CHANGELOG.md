@@ -6,6 +6,66 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
+## [0.8.0] - 2025-01-10
+
+### Adicionado
+
+- **Gerenciamento de Documentos** - Novos métodos para gerenciar a base de conhecimento:
+  - `list_documents(page, limit)` - Lista documentos disponíveis (paginado)
+  - `get_document(document_id)` - Detalhes de um documento específico
+  - `upload_pdf(file, metadata)` - Upload de PDF **(Admin)**
+  - `get_ingest_status(task_id)` - Status da ingestão
+  - `start_enrichment(document_id)` - Inicia enriquecimento **(Admin)**
+  - `get_enrichment_status(task_id)` - Status do enriquecimento
+  - `delete_document(document_id)` - Exclui documento **(Admin)**
+
+- **Novos modelos de dados**:
+  - `DocumentSummary` - Resumo de documento com progresso de enriquecimento
+  - `DocumentsResponse` - Resposta paginada de lista de documentos
+  - `UploadResponse` - Resposta de upload com task_id
+  - `IngestStatus` - Status de ingestão (pending/processing/completed/failed)
+  - `EnrichStatus` - Status de enriquecimento com progresso detalhado
+  - `DeleteResponse` - Resposta de exclusão
+
+- **Novos métodos HTTP internos**:
+  - `HTTPClient.delete()` - Requisições DELETE
+  - `HTTPClient.post_multipart()` - Upload de arquivos multipart/form-data
+
+### Permissões
+
+| Operação | Permissão |
+|----------|-----------|
+| Listar/consultar documentos | Todos |
+| Ver status de tarefas | Todos |
+| Upload, enriquecimento, exclusão | **Admin** |
+
+
+## [0.7.0] - 2025-01-08
+
+### Adicionado
+
+- **Streaming Response** - Método `ask_stream()` para respostas em tempo real:
+  - `vg.ask_stream(query)` - Retorna generator de `StreamChunk`
+  - `StreamChunk` - Dataclass com type, content, citations, etc.
+  - Tipos de eventos: `start`, `retrieval`, `token`, `complete`, `error`
+  - Ideal para interfaces de chat com feedback em tempo real
+  - Sem dependências adicionais (usa SSE nativo)
+- Novo modelo `StreamChunk` no módulo principal
+- Método `stream()` no cliente HTTP interno para SSE
+
+### Exemplo
+
+```python
+from vectorgov import VectorGov
+
+vg = VectorGov(api_key="vg_xxx")
+
+for chunk in vg.ask_stream("O que é ETP?"):
+    if chunk.type == "token":
+        print(chunk.content, end="", flush=True)
+    elif chunk.type == "complete":
+        print(f"\n\nFontes: {len(chunk.citations)} citações")
+```
 
 ## [0.6.0] - 2025-01-08
 
@@ -172,7 +232,8 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - Retry automático com backoff exponencial
 - Timeout configurável
 
-[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.3.0...v0.4.0
