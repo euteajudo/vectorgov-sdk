@@ -44,7 +44,18 @@ Com MCP (Claude Desktop, Cursor, etc.):
 """
 
 from vectorgov.client import VectorGov
-from vectorgov.models import SearchResult, Hit, Metadata
+from vectorgov.models import (
+    SearchResult,
+    Hit,
+    Metadata,
+    StreamChunk,
+    DocumentSummary,
+    DocumentsResponse,
+    UploadResponse,
+    IngestStatus,
+    EnrichStatus,
+    DeleteResponse,
+)
 from vectorgov.config import SearchMode, SYSTEM_PROMPTS
 from vectorgov.exceptions import (
     VectorGovError,
@@ -62,7 +73,7 @@ from vectorgov.formatters import (
     create_rag_prompt,
 )
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 __all__ = [
     # Cliente principal
     "VectorGov",
@@ -70,6 +81,14 @@ __all__ = [
     "SearchResult",
     "Hit",
     "Metadata",
+    "StreamChunk",
+    # Document Models
+    "DocumentSummary",
+    "DocumentsResponse",
+    "UploadResponse",
+    "IngestStatus",
+    "EnrichStatus",
+    "DeleteResponse",
     # Configuração
     "SearchMode",
     "SYSTEM_PROMPTS",

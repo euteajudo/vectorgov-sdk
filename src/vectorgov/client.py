@@ -8,7 +8,7 @@ from typing import Optional, Union
 import json
 from vectorgov._http import HTTPClient
 from vectorgov.config import SDKConfig, SearchMode, MODE_CONFIG, SYSTEM_PROMPTS
-from vectorgov.models import SearchResult, Hit, Metadata
+from vectorgov.models import SearchResult, Hit, Metadata, StreamChunk
 from vectorgov.exceptions import ValidationError, AuthError
 from vectorgov.integrations import tools as tool_utils
 
@@ -168,6 +168,74 @@ class VectorGov:
 
         # Converte resposta
         return self._parse_search_response(query, response, mode.value)
+
+    def ask_stream(
+        self,
+        query: str,
+        top_k: Optional[int] = None,
+        mode: Optional[Union[SearchMode, str]] = None,
+    ):
+        """Faz uma pergunta com resposta em streaming.
+
+        A resposta é gerada token por token, permitindo exibição
+        em tempo real (útil para chatbots).
+
+        Args:
+            query: Pergunta do usuário
+            top_k: Quantidade de documentos para contexto (1-20). Default: 5
+            mode: Modo de busca (fast, balanced, precise). Default: balanced
+
+        Yields:
+            StreamChunk com cada parte da resposta
+
+        Exemplo:
+            >>> for chunk in vg.ask_stream("O que é ETP?"):
+            ...     if chunk.type == "token":
+            ...         print(chunk.content, end="", flush=True)
+            ...     elif chunk.type == "complete":
+            ...         print(f"\\n\\nFontes: {len(chunk.citations)} citações")
+        """
+        # Validações
+        if not query or not query.strip():
+            raise ValidationError("Query não pode ser vazia", field="query")
+
+        query = query.strip()
+        if len(query) < 3:
+            raise ValidationError("Query deve ter pelo menos 3 caracteres", field="query")
+
+        # Valores padrão
+        top_k = top_k or self._config.default_top_k
+        mode = mode or self._config.default_mode
+        if isinstance(mode, SearchMode):
+            mode = mode.value
+
+        # Prepara request
+        request_data = {
+            "query": query,
+            "top_k": top_k,
+            "mode": mode,
+        }
+
+        # Faz requisição com streaming
+        for event in self._http.stream("/sdk/ask/stream", data=request_data):
+            event_type = event.get("type", "unknown")
+
+            chunk = StreamChunk(
+                type=event_type,
+                content=event.get("content"),
+                query=event.get("query"),
+                chunks=event.get("chunks"),
+                time_ms=event.get("time_ms"),
+                citations=event.get("citations"),
+                query_hash=event.get("query_hash"),
+                message=event.get("message"),
+            )
+
+            yield chunk
+
+            # Se for erro, para o stream
+            if event_type == "error":
+                break
 
     def _parse_search_response(
         self,
@@ -381,4 +449,148 @@ class VectorGov:
         raise ValueError(
             f"Formato de tool_call não reconhecido: {type(tool_call)}. "
             "Esperado: OpenAI ChatCompletionMessageToolCall, Anthropic ToolUseBlock, ou dict"
+        )
+
+    # =========================================================================
+    # Metodos de Gerenciamento de Documentos
+    # =========================================================================
+
+    def list_documents(
+        self,
+        page: int = 1,
+        limit: int = 20,
+    ) -> "DocumentsResponse":
+        from vectorgov.models import DocumentSummary, DocumentsResponse
+
+        if limit < 1 or limit > 100:
+            raise ValidationError("limit deve estar entre 1 e 100", field="limit")
+
+        response = self._http.get("/sdk/documents", params={"page": page, "limit": limit})
+
+        documents = [
+            DocumentSummary(
+                document_id=doc["document_id"],
+                tipo_documento=doc["tipo_documento"],
+                numero=doc["numero"],
+                ano=doc["ano"],
+                titulo=doc.get("titulo"),
+                descricao=doc.get("descricao"),
+                chunks_count=doc.get("chunks_count", 0),
+                enriched_count=doc.get("enriched_count", 0),
+            )
+            for doc in response.get("documents", [])
+        ]
+
+        return DocumentsResponse(
+            documents=documents,
+            total=response.get("total", len(documents)),
+            page=response.get("page", page),
+            pages=response.get("pages", 1),
+        )
+
+    def get_document(self, document_id: str) -> "DocumentSummary":
+        from vectorgov.models import DocumentSummary
+
+        if not document_id or not document_id.strip():
+            raise ValidationError("document_id nao pode ser vazio", field="document_id")
+
+        response = self._http.get(f"/sdk/documents/{document_id}")
+
+        return DocumentSummary(
+            document_id=response["document_id"],
+            tipo_documento=response["tipo_documento"],
+            numero=response["numero"],
+            ano=response["ano"],
+            titulo=response.get("titulo"),
+            descricao=response.get("descricao"),
+            chunks_count=response.get("chunks_count", 0),
+            enriched_count=response.get("enriched_count", 0),
+        )
+
+    def upload_pdf(self, file_path: str, tipo_documento: str, numero: str, ano: int) -> "UploadResponse":
+        from vectorgov.models import UploadResponse
+        import os as _os
+
+        if not _os.path.exists(file_path):
+            raise FileNotFoundError(f"Arquivo nao encontrado: {file_path}")
+
+        if not file_path.lower().endswith(".pdf"):
+            raise ValidationError("Apenas arquivos PDF sao aceitos", field="file_path")
+
+        valid_types = ["LEI", "DECRETO", "IN", "PORTARIA", "RESOLUCAO"]
+        tipo_documento = tipo_documento.upper()
+        if tipo_documento not in valid_types:
+            raise ValidationError(f"tipo_documento invalido", field="tipo_documento")
+
+        if not numero:
+            raise ValidationError("numero nao pode ser vazio", field="numero")
+
+        if ano < 1900 or ano > 2100:
+            raise ValidationError("ano invalido", field="ano")
+
+        with open(file_path, "rb") as f:
+            files = {"file": (_os.path.basename(file_path), f, "application/pdf")}
+            data = {"tipo_documento": tipo_documento, "numero": numero, "ano": str(ano)}
+            response = self._http.post_multipart("/sdk/documents/upload", files=files, data=data)
+
+        return UploadResponse(
+            success=response.get("success", True),
+            message=response.get("message", "Upload iniciado"),
+            document_id=response.get("document_id", ""),
+            task_id=response.get("task_id", ""),
+        )
+
+    def get_ingest_status(self, task_id: str) -> "IngestStatus":
+        from vectorgov.models import IngestStatus
+
+        if not task_id or not task_id.strip():
+            raise ValidationError("task_id nao pode ser vazio", field="task_id")
+
+        response = self._http.get(f"/sdk/ingest/status/{task_id}")
+
+        return IngestStatus(
+            task_id=task_id,
+            status=response.get("status", "unknown"),
+            progress=response.get("progress", 0),
+            message=response.get("message", ""),
+            document_id=response.get("document_id"),
+            chunks_created=response.get("chunks_created", 0),
+        )
+
+    def start_enrichment(self, document_id: str) -> dict:
+        if not document_id or not document_id.strip():
+            raise ValidationError("document_id nao pode ser vazio", field="document_id")
+
+        response = self._http.post("/sdk/documents/enrich", data={"document_id": document_id})
+        return {"task_id": response.get("task_id", ""), "message": response.get("message", "")}
+
+    def get_enrichment_status(self, task_id: str) -> "EnrichStatus":
+        from vectorgov.models import EnrichStatus
+
+        if not task_id or not task_id.strip():
+            raise ValidationError("task_id nao pode ser vazio", field="task_id")
+
+        response = self._http.get(f"/sdk/enrich/status/{task_id}")
+
+        return EnrichStatus(
+            task_id=task_id,
+            status=response.get("status", "unknown"),
+            progress=response.get("progress", 0.0),
+            chunks_enriched=response.get("chunks_enriched", 0),
+            chunks_pending=response.get("chunks_pending", 0),
+            chunks_failed=response.get("chunks_failed", 0),
+            errors=response.get("errors", []),
+        )
+
+    def delete_document(self, document_id: str) -> "DeleteResponse":
+        from vectorgov.models import DeleteResponse
+
+        if not document_id or not document_id.strip():
+            raise ValidationError("document_id nao pode ser vazio", field="document_id")
+
+        response = self._http.delete(f"/sdk/documents/{document_id}")
+
+        return DeleteResponse(
+            success=response.get("success", False),
+            message=response.get("message", ""),
         )

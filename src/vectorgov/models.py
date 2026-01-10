@@ -3,8 +3,60 @@ Modelos de dados do VectorGov SDK.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Iterator, Any
+from typing import Optional, Iterator, Any, Literal
 from datetime import datetime
+
+
+# =============================================================================
+# STREAMING MODELS
+# =============================================================================
+
+
+@dataclass
+class StreamChunk:
+    """Um chunk do stream de resposta.
+
+    Tipos de eventos:
+    - start: Início do processamento
+    - retrieval: Chunks recuperados
+    - token: Token da resposta
+    - complete: Resposta completa
+    - error: Erro
+    """
+
+    type: Literal["start", "retrieval", "token", "complete", "error"]
+    """Tipo do evento"""
+
+    content: Optional[str] = None
+    """Conteúdo (para type='token')"""
+
+    query: Optional[str] = None
+    """Query original (para type='start')"""
+
+    chunks: Optional[int] = None
+    """Número de chunks recuperados (para type='retrieval')"""
+
+    time_ms: Optional[float] = None
+    """Tempo de retrieval em ms (para type='retrieval')"""
+
+    citations: Optional[list[dict]] = None
+    """Lista de citações (para type='complete')"""
+
+    query_hash: Optional[str] = None
+    """Hash da query para feedback (para type='complete')"""
+
+    message: Optional[str] = None
+    """Mensagem de erro (para type='error')"""
+
+    def __repr__(self) -> str:
+        if self.type == "token":
+            return f"StreamChunk(type='token', content='{self.content[:20] if self.content else ''}...')"
+        return f"StreamChunk(type='{self.type}')"
+
+
+# =============================================================================
+# SEARCH MODELS
+# =============================================================================
 
 
 @dataclass
@@ -226,3 +278,147 @@ Resposta:"""
             "query_id": self.query_id,
             "mode": self.mode,
         }
+
+
+# =============================================================================
+# DOCUMENT MODELS
+# =============================================================================
+
+
+@dataclass
+class DocumentSummary:
+    """Resumo de um documento na base de conhecimento."""
+
+    document_id: str
+    """ID único do documento"""
+
+    tipo_documento: str
+    """Tipo do documento (LEI, DECRETO, IN, etc.)"""
+
+    numero: str
+    """Número do documento"""
+
+    ano: int
+    """Ano do documento"""
+
+    titulo: Optional[str] = None
+    """Título do documento"""
+
+    descricao: Optional[str] = None
+    """Descrição do documento"""
+
+    chunks_count: int = 0
+    """Número total de chunks"""
+
+    enriched_count: int = 0
+    """Número de chunks enriquecidos"""
+
+    @property
+    def is_enriched(self) -> bool:
+        """Verifica se o documento está completamente enriquecido."""
+        return self.enriched_count >= self.chunks_count and self.chunks_count > 0
+
+    @property
+    def enrichment_progress(self) -> float:
+        """Progresso do enriquecimento (0.0 a 1.0)."""
+        if self.chunks_count == 0:
+            return 0.0
+        return self.enriched_count / self.chunks_count
+
+    def __repr__(self) -> str:
+        status = "enriched" if self.is_enriched else f"{self.enrichment_progress:.0%}"
+        return f"Document({self.tipo_documento} {self.numero}/{self.ano}, {status})"
+
+
+@dataclass
+class DocumentsResponse:
+    """Resposta da listagem de documentos."""
+
+    documents: list[DocumentSummary]
+    """Lista de documentos"""
+
+    total: int
+    """Total de documentos"""
+
+    page: int
+    """Página atual"""
+
+    pages: int
+    """Total de páginas"""
+
+
+@dataclass
+class UploadResponse:
+    """Resposta do upload de documento."""
+
+    success: bool
+    """Se o upload foi iniciado com sucesso"""
+
+    message: str
+    """Mensagem de status"""
+
+    document_id: str
+    """ID do documento criado"""
+
+    task_id: str
+    """ID da task de ingestão"""
+
+
+@dataclass
+class IngestStatus:
+    """Status da ingestão de um documento."""
+
+    task_id: str
+    """ID da task"""
+
+    status: Literal["pending", "processing", "completed", "failed"]
+    """Status atual"""
+
+    progress: int
+    """Progresso (0-100)"""
+
+    message: str
+    """Mensagem de status"""
+
+    document_id: Optional[str] = None
+    """ID do documento (quando disponível)"""
+
+    chunks_created: int = 0
+    """Número de chunks criados"""
+
+
+@dataclass
+class EnrichStatus:
+    """Status do enriquecimento de um documento."""
+
+    task_id: str
+    """ID da task"""
+
+    status: Literal["pending", "processing", "completed", "error", "not_found", "unknown"]
+    """Status atual"""
+
+    progress: float
+    """Progresso (0.0 a 1.0)"""
+
+    chunks_enriched: int = 0
+    """Chunks já enriquecidos"""
+
+    chunks_pending: int = 0
+    """Chunks pendentes"""
+
+    chunks_failed: int = 0
+    """Chunks com falha"""
+
+    errors: list[str] = field(default_factory=list)
+    """Lista de erros encontrados"""
+
+
+@dataclass
+class DeleteResponse:
+    """Resposta da exclusão de documento."""
+
+    success: bool
+    """Se a exclusão foi bem-sucedida"""
+
+    message: str
+    """Mensagem de status"""

@@ -144,3 +144,121 @@ class HTTPClient:
     def post(self, path: str, data: Optional[dict] = None) -> dict[str, Any]:
         """Requisição POST."""
         return self.request("POST", path, data=data)
+
+    def stream(
+        self,
+        path: str,
+        data: Optional[dict] = None,
+    ):
+        """Faz uma requisição POST com streaming SSE.
+
+        Args:
+            path: Caminho da API
+            data: Dados para enviar no body
+
+        Yields:
+            Dicionários com eventos SSE parseados
+
+        Raises:
+            VectorGovError: Em caso de erro
+        """
+        url = f"{self.base_url}{path}"
+
+        # Prepara body
+        body = None
+        if data:
+            body = json.dumps(data).encode("utf-8")
+
+        # Headers para SSE
+        headers = self._get_headers()
+        headers["Accept"] = "text/event-stream"
+
+        try:
+            request = Request(
+                url,
+                data=body,
+                headers=headers,
+                method="POST",
+            )
+
+            with urlopen(request, timeout=120) as response:  # Timeout maior para streaming
+                for line in response:
+                    line = line.decode("utf-8").strip()
+
+                    # Ignora linhas vazias
+                    if not line:
+                        continue
+
+                    # Parse SSE data lines
+                    if line.startswith("data: "):
+                        try:
+                            event_data = json.loads(line[6:])
+                            yield event_data
+                        except json.JSONDecodeError:
+                            continue
+
+        except HTTPError as e:
+            response_body = e.read().decode("utf-8")
+            self._handle_error(e.code, response_body)
+
+        except URLError as e:
+            raise ConnectionError(f"Erro de conexão: {e.reason}")
+
+        except Exception as e:
+            raise VectorGovError(f"Erro no streaming: {str(e)}")
+
+
+    def delete(self, path: str, params: Optional[dict] = None) -> dict[str, Any]:
+        """Requisicao DELETE."""
+        return self.request("DELETE", path, params=params)
+
+    def post_multipart(
+        self,
+        path: str,
+        files: dict[str, tuple],
+        data: Optional[dict] = None,
+    ) -> dict[str, Any]:
+        """Requisicao POST multipart/form-data para upload de arquivos."""
+        import uuid
+
+        url = f"{self.base_url}{path}"
+        boundary = uuid.uuid4().hex
+        CRLF = "\r\n"
+
+        body_parts = []
+
+        if data:
+            for key, value in data.items():
+                part = "--" + boundary + CRLF + 'Content-Disposition: form-data; name="' + key + '"' + CRLF + CRLF + str(value) + CRLF
+                body_parts.append(part.encode("utf-8"))
+
+        for field_name, (filename, file_obj, content_type) in files.items():
+            file_content = file_obj.read()
+            header = "--" + boundary + CRLF + 'Content-Disposition: form-data; name="' + field_name + '"; filename="' + filename + '"' + CRLF + "Content-Type: " + content_type + CRLF + CRLF
+            body_parts.append(header.encode("utf-8"))
+            body_parts.append(file_content)
+            body_parts.append(CRLF.encode("utf-8"))
+
+        body_parts.append(("--" + boundary + "--" + CRLF).encode("utf-8"))
+
+        body = b"".join(body_parts)
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "User-Agent": "vectorgov-python/0.1.0",
+            "Accept": "application/json",
+        }
+
+        try:
+            request = Request(url, data=body, headers=headers, method="POST")
+            with urlopen(request, timeout=120) as response:
+                response_body = response.read().decode("utf-8")
+                return json.loads(response_body)
+
+        except HTTPError as e:
+            response_body = e.read().decode("utf-8")
+            self._handle_error(e.code, response_body)
+
+        except URLError as e:
+            raise ConnectionError(f"Erro de conexao: {e.reason}")
