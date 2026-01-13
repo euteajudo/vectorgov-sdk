@@ -6,6 +6,16 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
+
+## [0.8.1] - 2025-01-13
+
+### Alterado
+
+- **Limite de top_k aumentado** - O parâmetro `top_k` agora aceita valores de 1 a 50 (antes: 1-20)
+  - `search(query, top_k=50)` - Até 50 chunks de contexto
+  - `ask_stream(query, top_k=50)` - Idem para streaming
+  - Padrão continua sendo 5
+
 ## [0.8.0] - 2025-01-10
 
 ### Adicionado

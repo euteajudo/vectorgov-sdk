@@ -95,7 +95,7 @@ class VectorGov:
 
         Args:
             query: Texto da consulta
-            top_k: Quantidade de resultados (1-20). Default: 5
+            top_k: Quantidade de resultados (1-50). Default: 5
             mode: Modo de busca (fast, balanced, precise). Default: balanced
             filters: Filtros opcionais:
                 - tipo: Tipo do documento (lei, decreto, in, portaria)
@@ -128,8 +128,8 @@ class VectorGov:
 
         # Valores padrão
         top_k = top_k or self._config.default_top_k
-        if top_k < 1 or top_k > 20:
-            raise ValidationError("top_k deve estar entre 1 e 20", field="top_k")
+        if top_k < 1 or top_k > 50:
+            raise ValidationError("top_k deve estar entre 1 e 50", field="top_k")
 
         mode = mode or self._config.default_mode
         if isinstance(mode, str):
@@ -182,7 +182,7 @@ class VectorGov:
 
         Args:
             query: Pergunta do usuário
-            top_k: Quantidade de documentos para contexto (1-20). Default: 5
+            top_k: Quantidade de documentos para contexto (1-50). Default: 5
             mode: Modo de busca (fast, balanced, precise). Default: balanced
 
         Yields:
