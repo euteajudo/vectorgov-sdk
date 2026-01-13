@@ -65,9 +65,9 @@ TOOL_SCHEMA = {
         },
         "top_k": {
             "type": "integer",
-            "description": "Quantidade de resultados (1-10). Default: 5",
+            "description": "Quantidade de resultados (1-50). Default: 5",
             "minimum": 1,
-            "maximum": 10,
+            "maximum": 50,
             "default": 5,
         },
     },

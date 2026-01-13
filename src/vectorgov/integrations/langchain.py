@@ -111,7 +111,7 @@ class VectorGovRetriever(BaseRetriever):
 
         Args:
             api_key: Chave de API. Se não fornecida, usa VECTORGOV_API_KEY
-            top_k: Quantidade de documentos (1-20)
+            top_k: Quantidade de documentos (1-50)
             mode: Modo de busca (fast, balanced, precise)
             filters: Filtros padrão (tipo, ano, orgao)
         """

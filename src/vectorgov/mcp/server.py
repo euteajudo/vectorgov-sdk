@@ -98,7 +98,7 @@ def create_server(
 
         Args:
             query: Pergunta ou termo de busca sobre legislação brasileira.
-            top_k: Quantidade de resultados (1-10). Default: 5.
+            top_k: Quantidade de resultados (1-50). Default: 5.
             document_type: Filtrar por tipo (lei, decreto, in, portaria).
             year: Filtrar por ano do documento.
 
@@ -118,7 +118,7 @@ def create_server(
         try:
             result = client.search(
                 query=query,
-                top_k=min(top_k, 10),
+                top_k=min(top_k, 50),
                 filters=filters if filters else None,
             )
         except Exception as e:

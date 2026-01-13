@@ -77,7 +77,7 @@ def create_search_tool(
 
     Args:
         api_key: Chave de API VectorGov
-        top_k: Quantidade de resultados (1-20)
+        top_k: Quantidade de resultados (1-50)
         mode: Modo de busca (fast, balanced, precise)
         name: Nome da função
         description: Descrição customizada
@@ -311,7 +311,7 @@ class VectorGovToolset:
 
         Args:
             api_key: Chave de API VectorGov
-            top_k: Quantidade de resultados (1-20)
+            top_k: Quantidade de resultados (1-50)
             mode: Modo de busca (fast, balanced, precise)
         """
         self.api_key = api_key or os.environ.get("VECTORGOV_API_KEY")

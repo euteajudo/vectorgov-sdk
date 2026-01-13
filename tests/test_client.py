@@ -75,7 +75,7 @@ class TestSearch:
             vg.search("teste", top_k=0)
 
         with pytest.raises(ValidationError):
-            vg.search("teste", top_k=25)
+            vg.search("teste", top_k=51)  # Max é 50
 
     def test_search_validates_mode(self, vg):
         """Deve validar modo inválido."""

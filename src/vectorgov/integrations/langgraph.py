@@ -118,7 +118,7 @@ def create_vectorgov_tool(
 
     Args:
         api_key: Chave de API. Se não fornecida, usa VECTORGOV_API_KEY
-        top_k: Quantidade de resultados (1-20)
+        top_k: Quantidade de resultados (1-50)
         mode: Modo de busca (fast, balanced, precise)
         name: Nome da ferramenta
         description: Descrição customizada
