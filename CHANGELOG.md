@@ -7,6 +7,60 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.9.0] - 2025-01-17
+
+### ⚠️ BREAKING CHANGE
+
+- **Cache desabilitado por padrão** - Por questões de privacidade, o cache semântico agora vem **desabilitado por padrão** em todos os modos de busca.
+
+### Contexto
+
+O VectorGov utiliza um **cache semântico compartilhado** entre todos os clientes da API. Isso significa que:
+- Suas perguntas podem ser armazenadas no cache
+- Suas respostas podem ser servidas a outros clientes com perguntas similares
+- Você pode receber respostas já geradas por outros clientes
+
+### Migração
+
+```python
+# ANTES (v0.8.x) - Cache habilitado por padrão
+results = vg.search("O que é ETP?")  # use_cache=True implícito
+
+# DEPOIS (v0.9.0) - Cache desabilitado por padrão
+results = vg.search("O que é ETP?")  # use_cache=False implícito
+
+# Para habilitar cache explicitamente (aceita trade-off de privacidade)
+results = vg.search("O que é ETP?", use_cache=True)
+```
+
+### Adicionado
+
+- **Parâmetro `use_cache`** no método `search()`:
+  - `use_cache=True` - Habilita cache (menor latência, menor privacidade)
+  - `use_cache=False` - Desabilita cache (padrão, maior privacidade)
+  - Não especificado - Usa padrão do modo (agora `False`)
+
+- **Documentação de privacidade** - Nova seção no README explicando:
+  - Como funciona o cache compartilhado
+  - Trade-offs entre latência e privacidade
+  - Recomendações de uso por cenário
+
+### Alterado
+
+- `MODE_CONFIG` - Todos os modos agora têm `use_cache=False` por padrão:
+  - `SearchMode.FAST` - `use_cache=False`
+  - `SearchMode.BALANCED` - `use_cache=False`
+  - `SearchMode.PRECISE` - `use_cache=False`
+
+### Recomendações de Uso
+
+| Cenário | use_cache | Motivo |
+|---------|-----------|--------|
+| Dados sensíveis | `False` (padrão) | Privacidade máxima |
+| Perguntas genéricas | `True` | Menor latência, perguntas públicas |
+| Produção multi-tenant | `False` | Isolamento entre clientes |
+| Demo/Testes | `True` | Aproveita cache existente |
+
 ## [0.8.1] - 2025-01-13
 
 ### Alterado
@@ -242,7 +296,10 @@ for chunk in vg.ask_stream("O que é ETP?"):
 - Retry automático com backoff exponencial
 - Timeout configurável
 
-[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.8.1...v0.9.0
+[0.8.1]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.8.0...v0.8.1
+[0.8.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.4.0...v0.5.0
