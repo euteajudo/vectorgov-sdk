@@ -90,6 +90,7 @@ class VectorGov:
         top_k: Optional[int] = None,
         mode: Optional[Union[SearchMode, str]] = None,
         filters: Optional[dict] = None,
+        use_cache: Optional[bool] = None,
     ) -> SearchResult:
         """Busca informações na base de conhecimento.
 
@@ -101,6 +102,11 @@ class VectorGov:
                 - tipo: Tipo do documento (lei, decreto, in, portaria)
                 - ano: Ano do documento
                 - orgao: Órgão emissor
+            use_cache: Usar cache compartilhado. Default: False (privacidade).
+                ATENÇÃO: O cache é compartilhado entre todos os clientes.
+                Se True, sua pergunta/resposta pode ser vista por outros clientes
+                e você pode receber respostas de perguntas de outros clientes.
+                Habilite apenas se aceitar o trade-off privacidade vs latência.
 
         Returns:
             SearchResult com os documentos encontrados
@@ -111,7 +117,12 @@ class VectorGov:
             RateLimitError: Se exceder o rate limit
 
         Exemplo:
+            >>> # Busca privada (padrão)
             >>> results = vg.search("O que é ETP?")
+            >>>
+            >>> # Busca com cache (aceita compartilhamento)
+            >>> results = vg.search("O que é ETP?", use_cache=True)
+            >>>
             >>> for hit in results:
             ...     print(f"{hit.source}: {hit.text[:100]}...")
         """
@@ -144,13 +155,18 @@ class VectorGov:
         # Obtém configuração do modo
         mode_config = MODE_CONFIG[mode]
 
+        # Determina se usa cache
+        # Se o desenvolvedor passou explicitamente, usa o valor dele
+        # Senão, usa o padrão do modo (que é False por privacidade)
+        cache_enabled = use_cache if use_cache is not None else mode_config["use_cache"]
+
         # Prepara request
         request_data = {
             "query": query,
             "top_k": top_k,
             "use_hyde": mode_config["use_hyde"],
             "use_reranker": mode_config["use_reranker"],
-            "use_cache": mode_config["use_cache"],
+            "use_cache": cache_enabled,
             "mode": mode.value,
         }
 

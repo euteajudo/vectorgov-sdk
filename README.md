@@ -801,11 +801,14 @@ O servidor MCP expõe três ferramentas para Claude:
 
 ## Modos de Busca
 
-| Modo | Descrição | Latência | Uso Recomendado |
-|------|-----------|----------|-----------------|
-| `fast` | Busca rápida, sem reranking | ~2s | Chatbots, alta escala |
-| `balanced` | Busca com reranking | ~5s | **Uso geral (default)** |
-| `precise` | Busca com HyDE + reranking | ~15s | Análises críticas |
+| Modo | Descrição | Latência | Cache Padrão | Uso Recomendado |
+|------|-----------|----------|--------------|-----------------|
+| `fast` | Busca rápida, sem reranking | ~2s | ❌ Desligado | Chatbots, alta escala |
+| `balanced` | Busca com reranking | ~5s | ❌ Desligado | **Uso geral (default)** |
+| `precise` | Busca com HyDE + reranking | ~15s | ❌ Desligado | Análises críticas |
+
+> **Nota:** O cache está desabilitado por padrão em todos os modos para proteger sua privacidade.
+> Veja a seção [Aviso de Privacidade](#️-aviso-de-privacidade---cache-compartilhado) para mais detalhes.
 
 ```python
 # Busca rápida (chatbots)
@@ -816,6 +819,9 @@ results = vg.search("query", mode="balanced")
 
 # Busca precisa (análises)
 results = vg.search("query", mode="precise")
+
+# Qualquer modo COM cache (trade-off: privacidade vs latência)
+results = vg.search("query", mode="fast", use_cache=True)
 ```
 
 ## Filtros
@@ -958,6 +964,67 @@ vg = VectorGov(
     default_mode="precise",                   # Modo padrão
 )
 ```
+
+---
+
+# ⚠️ Aviso de Privacidade - Cache Compartilhado
+
+## Entendendo o Cache Semântico
+
+O VectorGov utiliza um **cache semântico compartilhado** entre todos os clientes da API. Isso significa:
+
+| Aspecto | Comportamento |
+|---------|---------------|
+| **Suas perguntas** | Podem ser armazenadas no cache |
+| **Suas respostas** | Podem ser servidas a outros clientes com perguntas similares |
+| **Perguntas de outros** | Você pode receber respostas já geradas por outros clientes |
+
+### Trade-off: Performance vs Privacidade
+
+| Cache Habilitado | Cache Desabilitado |
+|------------------|-------------------|
+| ✅ Latência menor (~0.1s para cache hit) | ❌ Latência maior (~5-15s) |
+| ✅ Resposta pode vir pré-validada | ❌ Sempre gera resposta nova |
+| ❌ Perguntas visíveis a outros clientes | ✅ Total privacidade |
+| ❌ Pode receber respostas de outros | ✅ Respostas exclusivas |
+
+### Controle de Cache
+
+Por padrão, o cache está **DESABILITADO** para proteger sua privacidade:
+
+```python
+# Padrão: SEM cache (privado)
+results = vg.search("O que é ETP?")  # use_cache=False implícito
+
+# Explicitamente habilitando cache (perda de privacidade)
+results = vg.search("O que é ETP?", use_cache=True)
+```
+
+### Quando Habilitar o Cache?
+
+| Use Cache | Não Use Cache |
+|-----------|---------------|
+| Perguntas genéricas sobre legislação | Perguntas com dados sensíveis |
+| Alta escala de usuários (chatbots públicos) | Análises confidenciais |
+| Demos e testes | Ambientes corporativos restritos |
+| Quando latência é crítica | Quando privacidade é prioridade |
+
+### Exemplo de Uso Consciente
+
+```python
+from vectorgov import VectorGov
+
+vg = VectorGov(api_key="vg_xxx")
+
+# Pergunta genérica - pode usar cache
+results = vg.search("Quais os critérios de julgamento?", use_cache=True)
+
+# Pergunta específica com dados sensíveis - NÃO usar cache
+results = vg.search("Contrato da empresa XYZ foi regular?", use_cache=False)
+```
+
+> **Nota:** O cache desabilitado não afeta a qualidade da resposta, apenas a latência.
+> O sistema de duas fases garante alta precisão independente do cache.
 
 ---
 

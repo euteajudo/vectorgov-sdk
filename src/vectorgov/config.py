@@ -86,20 +86,24 @@ Baseie suas respostas apenas no contexto fornecido e cite as fontes.""",
 
 
 # Mapeamento de modos para configurações internas
+# NOTA: use_cache=False por padrão para privacidade
+# O cache é compartilhado entre todos os clientes, então o desenvolvedor
+# deve explicitamente habilitar (use_cache=True) se aceitar o trade-off
+# de privacidade em troca de menor latência.
 MODE_CONFIG = {
     SearchMode.FAST: {
         "use_hyde": False,
         "use_reranker": False,
-        "use_cache": True,
+        "use_cache": False,  # Privacidade por padrão
     },
     SearchMode.BALANCED: {
         "use_hyde": False,
         "use_reranker": True,
-        "use_cache": True,
+        "use_cache": False,  # Privacidade por padrão
     },
     SearchMode.PRECISE: {
         "use_hyde": True,
         "use_reranker": True,
-        "use_cache": True,
+        "use_cache": False,  # Privacidade por padrão
     },
 }
