@@ -35,6 +35,28 @@ results = vg.search("O que é ETP?", use_cache=True)
 
 ### Adicionado
 
+- **Método `store_response()`** - Permite salvar respostas de LLMs externos (OpenAI, Gemini, Claude, etc.) no cache do VectorGov:
+  - Habilita feedback (like/dislike) para qualquer LLM
+  - Retorna `query_hash` para usar no método `feedback()`
+  - Útil para coletar dados de treinamento de modelos
+  ```python
+  # Exemplo de uso
+  results = vg.search("O que é ETP?")
+  response = openai.chat.completions.create(model="gpt-4o", messages=results.to_messages())
+  answer = response.choices[0].message.content
+
+  # Salva para feedback
+  stored = vg.store_response(query="O que é ETP?", answer=answer, provider="OpenAI", model="gpt-4o")
+  vg.feedback(stored.query_hash, like=True)  # Agora funciona!
+  ```
+
+- **Modelo `StoreResponseResult`** - Retorno do método `store_response()` com campos:
+  - `success: bool` - Se a resposta foi armazenada
+  - `query_hash: str` - Hash para usar em `feedback()`
+  - `message: str` - Mensagem de status
+
+- **Exemplo `15_feedback_external_llm.py`** - Demonstra fluxo completo de feedback com LLM externo
+
 - **Parâmetro `use_cache`** no método `search()`:
   - `use_cache=True` - Habilita cache (menor latência, menor privacidade)
   - `use_cache=False` - Desabilita cache (padrão, maior privacidade)

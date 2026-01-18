@@ -422,3 +422,21 @@ class DeleteResponse:
 
     message: str
     """Mensagem de status"""
+
+
+@dataclass
+class StoreResponseResult:
+    """Resultado do armazenamento de resposta de LLM externo.
+
+    Usado quando o usuário gera uma resposta com seu próprio LLM
+    e quer salvar no cache do VectorGov para permitir feedback.
+    """
+
+    success: bool
+    """Se a resposta foi armazenada com sucesso"""
+
+    query_hash: str
+    """Hash único da query (usar em feedback())"""
+
+    message: str
+    """Mensagem de status"""

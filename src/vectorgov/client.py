@@ -298,7 +298,7 @@ class VectorGov:
         O feedback ajuda a melhorar a qualidade das buscas futuras.
 
         Args:
-            query_id: ID da query (obtido via result.query_id)
+            query_id: ID da query (obtido via result.query_id ou store_response().query_hash)
             like: True para positivo, False para negativo
 
         Returns:
@@ -317,6 +317,98 @@ class VectorGov:
             data={"query_id": query_id, "is_like": like},
         )
         return response.get("success", False)
+
+    def store_response(
+        self,
+        query: str,
+        answer: str,
+        provider: str,
+        model: str,
+        chunks_used: int = 0,
+        latency_ms: float = 0,
+        retrieval_ms: float = 0,
+        generation_ms: float = 0,
+    ) -> "StoreResponseResult":
+        """Armazena resposta de LLM externo no cache do VectorGov.
+
+        Use este método quando você gera uma resposta usando seu próprio LLM
+        (OpenAI, Gemini, Claude, etc.) e quer:
+        1. Habilitar o sistema de feedback (like/dislike)
+        2. Contribuir para o treinamento de modelos futuros
+
+        Args:
+            query: A pergunta original feita pelo usuário
+            answer: A resposta gerada pelo seu LLM
+            provider: Nome do provedor (ex: "OpenAI", "Google", "Anthropic")
+            model: ID do modelo usado (ex: "gpt-4o", "gemini-2.0-flash")
+            chunks_used: Quantidade de chunks usados como contexto
+            latency_ms: Latência total em ms (busca + geração)
+            retrieval_ms: Tempo de busca em ms
+            generation_ms: Tempo de geração do LLM em ms
+
+        Returns:
+            StoreResponseResult com o query_hash para usar em feedback()
+
+        Exemplo:
+            >>> from openai import OpenAI
+            >>> vg = VectorGov(api_key="vg_xxx")
+            >>> openai_client = OpenAI()
+            >>>
+            >>> # 1. Busca no VectorGov
+            >>> results = vg.search("O que é ETP?")
+            >>>
+            >>> # 2. Gera resposta com seu LLM
+            >>> response = openai_client.chat.completions.create(
+            ...     model="gpt-4o",
+            ...     messages=results.to_messages()
+            ... )
+            >>> answer = response.choices[0].message.content
+            >>>
+            >>> # 3. Salva a resposta no VectorGov para feedback
+            >>> stored = vg.store_response(
+            ...     query="O que é ETP?",
+            ...     answer=answer,
+            ...     provider="OpenAI",
+            ...     model="gpt-4o",
+            ...     chunks_used=len(results)
+            ... )
+            >>>
+            >>> # 4. Depois o usuário pode dar feedback
+            >>> vg.feedback(stored.query_hash, like=True)
+        """
+        from vectorgov.models import StoreResponseResult
+
+        if not query or not query.strip():
+            raise ValidationError("query não pode ser vazia", field="query")
+
+        if not answer or not answer.strip():
+            raise ValidationError("answer não pode ser vazia", field="answer")
+
+        if not provider or not provider.strip():
+            raise ValidationError("provider não pode ser vazio", field="provider")
+
+        if not model or not model.strip():
+            raise ValidationError("model não pode ser vazio", field="model")
+
+        response = self._http.post(
+            "/cache/store",
+            data={
+                "query": query.strip(),
+                "answer": answer.strip(),
+                "provider": provider.strip(),
+                "model": model.strip(),
+                "chunks_used": chunks_used,
+                "latency_ms": latency_ms,
+                "retrieval_ms": retrieval_ms,
+                "generation_ms": generation_ms,
+            },
+        )
+
+        return StoreResponseResult(
+            success=response.get("success", False),
+            query_hash=response.get("query_hash", ""),
+            message=response.get("message", ""),
+        )
 
     def get_system_prompt(self, style: str = "default") -> str:
         """Retorna um system prompt pré-definido.

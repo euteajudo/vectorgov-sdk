@@ -55,6 +55,7 @@ from vectorgov.models import (
     IngestStatus,
     EnrichStatus,
     DeleteResponse,
+    StoreResponseResult,
 )
 from vectorgov.config import SearchMode, SYSTEM_PROMPTS
 from vectorgov.exceptions import (
@@ -73,7 +74,7 @@ from vectorgov.formatters import (
     create_rag_prompt,
 )
 
-__version__ = "0.8.1"
+__version__ = "0.9.0"
 __all__ = [
     # Cliente principal
     "VectorGov",
@@ -89,6 +90,7 @@ __all__ = [
     "IngestStatus",
     "EnrichStatus",
     "DeleteResponse",
+    "StoreResponseResult",
     # Configuração
     "SearchMode",
     "SYSTEM_PROMPTS",
