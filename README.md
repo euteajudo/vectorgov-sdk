@@ -1155,19 +1155,40 @@ Allow: /CLAUDE.md
 
 ## Obter sua API Key
 
-1. Acesse [vectorgov.io/playground](https://vectorgov.io/playground)
-2. Crie uma conta ou faça login
-3. Gere sua API key na seção "Configurações"
+### 1) Criar uma API key (site)
+
+1. Faça login no VectorGov.
+2. Acesse **API Keys**: `https://vectorgov.io/api-keys`
+3. Clique em **Nova API Key**, informe um nome (ex.: "Meu app dev") e confirme.
+4. **Copie e salve a chave completa** (ela é exibida uma única vez).
+
+### 2) Testar no Playground (interface web)
+
+1. Acesse o **Playground**: `https://vectorgov.io/playground`
+2. Faça uma pergunta e ajuste as configurações (modo, top_k, cache).
+3. Use a seção **Código equivalente** para copiar um exemplo (Python/TypeScript/cURL)
+   e substitua `vg_sua_chave` pela sua API key.
+
+### 3) Ver limite e acompanhar uso da API key
+
+- Em `https://vectorgov.io/api-keys`, cada chave mostra:
+  - **Status** (ativa/revogada)
+  - **Rate limit** (requisições por minuto)
+  - **Total de requests** (contador acumulado)
+- Para detalhes do minuto atual, abra a configuração da chave e veja:
+  - **Uso no minuto atual**
+  - **Restantes no minuto**
+- Para logs detalhados de chamadas, use **Uso da API** (quando disponível no seu menu).
 
 ## Documentação
 
-- [Documentação Completa](https://docs.vectorgov.io)
-- [Exemplos](https://github.com/vectorgov/vectorgov-python/tree/main/examples)
-- [Referência da API](https://docs.vectorgov.io/api-reference)
+- [Documentação](https://vectorgov.io/documentacao)
+- [API Keys](https://vectorgov.io/api-keys)
+- [Playground](https://vectorgov.io/playground)
 
 ## Suporte
 
-- [GitHub Issues](https://github.com/vectorgov/vectorgov-python/issues)
+- [GitHub Issues](https://github.com/euteajudo/vectorgov-sdk/issues)
 - Email: suporte@vectorgov.io
 
 ## Licença
