@@ -10,6 +10,17 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
 
 ---
 
+## SDKs Disponíveis
+
+| Linguagem | Pacote | Repositório |
+|-----------|--------|-------------|
+| **Python** | [`pip install vectorgov`](https://pypi.org/project/vectorgov/) | Este repositório |
+| **TypeScript/JavaScript** | [`npm install vectorgov`](https://www.npmjs.com/package/vectorgov) | [vectorgov-sdk-ts](https://github.com/euteajudo/vectorgov-sdk-ts) |
+
+> **Usando TypeScript/JavaScript?** Veja a documentação completa do SDK TypeScript em [github.com/euteajudo/vectorgov-sdk-ts](https://github.com/euteajudo/vectorgov-sdk-ts)
+
+---
+
 ## Índice
 
 - [Instalação](#instalação)
