@@ -73,3 +73,4 @@ Thumbs.db
 # Project specific
 .vectorgov_cache/
 *.log
+plans/
