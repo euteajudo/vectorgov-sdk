@@ -18,6 +18,7 @@
 8. [Tratamento de Erros](#tratamento-de-erros)
 9. [Configurações](#configurações)
 10. [Exemplos de Uso](#exemplos-de-uso)
+11. [Links Úteis e Documentação para LLMs](#links-úteis)
 
 ---
 
@@ -936,6 +937,18 @@ vg.start_enrichment(response.document_id)
 - **Documentação API**: https://vectorgov.io/docs
 - **Portal**: https://vectorgov.io
 
+### Documentação para LLMs
+
+O VectorGov disponibiliza documentação estruturada para assistentes de IA:
+
+| Recurso | URL | Descrição |
+|---------|-----|-----------|
+| **llms.txt** | https://vectorgov.io/llms.txt | Documentação completa do SDK em formato texto para LLMs (padrão [llmstxt.org](https://llmstxt.org/)) |
+| **CLAUDE.md** | https://vectorgov.io/CLAUDE.md | Instruções específicas para Claude Code com exemplos de integração |
+| **robots.txt** | https://vectorgov.io/robots.txt | Permite acesso de crawlers de IA (GPTBot, Claude-Web, etc.) |
+
+Esses arquivos permitem que assistentes de IA aprendam automaticamente a usar o SDK VectorGov.
+
 ---
 
-*Documentação gerada automaticamente em Janeiro de 2025*
+*Documentação atualizada em Janeiro de 2025*

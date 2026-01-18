@@ -43,6 +43,9 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
   - [Upload e Ingestao (Admin)](#upload-e-ingestão-admin)
   - [Enriquecimento (Admin)](#enriquecimento-admin)
   - [Exclusao (Admin)](#exclusão-admin)
+- **Documentação para LLMs**
+  - [llms.txt](#llmstxt)
+  - [CLAUDE.md](#claudemd)
 - [Obter sua API Key](#obter-sua-api-key)
 
 ---
@@ -1088,6 +1091,54 @@ results = vg.search("Contrato da empresa XYZ foi regular?", use_cache=False)
 
 > **Nota:** O cache desabilitado não afeta a qualidade da resposta, apenas a latência.
 > O sistema de duas fases garante alta precisão independente do cache.
+
+---
+
+## Documentação para LLMs
+
+O VectorGov fornece documentação estruturada para facilitar a integração com assistentes de IA e LLMs.
+
+### llms.txt
+
+Seguindo o padrão [llmstxt.org](https://llmstxt.org/), disponibilizamos documentação otimizada para consumo por LLMs:
+
+**URL:** [https://vectorgov.io/llms.txt](https://vectorgov.io/llms.txt)
+
+Este arquivo contém:
+- Visão geral do SDK e API
+- Exemplos de código prontos para uso
+- Documentação de todos os métodos (`search`, `ask`, `feedback`, `store_response`)
+- Integrações com OpenAI, Gemini e Claude
+- Modos de busca e parâmetros disponíveis
+- Tratamento de erros
+
+Assistentes de IA podem acessar este arquivo para aprender a usar o VectorGov automaticamente.
+
+### CLAUDE.md
+
+Instruções específicas para o Claude Code (CLI):
+
+**URL:** [https://vectorgov.io/CLAUDE.md](https://vectorgov.io/CLAUDE.md)
+
+Contém:
+- Padrões de código recomendados
+- Exemplos de integração com diferentes LLMs
+- Boas práticas para uso do SDK
+- Estrutura de resposta e tratamento de erros
+
+### robots.txt
+
+O arquivo `robots.txt` em [https://vectorgov.io/robots.txt](https://vectorgov.io/robots.txt) permite acesso de crawlers de IA:
+
+```
+User-agent: GPTBot
+User-agent: ChatGPT-User
+User-agent: Claude-Web
+User-agent: anthropic-ai
+User-agent: Googlebot
+Allow: /llms.txt
+Allow: /CLAUDE.md
+```
 
 ---
 
