@@ -7,6 +7,72 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.10.0] - 2025-01-18
+
+### Adicionado
+
+- **Logs de Auditoria** - Novos métodos para acessar logs de segurança e compliance:
+  - `get_audit_logs()` - Lista logs de auditoria com filtros:
+    - Filtra por `event_type`, `event_category`, `severity`
+    - Filtra por período (`start_date`, `end_date`)
+    - Paginação com `page` e `limit`
+  - `get_audit_stats(days)` - Estatísticas agregadas de auditoria:
+    - Total de eventos no período
+    - Eventos por tipo, severidade e categoria
+    - Contagem de bloqueios e avisos
+  - `get_audit_event_types()` - Lista tipos de eventos disponíveis
+
+- **Novos modelos de dados**:
+  - `AuditLog` - Log individual com campos:
+    - `id`, `event_type`, `event_category`, `severity`
+    - `created_at`, `query_text`, `detection_types`
+    - `risk_score`, `action_taken`, `endpoint`
+    - `client_ip`, `user_agent`, `details`
+  - `AuditLogsResponse` - Resposta paginada de logs
+  - `AuditStats` - Estatísticas agregadas com contadores
+  - `AuditEventTypes` - Lista de tipos de eventos
+
+### Exemplo
+
+```python
+from vectorgov import VectorGov
+
+vg = VectorGov(api_key="vg_xxx")
+
+# Listar logs de segurança
+logs = vg.get_audit_logs(severity="warning", limit=50)
+for log in logs.logs:
+    print(f"{log.created_at}: {log.event_type} - {log.action_taken}")
+
+# Estatísticas dos últimos 30 dias
+stats = vg.get_audit_stats(days=30)
+print(f"Total eventos: {stats.total_events}")
+print(f"Bloqueados: {stats.blocked_count}")
+print(f"Avisos: {stats.warning_count}")
+
+# Tipos de eventos disponíveis
+types = vg.get_audit_event_types()
+print(f"Tipos: {types.types}")
+```
+
+### Tipos de Eventos de Auditoria
+
+| Tipo | Descrição |
+|------|-----------|
+| `pii_detected` | Dados pessoais detectados na query |
+| `injection_blocked` | Tentativa de injeção bloqueada |
+| `rate_limit_exceeded` | Rate limit excedido |
+| `auth_failed` | Falha de autenticação |
+| `validation_error` | Erro de validação |
+
+### Severidades
+
+| Severidade | Descrição |
+|------------|-----------|
+| `info` | Informativo |
+| `warning` | Aviso (ação preventiva) |
+| `critical` | Crítico (requisição bloqueada) |
+
 ## [0.9.0] - 2025-01-17
 
 ### ⚠️ BREAKING CHANGE
@@ -318,7 +384,8 @@ for chunk in vg.ask_stream("O que é ETP?"):
 - Retry automático com backoff exponencial
 - Timeout configurável
 
-[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.7.0...v0.8.0
