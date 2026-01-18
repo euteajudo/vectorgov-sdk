@@ -1373,3 +1373,116 @@ class EnrichStatus:
     chunks_failed: int
     errors: list[str]     # Lista de erros, se houver
 ```
+
+---
+
+# Auditoria e Segurança
+
+O VectorGov possui um sistema de guardrails que monitora e registra eventos de segurança. Usuários da SDK podem acessar logs de auditoria filtrados por sua API Key.
+
+## Eventos Monitorados
+
+| Evento | Categoria | Descrição |
+|--------|-----------|-----------|
+| `pii_detected` | security | Dados pessoais detectados na query |
+| `injection_detected` | security | Tentativa de prompt injection detectada |
+| `injection_blocked` | security | Prompt injection bloqueado |
+| `low_relevance_query` | validation | Query com baixa relevância para o contexto |
+| `citation_invalid` | validation | Citação não encontrada nos chunks |
+| `circuit_breaker_open` | performance | Circuit breaker aberto (serviço indisponível) |
+| `circuit_breaker_close` | performance | Circuit breaker fechado (serviço restaurado) |
+
+## Listar Logs de Auditoria
+
+```python
+from vectorgov import VectorGov
+
+vg = VectorGov(api_key="vg_xxx")
+
+# Listar logs da sua API Key
+logs = vg.get_audit_logs(
+    limit=50,
+    severity="warning",      # Opcional: info, warning, critical
+    event_type="pii_detected",  # Opcional: filtrar por tipo
+    start_date="2025-01-01",    # Opcional: data início
+    end_date="2025-01-18"       # Opcional: data fim
+)
+
+for log in logs.logs:
+    print(f"[{log.severity}] {log.event_type}: {log.query_text}")
+    print(f"  Ação: {log.action_taken}")
+    print(f"  Data: {log.created_at}")
+```
+
+## Estatísticas de Auditoria
+
+```python
+# Obter estatísticas dos últimos 30 dias
+stats = vg.get_audit_stats(days=30)
+
+print(f"Total de eventos: {stats.total_events}")
+print(f"Bloqueados: {stats.blocked_count}")
+print(f"Alertas: {stats.warning_count}")
+
+# Por tipo de evento
+for event_type, count in stats.events_by_type.items():
+    print(f"  {event_type}: {count}")
+
+# Por severidade
+for severity, count in stats.events_by_severity.items():
+    print(f"  {severity}: {count}")
+```
+
+## Modelos de Resposta
+
+### AuditLog
+
+```python
+@dataclass
+class AuditLog:
+    id: str
+    event_type: str           # pii_detected, injection_blocked, etc
+    event_category: str       # security, performance, validation
+    severity: str             # info, warning, critical
+    query_text: str | None    # Query que gerou o evento
+    detection_types: list[str]  # Tipos de detecção (ex: ["cpf", "email"])
+    risk_score: float | None  # Score de risco (0.0 a 1.0)
+    action_taken: str | None  # Ação tomada (blocked, allowed, logged)
+    endpoint: str | None      # Endpoint chamado
+    created_at: str           # Timestamp ISO
+    details: dict             # Detalhes adicionais
+```
+
+### AuditLogsResponse
+
+```python
+@dataclass
+class AuditLogsResponse:
+    logs: list[AuditLog]
+    total: int
+    page: int
+    pages: int
+    limit: int
+```
+
+### AuditStats
+
+```python
+@dataclass
+class AuditStats:
+    total_events: int
+    events_by_type: dict[str, int]
+    events_by_severity: dict[str, int]
+    events_by_category: dict[str, int]
+    blocked_count: int
+    warning_count: int
+    period_days: int
+```
+
+## Boas Práticas de Segurança
+
+1. **Monitore regularmente**: Verifique logs de auditoria periodicamente
+2. **Configure alertas**: Use `severity="critical"` para eventos importantes
+3. **Evite PII nas queries**: Não inclua CPF, email ou dados pessoais nas perguntas
+4. **Respeite rate limits**: Muitos bloqueios podem indicar uso inadequado
+5. **Reporte falsos positivos**: Entre em contato se detectores estiverem incorretos
