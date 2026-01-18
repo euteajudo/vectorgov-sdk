@@ -440,3 +440,110 @@ class StoreResponseResult:
 
     message: str
     """Mensagem de status"""
+
+
+# =============================================================================
+# AUDIT MODELS
+# =============================================================================
+
+
+@dataclass
+class AuditLog:
+    """Registro de evento de auditoria.
+
+    Cada chamada à SDK gera um ou mais eventos de auditoria que permitem
+    rastrear o uso da API, detectar problemas de segurança e analisar
+    padrões de uso.
+    """
+
+    id: str
+    """ID único do evento"""
+
+    event_type: str
+    """Tipo do evento (pii_detected, injection_detected, low_relevance_query, etc.)"""
+
+    event_category: str
+    """Categoria do evento (security, performance, validation)"""
+
+    severity: str
+    """Severidade do evento (info, warning, critical)"""
+
+    query_text: Optional[str] = None
+    """Texto da query que gerou o evento (se aplicável)"""
+
+    detection_types: list[str] = field(default_factory=list)
+    """Tipos de detecção ativados (para eventos de segurança)"""
+
+    risk_score: Optional[float] = None
+    """Score de risco (0.0 a 1.0)"""
+
+    action_taken: Optional[str] = None
+    """Ação tomada pelo sistema (logged, blocked, warned)"""
+
+    endpoint: Optional[str] = None
+    """Endpoint que gerou o evento"""
+
+    client_ip: Optional[str] = None
+    """IP do cliente (anonimizado)"""
+
+    created_at: Optional[str] = None
+    """Data/hora do evento (ISO 8601)"""
+
+    details: dict = field(default_factory=dict)
+    """Detalhes adicionais do evento"""
+
+    def __repr__(self) -> str:
+        return f"AuditLog({self.event_type}, severity={self.severity}, {self.created_at})"
+
+
+@dataclass
+class AuditLogsResponse:
+    """Resposta da listagem de logs de auditoria."""
+
+    logs: list[AuditLog]
+    """Lista de logs de auditoria"""
+
+    total: int
+    """Total de logs encontrados"""
+
+    page: int
+    """Página atual"""
+
+    pages: int
+    """Total de páginas"""
+
+    limit: int
+    """Limite por página"""
+
+
+@dataclass
+class AuditStats:
+    """Estatísticas agregadas de auditoria.
+
+    Fornece uma visão geral dos eventos de auditoria em um período,
+    útil para dashboards e monitoramento.
+    """
+
+    total_events: int
+    """Total de eventos no período"""
+
+    events_by_type: dict
+    """Contagem de eventos por tipo"""
+
+    events_by_severity: dict
+    """Contagem de eventos por severidade"""
+
+    events_by_category: dict
+    """Contagem de eventos por categoria"""
+
+    blocked_count: int
+    """Quantidade de eventos bloqueados"""
+
+    warning_count: int
+    """Quantidade de avisos"""
+
+    period_days: int
+    """Período em dias das estatísticas"""
+
+    def __repr__(self) -> str:
+        return f"AuditStats(total={self.total_events}, blocked={self.blocked_count}, period={self.period_days}d)"

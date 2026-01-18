@@ -702,3 +702,161 @@ class VectorGov:
             success=response.get("success", False),
             message=response.get("message", ""),
         )
+
+    # =========================================================================
+    # Métodos de Auditoria
+    # =========================================================================
+
+    def get_audit_logs(
+        self,
+        limit: int = 50,
+        page: int = 1,
+        severity: Optional[str] = None,
+        event_type: Optional[str] = None,
+        event_category: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> "AuditLogsResponse":
+        """Obtém logs de auditoria do seu uso da API.
+
+        Cada chamada à SDK gera eventos de auditoria que podem ser
+        consultados para análise de segurança, debugging e compliance.
+
+        IMPORTANTE: Você só tem acesso aos seus próprios logs de auditoria.
+        Logs de outros clientes não são visíveis.
+
+        Args:
+            limit: Quantidade máxima de logs por página (1-100). Default: 50
+            page: Página de resultados. Default: 1
+            severity: Filtrar por severidade (info, warning, critical)
+            event_type: Filtrar por tipo de evento (pii_detected, injection_detected, etc.)
+            event_category: Filtrar por categoria (security, performance, validation)
+            start_date: Data inicial (ISO 8601: "2025-01-01")
+            end_date: Data final (ISO 8601: "2025-01-31")
+
+        Returns:
+            AuditLogsResponse com a lista de logs e metadados de paginação
+
+        Raises:
+            ValidationError: Se os parâmetros forem inválidos
+            AuthError: Se a API key for inválida
+
+        Exemplo:
+            >>> logs = vg.get_audit_logs(limit=10, severity="warning")
+            >>> for log in logs.logs:
+            ...     print(f"{log.event_type}: {log.query_text}")
+        """
+        from vectorgov.models import AuditLog, AuditLogsResponse
+
+        if limit < 1 or limit > 100:
+            raise ValidationError("limit deve estar entre 1 e 100", field="limit")
+
+        if page < 1:
+            raise ValidationError("page deve ser maior que 0", field="page")
+
+        if severity and severity not in ("info", "warning", "critical"):
+            raise ValidationError(
+                "severity deve ser: info, warning ou critical",
+                field="severity",
+            )
+
+        if event_category and event_category not in ("security", "performance", "validation"):
+            raise ValidationError(
+                "event_category deve ser: security, performance ou validation",
+                field="event_category",
+            )
+
+        # Monta parâmetros
+        params = {"limit": limit, "page": page}
+        if severity:
+            params["severity"] = severity
+        if event_type:
+            params["event_type"] = event_type
+        if event_category:
+            params["event_category"] = event_category
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+
+        response = self._http.get("/sdk/audit/logs", params=params)
+
+        logs = [
+            AuditLog(
+                id=log["id"],
+                event_type=log["event_type"],
+                event_category=log["event_category"],
+                severity=log["severity"],
+                query_text=log.get("query_text"),
+                detection_types=log.get("detection_types", []),
+                risk_score=log.get("risk_score"),
+                action_taken=log.get("action_taken"),
+                endpoint=log.get("endpoint"),
+                client_ip=log.get("client_ip"),
+                created_at=log.get("created_at"),
+                details=log.get("details", {}),
+            )
+            for log in response.get("logs", [])
+        ]
+
+        return AuditLogsResponse(
+            logs=logs,
+            total=response.get("total", len(logs)),
+            page=response.get("page", page),
+            pages=response.get("pages", 1),
+            limit=response.get("limit", limit),
+        )
+
+    def get_audit_stats(self, days: int = 30) -> "AuditStats":
+        """Obtém estatísticas agregadas de auditoria.
+
+        Fornece uma visão geral dos eventos de auditoria em um período,
+        útil para dashboards de monitoramento e análise de tendências.
+
+        IMPORTANTE: As estatísticas são apenas dos seus próprios eventos.
+
+        Args:
+            days: Período em dias para as estatísticas (1-90). Default: 30
+
+        Returns:
+            AuditStats com contagens por tipo, severidade e categoria
+
+        Raises:
+            ValidationError: Se days for inválido
+            AuthError: Se a API key for inválida
+
+        Exemplo:
+            >>> stats = vg.get_audit_stats(days=7)
+            >>> print(f"Eventos: {stats.total_events}")
+            >>> print(f"Bloqueados: {stats.blocked_count}")
+            >>> print(f"Por tipo: {stats.events_by_type}")
+        """
+        from vectorgov.models import AuditStats
+
+        if days < 1 or days > 90:
+            raise ValidationError("days deve estar entre 1 e 90", field="days")
+
+        response = self._http.get("/sdk/audit/stats", params={"days": days})
+
+        return AuditStats(
+            total_events=response.get("total_events", 0),
+            events_by_type=response.get("events_by_type", {}),
+            events_by_severity=response.get("events_by_severity", {}),
+            events_by_category=response.get("events_by_category", {}),
+            blocked_count=response.get("blocked_count", 0),
+            warning_count=response.get("warning_count", 0),
+            period_days=response.get("period_days", days),
+        )
+
+    def get_audit_event_types(self) -> list[str]:
+        """Lista os tipos de eventos de auditoria disponíveis.
+
+        Returns:
+            Lista de strings com os tipos de evento
+
+        Exemplo:
+            >>> types = vg.get_audit_event_types()
+            >>> print(types)  # ['pii_detected', 'injection_detected', ...]
+        """
+        response = self._http.get("/sdk/audit/event-types")
+        return response.get("types", [])
