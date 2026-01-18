@@ -885,7 +885,12 @@ messages = results.to_messages(system_prompt=custom_prompt)
 
 ## Feedback
 
-Ajude a melhorar o sistema enviando feedback:
+Ajude a melhorar o sistema enviando feedback sobre a qualidade das respostas. O feedback é usado para:
+- Melhorar o ranking de resultados
+- Treinar modelos futuros (fine-tuning)
+- Monitorar a qualidade do sistema
+
+### Feedback Básico (Busca VectorGov)
 
 ```python
 results = vg.search("O que é ETP?")
@@ -895,6 +900,64 @@ vg.feedback(results.query_id, like=True)
 
 # Se o resultado não foi útil
 vg.feedback(results.query_id, like=False)
+```
+
+### Feedback com LLM Externo (OpenAI, Gemini, Claude, etc.)
+
+Quando você usa seu próprio LLM para gerar respostas, use `store_response()` para habilitar o feedback:
+
+```python
+from vectorgov import VectorGov
+from openai import OpenAI
+
+vg = VectorGov(api_key="vg_xxx")
+openai_client = OpenAI()
+
+# 1. Busca contexto no VectorGov
+query = "O que é ETP?"
+results = vg.search(query)
+
+# 2. Gera resposta com seu LLM
+response = openai_client.chat.completions.create(
+    model="gpt-4o",
+    messages=results.to_messages(query)
+)
+answer = response.choices[0].message.content
+
+# 3. Salva a resposta no VectorGov para habilitar feedback
+stored = vg.store_response(
+    query=query,
+    answer=answer,
+    provider="OpenAI",
+    model="gpt-4o",
+    chunks_used=len(results)
+)
+
+# 4. Agora o feedback funciona!
+vg.feedback(stored.query_hash, like=True)
+```
+
+### Parâmetros do store_response()
+
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|-----------|------|-------------|-----------|
+| `query` | str | ✅ | A pergunta original |
+| `answer` | str | ✅ | A resposta gerada pelo LLM |
+| `provider` | str | ✅ | Nome do provedor (OpenAI, Google, Anthropic) |
+| `model` | str | ✅ | ID do modelo (gpt-4o, gemini-2.0-flash) |
+| `chunks_used` | int | ❌ | Quantidade de chunks usados como contexto |
+| `latency_ms` | float | ❌ | Latência total em ms |
+| `retrieval_ms` | float | ❌ | Tempo de busca em ms |
+| `generation_ms` | float | ❌ | Tempo de geração do LLM em ms |
+
+### Retorno do store_response()
+
+```python
+stored = vg.store_response(...)
+
+stored.success     # bool - Se foi salvo com sucesso
+stored.query_hash  # str - Hash para usar em feedback()
+stored.message     # str - Mensagem de status
 ```
 
 ## Propriedades do Resultado
