@@ -121,9 +121,28 @@ print(vg.available_prompts)
 
 📖 **[Guia Completo de System Prompts](guides/system-prompts.md)** - Conteúdo dos prompts, estimativa de tokens e impacto no custo.
 
+## Observabilidade e Auditoria
+
+Monitore o uso da API, detecte problemas de segurança e atenda requisitos de compliance:
+
+```python
+# Estatísticas dos últimos 30 dias
+stats = vg.get_audit_stats(days=30)
+print(f"Total eventos: {stats.total_events}")
+print(f"Bloqueados: {stats.blocked_count}")
+
+# Listar logs de segurança
+logs = vg.get_audit_logs(severity="warning", limit=50)
+for log in logs.logs:
+    print(f"{log.event_type}: {log.action_taken}")
+```
+
+📖 **[Guia Completo de Observabilidade e Auditoria](guides/observability-audit.md)** - Métodos, tipos de eventos, exemplos de monitoramento e compliance.
+
 ## Próximos Passos
 
 - [System Prompts](guides/system-prompts.md) - Controle tokens e custos
+- [Observabilidade e Auditoria](guides/observability-audit.md) - Monitoramento e compliance
 - [Modos de Busca](guides/search-modes.md) - Detalhes dos modos
 - [Integração com LLMs](guides/llm-integration.md) - Exemplos avançados
 
