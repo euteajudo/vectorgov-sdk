@@ -191,25 +191,31 @@ class VectorGov:
         top_k: Optional[int] = None,
         mode: Optional[Union[SearchMode, str]] = None,
     ):
-        """Faz uma pergunta com resposta em streaming.
+        """[INTERNO] Faz uma pergunta com resposta em streaming.
 
-        A resposta é gerada token por token, permitindo exibição
-        em tempo real (útil para chatbots).
+        AVISO: Este metodo e de uso INTERNO da equipe VectorGov.
+        Requer API key com permissao de admin.
+
+        Para uso externo, utilize o metodo search() e integre com
+        seu proprio LLM (OpenAI, Gemini, Claude, etc.).
+
+        A resposta e gerada token por token, permitindo exibicao
+        em tempo real (util para chatbots internos).
 
         Args:
-            query: Pergunta do usuário
+            query: Pergunta do usuario
             top_k: Quantidade de documentos para contexto (1-50). Default: 5
             mode: Modo de busca (fast, balanced, precise). Default: balanced
 
         Yields:
             StreamChunk com cada parte da resposta
 
-        Exemplo:
-            >>> for chunk in vg.ask_stream("O que é ETP?"):
-            ...     if chunk.type == "token":
-            ...         print(chunk.content, end="", flush=True)
-            ...     elif chunk.type == "complete":
-            ...         print(f"\\n\\nFontes: {len(chunk.citations)} citações")
+        Raises:
+            AuthenticationError: Se a API key nao tiver permissao de admin
+
+        Note:
+            Este metodo consome recursos GPU do RunPod e nao deve ser
+            disponibilizado para clientes externos.
         """
         # Validações
         if not query or not query.strip():
