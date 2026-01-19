@@ -1,6 +1,6 @@
 # 🗺️ MAPA DO SDK VECTORGOV
 
-> **Versão**: 0.8.1
+> **Versão**: 0.10.0
 > **Data**: Janeiro 2025
 > **Objetivo**: Documentação completa da arquitetura e funcionamento do SDK Python VectorGov
 
@@ -36,6 +36,7 @@ O VectorGov SDK é uma biblioteca Python que permite integração simples e efic
 | **MCP Server** | Servidor Model Context Protocol para Claude Desktop e Cursor |
 | **Streaming** | Suporte a respostas em streaming via SSE |
 | **Retry Automático** | Retry com backoff exponencial para resiliência |
+| **Auditoria** | Logs e estatísticas de eventos de segurança (PII, injeções) |
 
 ### Modelo de Negócio
 
@@ -144,7 +145,9 @@ vectorgov-sdk/
 │   │       ├── get_ingest_status()
 │   │       ├── start_enrichment()
 │   │       ├── get_enrichment_status()
-│   │       └── delete_document()
+│   │       ├── delete_document()
+│   │       ├── get_audit_logs()    # Logs de auditoria
+│   │       └── get_audit_stats()   # Estatísticas de auditoria
 │   │
 │   ├── _http.py                 # Cliente HTTP interno (265 linhas)
 │   │   └── class HTTPClient:
@@ -168,7 +171,10 @@ vectorgov-sdk/
 │   │   ├── class UploadResponse
 │   │   ├── class IngestStatus
 │   │   ├── class EnrichStatus
-│   │   └── class DeleteResponse
+│   │   ├── class DeleteResponse
+│   │   ├── class AuditLog          # Log de auditoria
+│   │   ├── class AuditLogsResponse # Resposta paginada de logs
+│   │   └── class AuditStats        # Estatísticas agregadas
 │   │
 │   ├── config.py                # Configurações (106 linhas)
 │   │   ├── class SearchMode     # Enum: FAST, BALANCED, PRECISE
@@ -343,6 +349,26 @@ O `VectorGov` é a classe principal do SDK, responsável por todas as interaçõ
 │  │ available_prompts -> list[str]                                     │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
+│  AUDITORIA E MONITORAMENTO (v0.10.0)                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │ get_audit_logs(days, severity, event_type, limit, page)            │   │
+│  │   -> AuditLogsResponse                                             │   │
+│  │                                                                     │   │
+│  │ - days: int          # Período em dias (default: 7)                │   │
+│  │ - severity: str      # info, warning, critical                     │   │
+│  │ - event_type: str    # pii_detected, injection_blocked, etc.       │   │
+│  │ - limit: int         # Máximo de logs (default: 50)                │   │
+│  │ - page: int          # Página para paginação                       │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │ get_audit_stats(days) -> AuditStats                                │   │
+│  │                                                                     │   │
+│  │ Retorna estatísticas agregadas:                                    │   │
+│  │ - total_events, blocked_count, warning_count                       │   │
+│  │ - events_by_type, events_by_severity, events_by_category           │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -440,6 +466,41 @@ Cliente HTTP minimalista sem dependências externas.
 │  │                                                                       │ │
 │  │  IngestStatus / EnrichStatus / UploadResponse / DeleteResponse       │ │
 │  │  (Status de operações assíncronas)                                   │ │
+│  │                                                                       │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│  AUDITORIA (v0.10.0)                                                       │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                       │ │
+│  │  AuditLog                   # Log individual de evento                │ │
+│  │  ├── id: str                # UUID do log                             │ │
+│  │  ├── event_type: str        # pii_detected, injection_blocked, etc.   │ │
+│  │  ├── event_category: str    # security, content, system               │ │
+│  │  ├── severity: str          # info, warning, critical                 │ │
+│  │  ├── query_text: str        # Query que gerou o evento                │ │
+│  │  ├── detection_types: list  # Tipos de detecção (CPF, email, etc.)    │ │
+│  │  ├── risk_score: float      # Score de risco (0-1)                    │ │
+│  │  ├── action_taken: str      # allowed, blocked, sanitized             │ │
+│  │  ├── endpoint: str          # Endpoint chamado                        │ │
+│  │  ├── client_ip: str         # IP do cliente                           │ │
+│  │  ├── created_at: str        # Timestamp ISO                           │ │
+│  │  └── details: dict          # Detalhes adicionais                     │ │
+│  │                                                                       │ │
+│  │  AuditLogsResponse          # Resposta paginada de logs               │ │
+│  │  ├── logs: list[AuditLog]   # Lista de logs                           │ │
+│  │  ├── total: int             # Total de logs                           │ │
+│  │  ├── page: int              # Página atual                            │ │
+│  │  ├── pages: int             # Total de páginas                        │ │
+│  │  └── limit: int             # Limite por página                       │ │
+│  │                                                                       │ │
+│  │  AuditStats                 # Estatísticas agregadas                  │ │
+│  │  ├── total_events: int      # Total de eventos no período             │ │
+│  │  ├── events_by_type: dict   # Contagem por tipo de evento             │ │
+│  │  ├── events_by_severity: dict # Contagem por severidade               │ │
+│  │  ├── events_by_category: dict # Contagem por categoria                │ │
+│  │  ├── blocked_count: int     # Total de requisições bloqueadas         │ │
+│  │  ├── warning_count: int     # Total de avisos                         │ │
+│  │  └── period_days: int       # Período em dias                         │ │
 │  │                                                                       │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │
 │                                                                             │
