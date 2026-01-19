@@ -64,6 +64,8 @@ nav:
     - Início Rápido: guides/quickstart.md
     - Modos de Busca: guides/search-modes.md
     - Integração com LLMs: guides/llm-integration.md
+    - System Prompts: guides/system-prompts.md
+    - Observabilidade e Auditoria: guides/observability-audit.md
     - Filtros: guides/filters.md
     - Tratamento de Erros: guides/error-handling.md
   - Referência da API:
