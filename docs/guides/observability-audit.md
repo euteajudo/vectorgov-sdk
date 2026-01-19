@@ -6,6 +6,37 @@ O VectorGov SDK oferece ferramentas completas de observabilidade e auditoria, pe
 
 ---
 
+## Segurança e Isolamento de Dados
+
+### Por que seus logs são privados?
+
+O VectorGov é uma plataforma **multi-tenant**, onde múltiplos clientes compartilham a mesma infraestrutura. Para garantir privacidade e segurança:
+
+| Aspecto | Como Funciona |
+|---------|---------------|
+| **Isolamento** | Cada API Key só acessa seus próprios logs |
+| **Filtro Automático** | O backend filtra por `api_key_id` automaticamente |
+| **Sem Acesso Cruzado** | Impossível ver logs de outras organizações |
+| **Dados Sensíveis** | Queries podem conter informações confidenciais |
+
+### O que isso significa para você?
+
+```python
+from vectorgov import VectorGov
+
+# Empresa A
+vg_a = VectorGov(api_key="vg_empresa_a_xxx")
+logs_a = vg_a.get_audit_logs()  # Só vê logs da Empresa A
+
+# Empresa B
+vg_b = VectorGov(api_key="vg_empresa_b_yyy")
+logs_b = vg_b.get_audit_logs()  # Só vê logs da Empresa B
+
+# Não há como a Empresa A acessar logs da Empresa B
+```
+
+---
+
 ## Por que usar Auditoria?
 
 | Caso de Uso | Descrição |
@@ -29,6 +60,64 @@ O SDK oferece 3 métodos para acessar dados de auditoria:
 | `get_audit_event_types()` | Lista tipos de eventos disponíveis | `list[str]` |
 
 > **IMPORTANTE**: Você só tem acesso aos seus próprios logs de auditoria. Logs de outros clientes não são visíveis.
+
+---
+
+## Importância de Cada Método
+
+### `get_audit_logs()` - Investigação e Compliance
+
+**Por que é importante:**
+
+| Cenário | Como o Método Ajuda |
+|---------|---------------------|
+| **Investigação de Incidentes** | Veja exatamente o que aconteceu, quando e qual query causou o problema |
+| **Compliance LGPD** | Prove que dados pessoais foram detectados e tratados adequadamente |
+| **Debugging** | Identifique queries mal formadas ou que causam erros de validação |
+| **Auditoria Interna** | Documente uso da API para relatórios de governança |
+
+**O que cada campo retornado significa:**
+
+| Campo | Significado | Ação Recomendada |
+|-------|-------------|------------------|
+| `event_type` | Tipo do evento (ex: `pii_detected`) | Filtre por tipos críticos |
+| `severity` | Gravidade (`info`, `warning`, `critical`) | Monitore `critical` em tempo real |
+| `risk_score` | Score de risco de 0.0 a 1.0 | Investigue scores > 0.7 |
+| `action_taken` | O que o sistema fez (`logged`, `blocked`, `warned`) | Revise ações `blocked` |
+| `query_text` | Query que gerou o evento (truncada) | Use para reproduzir problemas |
+| `detection_types` | O que foi detectado (ex: `["cpf", "email"]`) | Identifique padrões de PII |
+
+### `get_audit_stats()` - Visão Gerencial e Tendências
+
+**Por que é importante:**
+
+| Cenário | Como o Método Ajuda |
+|---------|---------------------|
+| **Dashboard Executivo** | Mostre métricas de segurança para stakeholders |
+| **Identificação de Tendências** | Detecte aumento de tentativas de injection |
+| **Planejamento de Capacidade** | Entenda volume de uso para sizing |
+| **KPIs de Segurança** | Acompanhe taxa de bloqueios vs requisições totais |
+
+**Métricas chave retornadas:**
+
+| Campo | Significado | Meta Ideal |
+|-------|-------------|------------|
+| `total_events` | Total de eventos no período | Crescimento controlado |
+| `blocked_count` | Requisições bloqueadas | Próximo de 0 |
+| `warning_count` | Avisos gerados | Monitorar tendência |
+| `events_by_type` | Distribuição por tipo | Maioria deve ser `search_completed` |
+| `events_by_severity` | Distribuição por gravidade | Maioria deve ser `info` |
+
+### `get_audit_event_types()` - Descoberta e Integração
+
+**Por que é importante:**
+
+| Cenário | Como o Método Ajuda |
+|---------|---------------------|
+| **Construir Interfaces** | Popular dropdowns de filtro dinamicamente |
+| **Manter Compatibilidade** | Descobrir novos tipos de eventos adicionados |
+| **Documentação** | Gerar docs automáticos dos eventos possíveis |
+| **Validação** | Verificar se um tipo de evento existe antes de filtrar |
 
 ---
 
