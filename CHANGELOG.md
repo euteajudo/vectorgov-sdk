@@ -7,6 +7,52 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+### Adicionado
+
+- **Documentação: "Do Básico ao Avançado"** - Nova seção no README com guia progressivo de adoção:
+  - **Nível 1**: Mínimo necessário (`search()` + API key)
+  - **Nível 2**: Integração com LLM (`to_messages()`)
+  - **Nível 3**: Sistema de feedback (`feedback()`, `store_response()`)
+  - **Nível 4**: Filtros de busca (tipo, ano, órgão)
+  - **Nível 5**: Modos de performance (`fast`, `balanced`, `precise`)
+  - **Nível 6**: Controle de custos com prompts customizados
+  - **Nível 7**: Auditoria e rastreabilidade (`get_audit_logs()`)
+  - **Nível 8**: Integrações avançadas (LangChain, LangGraph, MCP)
+  - **Exemplo completo**: Função de produção usando todas as features
+
+### Removido
+
+- **Método `ask_stream()` removido** - O endpoint `/ask/stream` agora é restrito apenas para administradores. Desenvolvedores devem usar:
+  - `search()` para obter contexto + `to_messages()` para enviar ao LLM de sua escolha
+  - Integrações com Ollama, Transformers, LangChain para RAG local
+  - Function Calling para agentes com OpenAI/Anthropic/Google
+
+- **Modelo `StreamChunk` removido** - Não é mais necessário sem o método `ask_stream()`
+
+### Migração
+
+```python
+# ANTES (v0.10.x) - ask_stream()
+for chunk in vg.ask_stream("O que é ETP?"):
+    if chunk.type == "token":
+        print(chunk.content, end="")
+
+# DEPOIS - Use seu próprio LLM
+results = vg.search("O que é ETP?")
+messages = results.to_messages("O que é ETP?")
+
+# Com OpenAI
+response = openai.chat.completions.create(model="gpt-4o", messages=messages, stream=True)
+for chunk in response:
+    print(chunk.choices[0].delta.content or "", end="")
+
+# Com Ollama (gratuito/local)
+from vectorgov.integrations.ollama import VectorGovOllama
+rag = VectorGovOllama(vg, model="qwen3:8b")
+result = rag.ask("O que é ETP?")
+print(result.answer)
+```
+
 ## [0.10.0] - 2025-01-18
 
 ### Adicionado
@@ -155,7 +201,6 @@ results = vg.search("O que é ETP?", use_cache=True)
 
 - **Limite de top_k aumentado** - O parâmetro `top_k` agora aceita valores de 1 a 50 (antes: 1-20)
   - `search(query, top_k=50)` - Até 50 chunks de contexto
-  - `ask_stream(query, top_k=50)` - Idem para streaming
   - Padrão continua sendo 5
 
 ## [0.8.0] - 2025-01-10
@@ -196,28 +241,7 @@ results = vg.search("O que é ETP?", use_cache=True)
 
 ### Adicionado
 
-- **Streaming Response** - Método `ask_stream()` para respostas em tempo real:
-  - `vg.ask_stream(query)` - Retorna generator de `StreamChunk`
-  - `StreamChunk` - Dataclass com type, content, citations, etc.
-  - Tipos de eventos: `start`, `retrieval`, `token`, `complete`, `error`
-  - Ideal para interfaces de chat com feedback em tempo real
-  - Sem dependências adicionais (usa SSE nativo)
-- Novo modelo `StreamChunk` no módulo principal
-- Método `stream()` no cliente HTTP interno para SSE
-
-### Exemplo
-
-```python
-from vectorgov import VectorGov
-
-vg = VectorGov(api_key="vg_xxx")
-
-for chunk in vg.ask_stream("O que é ETP?"):
-    if chunk.type == "token":
-        print(chunk.content, end="", flush=True)
-    elif chunk.type == "complete":
-        print(f"\n\nFontes: {len(chunk.citations)} citações")
-```
+- Método `stream()` no cliente HTTP interno para SSE (uso interno)
 
 ## [0.6.0] - 2025-01-08
 
