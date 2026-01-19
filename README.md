@@ -57,6 +57,16 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
   - [llms.txt](#llmstxt)
   - [CLAUDE.md](#claudemd)
 - [Obter sua API Key](#obter-sua-api-key)
+- **Do Básico ao Avançado**
+  - [Nível 1: O Mínimo Necessário](#nível-1-o-mínimo-necessário)
+  - [Nível 2: Passando para seu LLM](#nível-2-passando-para-seu-llm)
+  - [Nível 3: Feedback](#nível-3-melhorando-o-sistema-com-feedback)
+  - [Nível 4: Filtros](#nível-4-refinando-com-filtros)
+  - [Nível 5: Modos](#nível-5-controlando-performance-com-modos)
+  - [Nível 6: Prompts](#nível-6-controlando-custos-com-prompts)
+  - [Nível 7: Auditoria](#nível-7-rastreabilidade-e-auditoria)
+  - [Nível 8: Integrações](#nível-8-integrações-avançadas)
+  - [Exemplo Completo](#-exemplo-completo-tudo-junto)
 
 ---
 
@@ -1581,3 +1591,415 @@ class AuditStats:
 3. **Evite PII nas queries**: Não inclua CPF, email ou dados pessoais nas perguntas
 4. **Respeite rate limits**: Muitos bloqueios podem indicar uso inadequado
 5. **Reporte falsos positivos**: Entre em contato se detectores estiverem incorretos
+
+---
+
+# 🚀 Do Básico ao Avançado: Construindo sua Integração
+
+Esta seção mostra a **progressão natural** de uso do VectorGov SDK, começando pelo mínimo necessário e adicionando features conforme sua necessidade cresce.
+
+## Nível 1: O Mínimo Necessário
+
+**Tudo que você precisa para começar:** uma API key e o método `search()`.
+
+```python
+from vectorgov import VectorGov
+
+vg = VectorGov(api_key="vg_sua_chave")
+results = vg.search("O que é ETP?")
+
+for hit in results:
+    print(hit.text)
+```
+
+✅ **Isso já funciona!** Você recebe os chunks mais relevantes da legislação brasileira.
+
+---
+
+## Nível 2: Passando para seu LLM
+
+**Quer usar o contexto com seu próprio LLM?** Use `to_messages()`:
+
+```python
+from vectorgov import VectorGov
+from openai import OpenAI
+
+vg = VectorGov(api_key="vg_xxx")
+openai = OpenAI()
+
+results = vg.search("O que é ETP?")
+
+# Converte para formato de mensagens (funciona com OpenAI, Claude, Gemini)
+response = openai.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=results.to_messages("O que é ETP?")
+)
+
+print(response.choices[0].message.content)
+```
+
+✅ Agora você tem RAG funcionando com qualquer LLM de sua escolha.
+
+---
+
+## Nível 3: Melhorando o Sistema com Feedback
+
+**Quer ajudar a melhorar os resultados?** Envie feedback:
+
+```python
+results = vg.search("O que é ETP?")
+
+# ... usa os resultados ...
+
+# Feedback positivo
+vg.feedback(results.query_id, like=True)
+
+# Ou negativo
+vg.feedback(results.query_id, like=False)
+```
+
+Se estiver usando LLM externo, salve a resposta primeiro:
+
+```python
+# Gera resposta com seu LLM
+answer = openai.chat.completions.create(...).choices[0].message.content
+
+# Salva no VectorGov para habilitar feedback
+stored = vg.store_response(
+    query="O que é ETP?",
+    answer=answer,
+    provider="OpenAI",
+    model="gpt-4o"
+)
+
+# Agora pode enviar feedback
+vg.feedback(stored.query_hash, like=True)
+```
+
+✅ Seu feedback melhora o sistema para todos.
+
+---
+
+## Nível 4: Refinando com Filtros
+
+**Quer buscar em documentos específicos?** Use filtros:
+
+```python
+# Apenas leis
+results = vg.search("licitação", filters={"tipo": "lei"})
+
+# Apenas de 2021
+results = vg.search("pregão", filters={"ano": 2021})
+
+# Múltiplos filtros
+results = vg.search("contratação direta", filters={
+    "tipo": "in",
+    "ano": 2022,
+    "orgao": "seges"
+})
+```
+
+✅ Resultados mais precisos para seu caso de uso.
+
+---
+
+## Nível 5: Controlando Performance com Modos
+
+**Precisa de mais velocidade ou precisão?** Escolha o modo:
+
+```python
+# Rápido: chatbots, alta escala (~2s)
+results = vg.search("query", mode="fast")
+
+# Balanceado: uso geral (~5s) - DEFAULT
+results = vg.search("query", mode="balanced")
+
+# Preciso: análises críticas (~15s)
+results = vg.search("query", mode="precise")
+
+# Com cache para queries genéricas (trade-off: privacidade)
+results = vg.search("query", mode="fast", use_cache=True)
+```
+
+✅ Otimize para seu caso: latência vs precisão vs custo.
+
+---
+
+## Nível 6: Controlando Custos com Prompts
+
+**Quer economizar tokens no LLM?** Personalize o prompt:
+
+```python
+# Prompt mínimo (~15 tokens) - economia máxima
+results = vg.search("O que é ETP?")
+messages = results.to_messages(
+    "O que é ETP?",
+    system_prompt="Responda usando o contexto. Cite fontes."
+)
+
+# Ou use prompts pré-definidos
+messages = results.to_messages(
+    "O que é ETP?",
+    system_prompt=vg.get_system_prompt("concise")  # ~40 tokens
+)
+
+# Ver opções disponíveis
+print(vg.available_prompts)  # ['default', 'concise', 'detailed', 'chatbot']
+```
+
+✅ Economia de até 80 tokens por requisição = ~$0.80/10.000 req no GPT-4o.
+
+---
+
+## Nível 7: Rastreabilidade e Auditoria
+
+**Precisa monitorar o uso?** Acesse os logs de auditoria:
+
+```python
+# Logs dos últimos 7 dias
+logs = vg.get_audit_logs(days=7)
+
+for log in logs.logs:
+    print(f"[{log.severity}] {log.event_type}")
+
+# Estatísticas agregadas
+stats = vg.get_audit_stats(days=30)
+print(f"Total: {stats.total_events} eventos")
+print(f"Bloqueados: {stats.blocked_count}")
+```
+
+✅ Visibilidade completa sobre o uso e segurança.
+
+---
+
+## Nível 8: Integrações Avançadas
+
+**Quer usar com frameworks de agentes?** Escolha sua integração:
+
+### LangChain
+```python
+from vectorgov.integrations.langchain import VectorGovRetriever
+retriever = VectorGovRetriever(api_key="vg_xxx")
+```
+
+### LangGraph
+```python
+from vectorgov.integrations.langgraph import create_vectorgov_tool
+tool = create_vectorgov_tool(api_key="vg_xxx")
+```
+
+### Function Calling
+```python
+# OpenAI
+tools = [vg.to_openai_tool()]
+
+# Anthropic
+tools = [vg.to_anthropic_tool()]
+
+# Google
+tools = [vg.to_google_tool()]
+```
+
+### MCP (Claude Desktop, Cursor)
+```json
+{
+    "mcpServers": {
+        "vectorgov": {
+            "command": "vectorgov-mcp",
+            "env": {"VECTORGOV_API_KEY": "vg_xxx"}
+        }
+    }
+}
+```
+
+✅ VectorGov se integra com qualquer stack de IA.
+
+---
+
+## 🎯 Exemplo Completo: Tudo Junto
+
+Aqui está um exemplo de **produção real** que usa todas as features em um único fluxo:
+
+```python
+"""
+Aplicação RAG Completa com VectorGov
+Inclui: filtros, modos, prompts, feedback, auditoria
+"""
+
+from vectorgov import VectorGov, VectorGovError, RateLimitError
+from openai import OpenAI
+import time
+
+# =============================================================================
+# CONFIGURAÇÃO
+# =============================================================================
+
+vg = VectorGov(
+    api_key="vg_xxx",
+    timeout=60,
+    default_top_k=5,
+)
+openai_client = OpenAI()
+
+# =============================================================================
+# FUNÇÃO PRINCIPAL RAG
+# =============================================================================
+
+def responder_pergunta(
+    query: str,
+    filtros: dict = None,
+    modo: str = "balanced",
+    prompt_tipo: str = "default",
+    usar_cache: bool = False,
+) -> dict:
+    """
+    Fluxo RAG completo com todas as features.
+
+    Args:
+        query: Pergunta do usuário
+        filtros: Filtros de busca (tipo, ano, orgao)
+        modo: fast, balanced ou precise
+        prompt_tipo: default, concise, detailed, chatbot
+        usar_cache: Se deve usar cache compartilhado
+
+    Returns:
+        dict com answer, sources, query_hash, latency
+    """
+    start_time = time.time()
+
+    try:
+        # -----------------------------------------------------------------
+        # 1. BUSCA COM FILTROS E MODO
+        # -----------------------------------------------------------------
+        results = vg.search(
+            query,
+            mode=modo,
+            filters=filtros,
+            use_cache=usar_cache,
+        )
+
+        if not results.hits:
+            return {
+                "answer": "Não encontrei informações relevantes para sua pergunta.",
+                "sources": [],
+                "query_hash": None,
+                "latency_ms": (time.time() - start_time) * 1000,
+            }
+
+        # -----------------------------------------------------------------
+        # 2. MONTA PROMPT COM CONTROLE DE TOKENS
+        # -----------------------------------------------------------------
+        system_prompt = vg.get_system_prompt(prompt_tipo)
+        messages = results.to_messages(query, system_prompt=system_prompt)
+
+        # -----------------------------------------------------------------
+        # 3. GERA RESPOSTA COM LLM
+        # -----------------------------------------------------------------
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",  # Mais barato para alto volume
+            messages=messages,
+            temperature=0.1,  # Mais determinístico para respostas jurídicas
+        )
+        answer = response.choices[0].message.content
+
+        # -----------------------------------------------------------------
+        # 4. SALVA RESPOSTA PARA HABILITAR FEEDBACK
+        # -----------------------------------------------------------------
+        stored = vg.store_response(
+            query=query,
+            answer=answer,
+            provider="OpenAI",
+            model="gpt-4o-mini",
+            chunks_used=len(results.hits),
+        )
+
+        # -----------------------------------------------------------------
+        # 5. RETORNA RESULTADO ESTRUTURADO
+        # -----------------------------------------------------------------
+        return {
+            "answer": answer,
+            "sources": [hit.source for hit in results.hits],
+            "query_hash": stored.query_hash,  # Para feedback posterior
+            "latency_ms": (time.time() - start_time) * 1000,
+            "cached": results.cached,
+            "mode": modo,
+        }
+
+    except RateLimitError as e:
+        return {
+            "error": f"Rate limit. Tente novamente em {e.retry_after}s",
+            "retry_after": e.retry_after,
+        }
+
+    except VectorGovError as e:
+        return {
+            "error": f"Erro VectorGov: {e.message}",
+        }
+
+# =============================================================================
+# EXEMPLO DE USO
+# =============================================================================
+
+if __name__ == "__main__":
+    # Pergunta simples
+    resultado = responder_pergunta("O que é ETP?")
+    print(f"Resposta: {resultado['answer'][:200]}...")
+    print(f"Fontes: {resultado['sources']}")
+    print(f"Latência: {resultado['latency_ms']:.0f}ms")
+
+    # Pergunta com filtros e modo preciso
+    resultado = responder_pergunta(
+        query="Quando o ETP pode ser dispensado?",
+        filtros={"tipo": "in", "ano": 2022},
+        modo="precise",
+        prompt_tipo="detailed",
+    )
+
+    # Enviar feedback (após usuário avaliar)
+    if resultado.get("query_hash"):
+        vg.feedback(resultado["query_hash"], like=True)
+        print("Feedback enviado!")
+
+    # Verificar logs de auditoria
+    stats = vg.get_audit_stats(days=7)
+    print(f"\nEstatísticas da semana:")
+    print(f"  Total de eventos: {stats.total_events}")
+    print(f"  Bloqueados: {stats.blocked_count}")
+```
+
+### O que esse exemplo demonstra:
+
+| Feature | Linha | Descrição |
+|---------|-------|-----------|
+| **Busca básica** | `vg.search()` | O mínimo necessário |
+| **Modos** | `mode="balanced"` | Controle de latência/precisão |
+| **Filtros** | `filters={...}` | Refinamento de busca |
+| **Cache** | `use_cache=False` | Trade-off privacidade/velocidade |
+| **Prompts** | `vg.get_system_prompt()` | Controle de tokens/custos |
+| **to_messages()** | `results.to_messages()` | Integração com qualquer LLM |
+| **store_response()** | `vg.store_response()` | Habilita feedback para LLM externo |
+| **Feedback** | `vg.feedback()` | Melhora o sistema |
+| **Auditoria** | `vg.get_audit_stats()` | Rastreabilidade |
+| **Tratamento de erros** | `try/except` | Robustez em produção |
+
+---
+
+## 📊 Resumo: Qual Feature Usar Quando?
+
+| Necessidade | Feature | Exemplo |
+|-------------|---------|---------|
+| Buscar legislação | `search()` | `vg.search("query")` |
+| Usar com LLM | `to_messages()` | `results.to_messages(query)` |
+| Melhorar resultados | `feedback()` | `vg.feedback(query_id, like=True)` |
+| Busca específica | `filters` | `filters={"tipo": "lei"}` |
+| Mais velocidade | `mode="fast"` | Chatbots, alto volume |
+| Mais precisão | `mode="precise"` | Análises críticas |
+| Economia de tokens | `system_prompt` | Prompt personalizado |
+| LLM externo + feedback | `store_response()` | Salva resposta para feedback |
+| Monitoramento | `get_audit_logs()` | Logs de segurança |
+| Agentes IA | `to_openai_tool()` | Function calling |
+| Claude Desktop | MCP Server | `vectorgov-mcp` |
+
+---
+
+> **Dica:** Comece simples com `search()` e vá adicionando features conforme sua aplicação evolui. Não precisa usar tudo desde o início!
