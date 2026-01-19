@@ -9,6 +9,17 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ### Adicionado
 
+- **Documentação: Guia de Observabilidade e Auditoria** - Novo guia completo em `docs/guides/observability-audit.md`:
+  - Documentação dos 3 métodos de auditoria: `get_audit_logs()`, `get_audit_stats()`, `get_audit_event_types()`
+  - Tabelas de parâmetros com tipos, padrões e descrições
+  - Tipos de eventos: `pii_detected`, `injection_detected`, `rate_limit_exceeded`, `auth_failed`, `validation_error`, etc.
+  - Severidades (`info`, `warning`, `critical`) e categorias (`security`, `performance`, `validation`)
+  - Modelos de dados: `AuditLog`, `AuditLogsResponse`, `AuditStats`
+  - 5 casos de uso práticos: dashboard de monitoramento, alertas de segurança, compliance LGPD, debugging, rate limit
+  - Boas práticas de monitoramento
+  - Integração com ferramentas externas (JSON, Slack)
+  - Seção de Observabilidade adicionada ao `docs/index.md`
+
 - **Documentação: "Do Básico ao Avançado"** - Nova seção no README com guia progressivo de adoção:
   - **Nível 1**: Mínimo necessário (`search()` + API key)
   - **Nível 2**: Integração com LLM (`to_messages()`)
