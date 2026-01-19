@@ -97,9 +97,33 @@ print(results.to_context())
 results = vg.search("query", mode="precise")
 ```
 
+## System Prompts
+
+Controle como o LLM responde suas perguntas:
+
+```python
+# Usar prompt pré-definido
+messages = results.to_messages(
+    query="O que é ETP?",
+    system_prompt=vg.get_system_prompt("detailed")
+)
+
+# Ou criar seu próprio
+messages = results.to_messages(
+    query="O que é ETP?",
+    system_prompt="Seu prompt personalizado aqui..."
+)
+
+# Ver prompts disponíveis
+print(vg.available_prompts)
+# ['default', 'concise', 'detailed', 'chatbot']
+```
+
+📖 **[Guia Completo de System Prompts](guides/system-prompts.md)** - Conteúdo dos prompts, estimativa de tokens e impacto no custo.
+
 ## Próximos Passos
 
-- [Início Rápido](guides/quickstart.md) - Tutorial completo
+- [System Prompts](guides/system-prompts.md) - Controle tokens e custos
 - [Modos de Busca](guides/search-modes.md) - Detalhes dos modos
 - [Integração com LLMs](guides/llm-integration.md) - Exemplos avançados
 

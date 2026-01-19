@@ -26,7 +26,6 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
 - [Instalação](#instalação)
   - [Instalação com Extras](#instalação-com-extras-opcionais)
 - [Início Rápido](#início-rápido)
-- [Streaming (Tempo Real)](#streaming-tempo-real)
 - **Modelos Comerciais (APIs Pagas)**
   - [OpenAI (GPT-4)](#openai)
   - [Google Gemini](#google-gemini)
@@ -106,58 +105,6 @@ for hit in results:
 ```
 
 > **Nota:** O SDK retorna o **texto completo** de cada chunk em `hit.text`. Não há limite de caracteres - você recebe todo o conteúdo do artigo/parágrafo/inciso recuperado.
-
----
-
-## Streaming (Tempo Real)
-
-Obtenha respostas em tempo real com o método `ask_stream()`. Ideal para interfaces de chat interativas.
-
-```python
-from vectorgov import VectorGov
-
-vg = VectorGov(api_key="vg_xxx")
-
-for chunk in vg.ask_stream("O que é ETP?"):
-    if chunk.type == "token":
-        # Exibe cada token conforme é gerado
-        print(chunk.content, end="", flush=True)
-    elif chunk.type == "retrieval":
-        # Notificação de busca concluída
-        print(f"[Recuperados {chunk.chunks} documentos em {chunk.time_ms}ms]")
-    elif chunk.type == "complete":
-        # Resposta completa com citações
-        print(f"\n\n📚 Fontes: {len(chunk.citations)} citações")
-```
-
-### Tipos de Eventos
-
-| Evento | Descrição | Campos |
-|--------|-----------|--------|
-| `start` | Início do processamento | `query` |
-| `retrieval` | Busca concluída | `chunks`, `time_ms` |
-| `token` | Token da resposta | `content` |
-| `complete` | Resposta finalizada | `citations`, `query_hash` |
-| `error` | Erro no processamento | `message` |
-
-### Exemplo com Interface
-
-```python
-import sys
-
-for chunk in vg.ask_stream("Quando o ETP pode ser dispensado?"):
-    if chunk.type == "start":
-        print("🔍 Buscando...", file=sys.stderr)
-    elif chunk.type == "retrieval":
-        print(f"📄 {chunk.chunks} documentos encontrados", file=sys.stderr)
-    elif chunk.type == "token":
-        print(chunk.content, end="", flush=True)
-    elif chunk.type == "complete":
-        print(f"\n\n---\n📚 {len(chunk.citations)} citações", file=sys.stderr)
-    elif chunk.type == "error":
-        print(f"❌ Erro: {chunk.message}", file=sys.stderr)
-        break
-```
 
 ---
 
@@ -879,23 +826,150 @@ prompt = results.to_prompt("O que é ETP?")
 
 ## System Prompts Customizados
 
+O SDK inclui 4 prompts pré-definidos otimizados para diferentes casos de uso. Você também pode criar prompts personalizados para ter **controle total sobre tokens e custos**.
+
+### Prompts Disponíveis
+
+| Prompt | Tokens | Uso Recomendado |
+|--------|--------|-----------------|
+| `concise` | ~40 | Chatbots, alto volume, economia máxima |
+| `chatbot` | ~60 | Atendimento ao público, linguagem acessível |
+| `default` | ~95 | Uso geral, equilíbrio entre qualidade e custo |
+| `detailed` | ~120 | Pareceres jurídicos, análises detalhadas |
+
+### Conteúdo dos Prompts
+
+<details>
+<summary><b>default</b> (~95 tokens)</summary>
+
+```text
+Você é um assistente especializado em legislação brasileira, especialmente em licitações e contratos públicos.
+
+Instruções:
+1. Use APENAS as informações do contexto fornecido para responder
+2. Se a informação não estiver no contexto, diga que não encontrou
+3. Sempre cite as fontes usando o formato [Fonte: Lei X, Art. Y]
+4. Seja objetivo e direto nas respostas
+5. Use linguagem formal adequada ao contexto jurídico
+```
+</details>
+
+<details>
+<summary><b>concise</b> (~40 tokens) - Economia máxima</summary>
+
+```text
+Você é um assistente jurídico. Responda de forma concisa e direta usando apenas o contexto fornecido. Cite as fontes.
+```
+</details>
+
+<details>
+<summary><b>detailed</b> (~120 tokens) - Análises completas</summary>
+
+```text
+Você é um especialista em direito administrativo brasileiro.
+
+Ao responder:
+1. Analise cuidadosamente todo o contexto fornecido
+2. Estruture a resposta em tópicos quando apropriado
+3. Cite TODAS as fontes relevantes no formato [Lei X/Ano, Art. Y, §Z]
+4. Explique termos técnicos quando necessário
+5. Se houver divergências ou exceções, mencione-as
+6. Conclua com um resumo prático quando aplicável
+
+Use SOMENTE informações do contexto. Não invente ou extrapole.
+```
+</details>
+
+<details>
+<summary><b>chatbot</b> (~60 tokens) - Linguagem acessível</summary>
+
+```text
+Você é um assistente virtual amigável especializado em licitações públicas.
+Responda de forma clara e acessível, evitando jargão excessivo.
+Baseie suas respostas apenas no contexto fornecido e cite as fontes.
+```
+</details>
+
+### Impacto no Custo por LLM
+
+Custo estimado **por requisição** (prompt + contexto ~1000 tokens + resposta ~500 tokens):
+
+| LLM | `concise` | `default` | `detailed` |
+|-----|-----------|-----------|------------|
+| **GPT-4o** | ~$0.0077 | ~$0.0078 | ~$0.0079 |
+| **GPT-4o-mini** | ~$0.00046 | ~$0.00047 | ~$0.00048 |
+| **Claude Sonnet** | ~$0.0107 | ~$0.0108 | ~$0.0109 |
+| **Gemini 1.5 Flash** | ~$0.00023 | ~$0.00023 | ~$0.00024 |
+
+> **Nota:** O system prompt representa ~5-10% do custo total. O maior impacto vem do **contexto** (chunks) e da **resposta gerada**.
+
+### Uso Básico
+
 ```python
 # Usar prompt pré-definido
 results = vg.search("query")
 messages = results.to_messages(
+    query="O que é ETP?",
     system_prompt=vg.get_system_prompt("detailed")
 )
 
-# Prompts disponíveis
+# Ver prompts disponíveis
 print(vg.available_prompts)
 # ['default', 'concise', 'detailed', 'chatbot']
 
-# Prompt totalmente customizado
-custom_prompt = """Você é um advogado especialista em licitações.
-Responda de forma técnica e cite artigos específicos."""
-
-messages = results.to_messages(system_prompt=custom_prompt)
+# Ver conteúdo de um prompt
+print(vg.get_system_prompt("concise"))
 ```
+
+### Prompt Personalizado (Controle Total)
+
+Crie seu próprio prompt para ter controle total sobre tokens e comportamento:
+
+```python
+# Prompt ultra-curto para economia máxima (~15 tokens)
+meu_prompt = "Responda usando apenas o contexto. Cite fontes."
+
+messages = results.to_messages(
+    query="O que é ETP?",
+    system_prompt=meu_prompt
+)
+
+# Prompt especializado para seu domínio
+prompt_pregao = """Você é um pregoeiro experiente.
+Responda apenas sobre pregão eletrônico.
+Cite artigos da Lei 14.133/2021."""
+
+messages = results.to_messages(
+    query="Qual o prazo para impugnação?",
+    system_prompt=prompt_pregao
+)
+
+# Sem system prompt (só contexto + pergunta)
+messages = results.to_messages(
+    query="O que é ETP?",
+    system_prompt=""
+)
+```
+
+### Dicas para Otimizar Custos
+
+1. **Chatbots de alto volume**: Use `concise` ou prompt personalizado mínimo
+2. **Reduza o contexto**: `top_k=3` ao invés de 5 reduz ~40% dos tokens
+3. **Modelos mais baratos**: GPT-4o-mini é 17x mais barato que GPT-4o
+4. **Monitore tokens**: Use `tiktoken` para estimar custos antes de enviar
+
+```python
+import tiktoken
+
+def estimar_tokens(messages, model="gpt-4o"):
+    enc = tiktoken.encoding_for_model(model)
+    return sum(len(enc.encode(m["content"])) for m in messages)
+
+messages = results.to_messages("O que é ETP?")
+print(f"Esta requisição usará ~{estimar_tokens(messages)} tokens de input")
+```
+
+📖 **[Guia Completo de System Prompts](docs/guides/system-prompts.md)** - Documentação detalhada com todos os cenários de uso.
 
 ## Feedback
 
