@@ -93,7 +93,7 @@ O VectorGov SDK é uma biblioteca Python que permite integração simples e efic
 │   │                         API VECTORGOV                               │   │
 │   │                   https://vectorgov.io/api/v1                       │   │
 │   │                                                                     │   │
-│   │   /sdk/search     /sdk/ask/stream    /sdk/documents    /sdk/feedback│   │
+│   │ /sdk/search  /sdk/ask/stream  /sdk/documents  /sdk/feedback  /sdk/health│   │
 │   └─────────────────────────────────────────────────────────────────────┘   │
 │                                       │                                     │
 │   ┌─────────────────────────────────────────────────────────────────────┐   │
@@ -147,7 +147,8 @@ vectorgov-sdk/
 │   │       ├── get_enrichment_status()
 │   │       ├── delete_document()
 │   │       ├── get_audit_logs()    # Logs de auditoria
-│   │       └── get_audit_stats()   # Estatísticas de auditoria
+│   │       ├── get_audit_stats()   # Estatísticas de auditoria
+│   │       └── get_health()        # Status do SDK e guardrails
 │   │
 │   ├── _http.py                 # Cliente HTTP interno (265 linhas)
 │   │   └── class HTTPClient:
