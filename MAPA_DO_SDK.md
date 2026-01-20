@@ -140,11 +140,9 @@ vectorgov-sdk/
 │   │       ├── execute_tool_call()
 │   │       ├── list_documents() # Gestão de documentos
 │   │       ├── get_document()
-│   │       ├── upload_pdf()
-│   │       ├── get_ingest_status()
-│   │       ├── start_enrichment()
-│   │       ├── get_enrichment_status()
-│   │       ├── delete_document()
+│   │       ├── upload_pdf()      # 🔜 Em breve
+│   │       ├── start_enrichment()# 🔜 Em breve
+│   │       ├── delete_document() # 🔜 Em breve
 │   │       ├── get_audit_logs()    # Logs de auditoria
 │   │       ├── get_audit_stats()   # Estatísticas de auditoria
 │   │       ├── get_health()        # Status do SDK e guardrails
@@ -168,10 +166,10 @@ vectorgov-sdk/
 │   │   │   └── to_prompt()      # Formato prompt único
 │   │   ├── class DocumentSummary
 │   │   ├── class DocumentsResponse
-│   │   ├── class UploadResponse
-│   │   ├── class IngestStatus
-│   │   ├── class EnrichStatus
-│   │   ├── class DeleteResponse
+│   │   ├── class UploadResponse    # 🔜 Em breve
+│   │   ├── class IngestStatus      # 🔜 Em breve
+│   │   ├── class EnrichStatus      # 🔜 Em breve
+│   │   ├── class DeleteResponse    # 🔜 Em breve
 │   │   ├── class AuditLog          # Log de auditoria
 │   │   ├── class AuditLogsResponse # Resposta paginada de logs
 │   │   ├── class AuditStats        # Estatísticas agregadas
@@ -330,11 +328,11 @@ O `VectorGov` é a classe principal do SDK, responsável por todas as interaçõ
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
 │  │ list_documents(page, limit) -> DocumentsResponse                   │   │
 │  │ get_document(document_id) -> DocumentSummary                       │   │
-│  │ upload_pdf(file_path, tipo, numero, ano) -> UploadResponse         │   │
-│  │ get_ingest_status(task_id) -> IngestStatus                         │   │
-│  │ start_enrichment(document_id) -> dict                              │   │
-│  │ get_enrichment_status(task_id) -> EnrichStatus                     │   │
-│  │ delete_document(document_id) -> DeleteResponse                     │   │
+│  │                                                                     │   │
+│  │ 🔜 Em breve:                                                        │   │
+│  │ - upload_pdf()       # Upload de documentos                        │   │
+│  │ - start_enrichment() # Enriquecimento automático                   │   │
+│  │ - delete_document()  # Exclusão de documentos                      │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
 │  FEEDBACK E UTILITÁRIOS                                                     │
@@ -465,8 +463,8 @@ Cliente HTTP minimalista sem dependências externas.
 │  │  ├── is_enriched: bool    # Property                                 │ │
 │  │  └── enrichment_progress: float                                      │ │
 │  │                                                                       │ │
-│  │  IngestStatus / EnrichStatus / UploadResponse / DeleteResponse       │ │
-│  │  (Status de operações assíncronas)                                   │ │
+│  │  🔜 Em breve: IngestStatus, EnrichStatus, UploadResponse,            │ │
+│  │  DeleteResponse (operações de gerenciamento de documentos)           │ │
 │  │                                                                       │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │
 │                                                                             │
@@ -934,34 +932,9 @@ input_cost = (stats.total_tokens / 1_000_000) * 2.50  # GPT-4o input
 print(f"Custo estimado (input): ${input_cost:.6f}")
 ```
 
-### Upload de Documento
+### Upload, Ingestão e Enriquecimento
 
-```python
-from vectorgov import VectorGov
-
-vg = VectorGov(api_key="vg_xxx")
-
-# Upload
-response = vg.upload_pdf(
-    file_path="lei_14133.pdf",
-    tipo_documento="LEI",
-    numero="14133",
-    ano=2021
-)
-print(f"Task ID: {response.task_id}")
-
-# Monitorar ingestão
-import time
-while True:
-    status = vg.get_ingest_status(response.task_id)
-    print(f"Status: {status.status} ({status.progress}%)")
-    if status.status in ["completed", "failed"]:
-        break
-    time.sleep(5)
-
-# Iniciar enriquecimento
-vg.start_enrichment(response.document_id)
-```
+🔜 **Em breve**: Funcionalidades de upload de documentos, monitoramento de ingestão e enriquecimento automático estarão disponíveis em versões futuras da SDK pública.
 
 ---
 

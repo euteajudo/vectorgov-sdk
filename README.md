@@ -1303,13 +1303,9 @@ O SDK permite gerenciar documentos na base de conhecimento. Algumas operações 
 |----------|-----------|--------|
 | Listar documentos | Todos | `list_documents()` |
 | Ver detalhes | Todos | `get_document(id)` |
-| Ver status ingestão | Todos | `get_ingest_status(task_id)` |
-| Ver status enriquecimento | Todos | `get_enrichment_status(task_id)` |
-| **Upload de PDF** | **Admin** | `upload_pdf()` |
-| **Iniciar enriquecimento** | **Admin** | `start_enrichment()` |
-| **Excluir documento** | **Admin** | `delete_document()` |
-
-> **Nota:** Para obter permissões de administrador, entre em contato com o suporte.
+| **Upload de PDF** | 🔜 Em breve | - |
+| **Iniciar enriquecimento** | 🔜 Em breve | - |
+| **Excluir documento** | 🔜 Em breve | - |
 
 ## Listar e Consultar Documentos
 
@@ -1338,110 +1334,9 @@ print(f"Documento: {doc.titulo}")
 print(f"Status: {'Enriquecido' if doc.is_enriched else 'Pendente'}")
 ```
 
-## Upload e Ingestão (Admin)
+## Upload, Enriquecimento e Exclusão
 
-> **Requer permissão de administrador**
-
-```python
-from vectorgov import VectorGov
-
-vg = VectorGov(api_key="vg_admin_xxx")  # API key com permissão admin
-
-# Upload de PDF
-with open("lei_exemplo.pdf", "rb") as f:
-    result = vg.upload_pdf(
-        file=f,
-        tipo_documento="LEI",
-        numero="99999",
-        ano=2024,
-        titulo="Lei de Exemplo",
-        descricao="Descrição opcional"
-    )
-
-print(f"Upload: {result.message}")
-print(f"Document ID: {result.document_id}")
-print(f"Task ID: {result.task_id}")
-
-# Acompanhar status da ingestão
-status = vg.get_ingest_status(result.task_id)
-print(f"Status: {status.status}")  # pending, processing, completed, failed
-print(f"Progresso: {status.progress}%")
-print(f"Chunks criados: {status.chunks_created}")
-```
-
-### Polling de Status
-
-```python
-import time
-
-task_id = result.task_id
-
-while True:
-    status = vg.get_ingest_status(task_id)
-    print(f"Status: {status.status} ({status.progress}%)")
-    
-    if status.status in ("completed", "failed"):
-        break
-    
-    time.sleep(5)  # Aguarda 5 segundos
-
-if status.status == "completed":
-    print(f"Ingestão concluída! {status.chunks_created} chunks criados")
-else:
-    print(f"Erro: {status.message}")
-```
-
-## Enriquecimento (Admin)
-
-> **Requer permissão de administrador**
-
-O enriquecimento adiciona contexto semântico aos chunks (resumos, perguntas sintéticas, etc.), melhorando a qualidade da busca.
-
-```python
-from vectorgov import VectorGov
-
-vg = VectorGov(api_key="vg_admin_xxx")
-
-# Iniciar enriquecimento de um documento
-result = vg.start_enrichment("LEI-14133-2021")
-print(f"Task ID: {result.task_id}")
-
-# Acompanhar progresso
-status = vg.get_enrichment_status(result.task_id)
-print(f"Status: {status.status}")
-print(f"Progresso: {status.progress:.0%}")
-print(f"Chunks enriquecidos: {status.chunks_enriched}")
-print(f"Chunks pendentes: {status.chunks_pending}")
-print(f"Erros: {status.chunks_failed}")
-
-# Polling até concluir
-import time
-
-while status.status not in ("completed", "error"):
-    time.sleep(10)
-    status = vg.get_enrichment_status(result.task_id)
-    print(f"Progresso: {status.progress:.0%} ({status.chunks_enriched}/{status.chunks_enriched + status.chunks_pending})")
-
-print("Enriquecimento concluído!")
-```
-
-## Exclusão (Admin)
-
-> **Requer permissão de administrador**
-
-```python
-from vectorgov import VectorGov
-
-vg = VectorGov(api_key="vg_admin_xxx")
-
-# Excluir documento
-result = vg.delete_document("LEI-99999-2024")
-
-if result.success:
-    print(f"Documento excluído: {result.message}")
-else:
-    print(f"Erro: {result.message}")
-```
+🔜 **Em breve**: Funcionalidades de upload de documentos, enriquecimento automático e exclusão estarão disponíveis em versões futuras da SDK pública.
 
 ## Modelos de Resposta
 
@@ -1458,37 +1353,10 @@ class DocumentSummary:
     descricao: str        # Descrição opcional
     chunks_count: int     # Total de chunks
     enriched_count: int   # Chunks enriquecidos
-    
+
     # Propriedades calculadas
     is_enriched: bool           # True se todos chunks enriquecidos
     enrichment_progress: float  # 0.0 a 1.0
-```
-
-### IngestStatus
-
-```python
-@dataclass
-class IngestStatus:
-    task_id: str
-    status: Literal["pending", "processing", "completed", "failed"]
-    progress: int         # 0 a 100
-    message: str
-    document_id: str      # Disponível após conclusão
-    chunks_created: int
-```
-
-### EnrichStatus
-
-```python
-@dataclass
-class EnrichStatus:
-    task_id: str
-    status: Literal["pending", "processing", "completed", "error", "not_found"]
-    progress: float       # 0.0 a 1.0
-    chunks_enriched: int
-    chunks_pending: int
-    chunks_failed: int
-    errors: list[str]     # Lista de erros, se houver
 ```
 
 ---
