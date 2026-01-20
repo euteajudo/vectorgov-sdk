@@ -30,6 +30,7 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
   - [OpenAI (GPT-4)](#openai)
   - [Google Gemini](#google-gemini)
   - [Anthropic Claude](#anthropic-claude)
+  - [Respostas em Streaming](#-respostas-em-streaming)
 - **Modelos Open-Source (Gratuitos)**
   - [Ollama (Recomendado)](#integração-com-ollama)
   - [HuggingFace Transformers](#integração-com-huggingface-transformers)
@@ -213,6 +214,135 @@ response = client.messages.create(
 
 print(response.content[0].text)
 ```
+
+---
+
+## 🌊 Respostas em Streaming
+
+O VectorGov **não gera respostas** — ele fornece o **contexto jurídico** para seu LLM. Por isso, o streaming é configurado **no seu provedor de LLM**, não no VectorGov.
+
+```
+VectorGov                        Seu LLM
+   │                                │
+   │ vg.search("query")             │
+   │ ─────────────────► ~1-2s       │
+   │ retorna chunks                 │
+   │                                │
+   │ results.to_messages()          │
+   │ ─────────────────►             │
+   │                                │
+   │                     llm.create(
+   │                         messages=...,
+   │                         stream=True  ◄── Configure aqui!
+   │                     )
+   │                                │
+   │                     for chunk in response:
+   │                         print(chunk)  ◄── Streaming!
+```
+
+### OpenAI com Streaming
+
+```python
+from vectorgov import VectorGov
+from openai import OpenAI
+
+vg = VectorGov(api_key="vg_xxx")
+openai_client = OpenAI()
+
+# Busca contexto (instantâneo, ~1-2s)
+results = vg.search("O que é ETP?")
+messages = results.to_messages("O que é ETP?")
+
+# Gera resposta com streaming
+response = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=messages,
+    stream=True  # ✅ Habilita streaming
+)
+
+# Imprime tokens conforme chegam
+for chunk in response:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="", flush=True)
+```
+
+### Google Gemini com Streaming
+
+```python
+from vectorgov import VectorGov
+import google.generativeai as genai
+
+vg = VectorGov(api_key="vg_xxx")
+genai.configure(api_key="sua_google_key")
+
+results = vg.search("O que é ETP?")
+messages = results.to_messages("O que é ETP?")
+
+model = genai.GenerativeModel(
+    model_name="gemini-2.0-flash",
+    system_instruction=messages[0]["content"]
+)
+
+# Gera resposta com streaming
+response = model.generate_content(
+    messages[1]["content"],
+    stream=True  # ✅ Habilita streaming
+)
+
+# Imprime tokens conforme chegam
+for chunk in response:
+    print(chunk.text, end="", flush=True)
+```
+
+### Anthropic Claude com Streaming
+
+```python
+from vectorgov import VectorGov
+from anthropic import Anthropic
+
+vg = VectorGov(api_key="vg_xxx")
+client = Anthropic()
+
+results = vg.search("O que é ETP?")
+messages = results.to_messages("O que é ETP?")
+
+# Gera resposta com streaming
+with client.messages.stream(
+    model="claude-sonnet-4-20250514",
+    max_tokens=1024,
+    system=messages[0]["content"],
+    messages=[{"role": "user", "content": messages[1]["content"]}]
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)
+```
+
+### Ollama com Streaming
+
+```python
+from vectorgov import VectorGov
+from vectorgov.integrations.ollama import VectorGovOllama
+
+vg = VectorGov(api_key="vg_xxx")
+rag = VectorGovOllama(vg, model="qwen3:8b")
+
+# Streaming nativo
+for chunk in rag.stream("O que é ETP?"):
+    print(chunk, end="", flush=True)
+```
+
+### Resumo por Provedor
+
+| Provedor | Como habilitar streaming |
+|----------|-------------------------|
+| **OpenAI** | `stream=True` no `chat.completions.create()` |
+| **Google Gemini** | `stream=True` no `generate_content()` |
+| **Anthropic Claude** | `client.messages.stream()` context manager |
+| **Ollama** | `rag.stream()` ou `stream=True` na API |
+| **LangChain** | `.stream()` em vez de `.invoke()` |
+| **vLLM/Local** | `stream=True` na API OpenAI-compatible |
+
+> **Importante:** O VectorGov retorna o contexto em ~1-2 segundos (sem streaming necessário). O streaming é útil apenas na etapa de **geração de resposta pelo LLM**, que pode levar 5-30 segundos dependendo do modelo.
 
 ---
 

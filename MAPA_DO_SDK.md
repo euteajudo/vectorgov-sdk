@@ -14,11 +14,12 @@
 4. [Módulos Principais](#módulos-principais)
 5. [Fluxo de Dados](#fluxo-de-dados)
 6. [Integrações](#integrações)
-7. [Modelos de Dados](#modelos-de-dados)
-8. [Tratamento de Erros](#tratamento-de-erros)
-9. [Configurações](#configurações)
-10. [Exemplos de Uso](#exemplos-de-uso)
-11. [Links Úteis e Documentação para LLMs](#links-úteis)
+7. [Respostas em Streaming](#-respostas-em-streaming)
+8. [Modelos de Dados](#modelos-de-dados)
+9. [Tratamento de Erros](#tratamento-de-erros)
+10. [Configurações](#configurações)
+11. [Exemplos de Uso](#exemplos-de-uso)
+12. [Links Úteis e Documentação para LLMs](#links-úteis)
 
 ---
 
@@ -713,6 +714,149 @@ Cliente HTTP minimalista sem dependências externas.
 | `qwen3:8b` | 8-16 GB | Excelente | Excelente | Médio |
 | `llama3.2:3b` | 4-6 GB | Boa | Bom | Rápido |
 | `mistral:7b` | 8-14 GB | Boa | Bom | Médio |
+
+### 🌊 Respostas em Streaming
+
+O VectorGov fornece **contexto jurídico** (~1-2s), mas a resposta é gerada pelo **seu LLM**. O streaming é configurado no provedor, não no VectorGov.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      ARQUITETURA DE STREAMING                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   1. BUSCA (VectorGov)           2. GERAÇÃO (Seu LLM)                       │
+│   ────────────────────           ─────────────────────                      │
+│                                                                             │
+│   vg.search("query")             llm.generate(stream=True)                  │
+│          │                                 │                                │
+│          │ ~1-2s                           │ 5-30s (streaming)              │
+│          ▼                                 ▼                                │
+│   ┌─────────────┐                ┌─────────────────────┐                   │
+│   │ SearchResult│───────────────▶│ Token por Token     │                   │
+│   │ (contexto)  │  to_messages() │ ███░░░░░░░░░░░░░░░░ │                   │
+│   └─────────────┘                └─────────────────────┘                   │
+│                                                                             │
+│   SEM STREAMING                  COM STREAMING                              │
+│   Aguarda resposta completa      Exibe enquanto gera                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Streaming com OpenAI
+
+```python
+from vectorgov import VectorGov
+from openai import OpenAI
+
+vg = VectorGov(api_key="vg_xxx")
+client = OpenAI()
+
+results = vg.search("O que é ETP?")
+messages = results.to_messages("O que é ETP?")
+
+# Com streaming
+stream = client.chat.completions.create(
+    model="gpt-4o",
+    messages=messages,
+    stream=True  # ← Habilita streaming
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="", flush=True)
+```
+
+#### Streaming com Google Gemini
+
+```python
+from vectorgov import VectorGov
+import google.generativeai as genai
+
+vg = VectorGov(api_key="vg_xxx")
+genai.configure(api_key="sua_google_key")
+
+results = vg.search("O que é ETP?")
+messages = results.to_messages("O que é ETP?")
+
+model = genai.GenerativeModel(
+    model_name="gemini-2.0-flash",
+    system_instruction=messages[0]["content"]
+)
+
+# Com streaming
+response = model.generate_content(
+    messages[1]["content"],
+    stream=True  # ← Habilita streaming
+)
+
+for chunk in response:
+    print(chunk.text, end="", flush=True)
+```
+
+#### Streaming com Anthropic Claude
+
+```python
+from vectorgov import VectorGov
+from anthropic import Anthropic
+
+vg = VectorGov(api_key="vg_xxx")
+client = Anthropic()
+
+results = vg.search("O que é ETP?")
+messages = results.to_messages("O que é ETP?")
+
+# Claude usa context manager para streaming
+with client.messages.stream(
+    model="claude-sonnet-4-20250514",
+    max_tokens=4096,
+    system=messages[0]["content"],
+    messages=[{"role": "user", "content": messages[1]["content"]}]
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)
+```
+
+#### Streaming com Ollama
+
+```python
+from vectorgov import VectorGov
+from vectorgov.integrations.ollama import VectorGovOllama
+
+vg = VectorGov(api_key="vg_xxx")
+rag = VectorGovOllama(vg, model="qwen3:8b")
+
+# Método stream() retorna generator
+for chunk in rag.stream("O que é ETP?"):
+    print(chunk, end="", flush=True)
+```
+
+#### Streaming com LangChain
+
+```python
+from vectorgov.integrations.langchain import VectorGovRetriever
+from langchain_openai import ChatOpenAI
+from langchain.chains import RetrievalQA
+
+retriever = VectorGovRetriever(api_key="vg_xxx")
+llm = ChatOpenAI(model="gpt-4o", streaming=True)
+
+qa = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
+
+# Usa .stream() ao invés de .invoke()
+for chunk in qa.stream("O que é ETP?"):
+    print(chunk, end="", flush=True)
+```
+
+#### Tabela de Streaming por Provedor
+
+| Provedor | Como Habilitar | Método de Iteração |
+|----------|----------------|-------------------|
+| **OpenAI** | `stream=True` | `for chunk in stream:` |
+| **Google Gemini** | `stream=True` | `for chunk in response:` |
+| **Anthropic Claude** | `client.messages.stream()` | `for text in stream.text_stream:` |
+| **Ollama** | `rag.stream()` | `for chunk in rag.stream():` |
+| **LangChain** | `streaming=True` no LLM | `.stream()` ao invés de `.invoke()` |
+| **Transformers** | `TextIteratorStreamer` | `for text in streamer:` |
 
 ---
 
