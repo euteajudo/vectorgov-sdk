@@ -7,6 +7,68 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.13.0] - 2025-01-19
+
+### Adicionado
+
+- **Contagem de Tokens (Server-Side)** - Estimar tokens antes de enviar para o LLM:
+  - `vg.estimate_tokens(content)` - Método no cliente para estimar tokens
+  - Aceita `SearchResult` ou `str` como entrada
+  - A contagem é feita no servidor usando tiktoken, garantindo precisão sem dependências extras no cliente
+  - Novo modelo `TokenStats` com campos:
+    - `context_tokens` - Tokens do contexto (hits formatados)
+    - `system_tokens` - Tokens do system prompt
+    - `query_tokens` - Tokens da query do usuário
+    - `total_tokens` - Total de tokens (context + system + query)
+    - `hits_count` - Número de hits incluídos no contexto
+    - `char_count` - Número total de caracteres
+    - `encoding` - Encoding usado (padrão: cl100k_base, compatível com GPT-4/Claude)
+  - Exemplo `14_token_counting.py` com 6 casos de uso:
+    - Estimar tokens de um SearchResult
+    - Estimar tokens de texto simples
+    - Usar system prompt customizado
+    - Otimizar para limite de tokens
+    - Estimativa de custo por query
+    - Verificação antes de enviar ao OpenAI
+- Sem dependências extras necessárias - processamento server-side via API
+
+### Exemplo
+
+```python
+from vectorgov import VectorGov, TokenStats
+
+vg = VectorGov(api_key="vg_xxx")
+results = vg.search("O que é ETP?", top_k=5)
+
+# Estimar tokens do resultado de busca
+stats = vg.estimate_tokens(results)
+print(f"Total: {stats.total_tokens} tokens")
+print(f"Contexto: {stats.context_tokens} tokens")
+print(f"System: {stats.system_tokens} tokens")
+print(f"Query: {stats.query_tokens} tokens")
+
+# Estimar tokens de texto simples
+stats = vg.estimate_tokens("Texto qualquer para contar tokens")
+print(f"Tokens: {stats.total_tokens}")
+
+# Verificar limite do modelo
+MODEL_LIMITS = {"gpt-4o": 128_000, "claude-sonnet-4": 200_000}
+for model, limit in MODEL_LIMITS.items():
+    status = "OK" if stats.total_tokens < limit else "EXCEDE"
+    print(f"{model}: {status}")
+
+# Otimizar para caber em um limite
+MAX_TOKENS = 4000
+if stats.total_tokens > MAX_TOKENS:
+    # Reduzir top_k até caber
+    for k in range(5, 0, -1):
+        results = vg.search("O que é ETP?", top_k=k)
+        stats = vg.estimate_tokens(results)
+        if stats.total_tokens <= MAX_TOKENS:
+            print(f"Com top_k={k}: {stats.total_tokens} tokens OK")
+            break
+```
+
 ## [0.12.0] - 2025-01-19
 
 ### Adicionado
@@ -428,7 +490,9 @@ results = vg.search("O que é ETP?", use_cache=True)
 - Retry automático com backoff exponencial
 - Timeout configurável
 
-[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.12.0...v0.13.0
+[0.12.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.10.0...v0.12.0
 [0.10.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.8.0...v0.8.1

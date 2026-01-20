@@ -778,6 +778,12 @@ O servidor MCP expõe três ferramentas para Claude:
 | `balanced` | Busca com reranking | ~5s | ❌ Desligado | **Uso geral (default)** |
 | `precise` | Busca com HyDE + reranking | ~15s | ❌ Desligado | Análises críticas |
 
+> **Importante:** O modo de busca **não afeta** a quantidade de tokens enviados ao seu LLM. Todos os modos retornam o mesmo número de resultados (controlado por `top_k`). A diferença está na **qualidade** dos resultados:
+> - **HyDE** (modo `precise`): Gera documentos hipotéticos para melhorar a busca - processamento extra no backend VectorGov
+> - **Reranker** (modos `balanced` e `precise`): Reordena resultados por relevância - processamento extra no backend VectorGov
+>
+> Ou seja: você recebe resultados **mais relevantes**, não **mais resultados**.
+
 > **Nota:** O cache está desabilitado por padrão em todos os modos para proteger sua privacidade.
 > Veja a seção [Aviso de Privacidade](#️-aviso-de-privacidade---cache-compartilhado) para mais detalhes.
 

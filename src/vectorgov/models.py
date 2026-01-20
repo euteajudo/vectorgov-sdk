@@ -8,6 +8,56 @@ from datetime import datetime
 
 
 # =============================================================================
+# TOKEN STATS MODEL
+# =============================================================================
+
+
+@dataclass
+class TokenStats:
+    """Estatísticas de tokens retornadas pela API VectorGov.
+
+    O cálculo de tokens é feito no servidor usando tiktoken,
+    garantindo contagem precisa sem dependências extras no cliente.
+
+    Útil para:
+    - Estimar custos de API
+    - Verificar se o contexto cabe na janela de contexto do modelo
+    - Otimizar o número de resultados retornados
+
+    Example:
+        >>> stats = vg.estimate_tokens(results)
+        >>> print(f"Context: {stats.context_tokens} tokens")
+        >>> print(f"Total: {stats.total_tokens} tokens")
+        >>> if stats.total_tokens > 128000:
+        ...     print("Excede limite do GPT-4!")
+    """
+
+    context_tokens: int
+    """Tokens do contexto (hits formatados)"""
+
+    system_tokens: int
+    """Tokens do system prompt"""
+
+    query_tokens: int
+    """Tokens da query do usuário"""
+
+    total_tokens: int
+    """Total de tokens (context + system + query)"""
+
+    hits_count: int
+    """Número de hits incluídos no contexto"""
+
+    char_count: int
+    """Número total de caracteres"""
+
+    encoding: str = "cl100k_base"
+    """Encoding usado (padrão: cl100k_base, compatível com GPT-4/Claude)"""
+
+    def __repr__(self) -> str:
+        return f"TokenStats(total={self.total_tokens}, context={self.context_tokens}, hits={self.hits_count})"
+
+
+# =============================================================================
 # SEARCH MODELS
 # =============================================================================
 
@@ -129,6 +179,10 @@ class SearchResult:
 
         Returns:
             String formatada com os resultados numerados
+
+        Example:
+            >>> context = results.to_context()
+            >>> print(context)
         """
         parts = []
         total_chars = 0
@@ -159,6 +213,10 @@ class SearchResult:
 
         Returns:
             Lista de mensagens no formato OpenAI/Anthropic
+
+        Example:
+            >>> messages = results.to_messages("O que é ETP?")
+            >>> response = openai.chat.completions.create(messages=messages)
         """
         from vectorgov.config import SYSTEM_PROMPTS
 
@@ -166,12 +224,11 @@ class SearchResult:
         system = system_prompt or SYSTEM_PROMPTS["default"]
         context = self.to_context(max_chars=max_context_chars)
 
+        user_content = f"Contexto:\n{context}\n\nPergunta: {query}"
+
         return [
             {"role": "system", "content": system},
-            {
-                "role": "user",
-                "content": f"Contexto:\n{context}\n\nPergunta: {query}",
-            },
+            {"role": "user", "content": user_content},
         ]
 
     def to_prompt(
@@ -189,6 +246,10 @@ class SearchResult:
 
         Returns:
             String com o prompt completo
+
+        Example:
+            >>> prompt = results.to_prompt("O que é ETP?")
+            >>> response = model.generate_content(prompt)
         """
         from vectorgov.config import SYSTEM_PROMPTS
 
@@ -231,6 +292,7 @@ Resposta:"""
             "query_id": self.query_id,
             "mode": self.mode,
         }
+
 
 
 # =============================================================================

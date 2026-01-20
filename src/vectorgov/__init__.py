@@ -48,6 +48,7 @@ from vectorgov.models import (
     SearchResult,
     Hit,
     Metadata,
+    TokenStats,
     DocumentSummary,
     DocumentsResponse,
     UploadResponse,
@@ -77,7 +78,7 @@ from vectorgov.formatters import (
     create_rag_prompt,
 )
 
-__version__ = "0.12.0"
+__version__ = "0.13.0"
 __all__ = [
     # Cliente principal
     "VectorGov",
@@ -85,6 +86,7 @@ __all__ = [
     "SearchResult",
     "Hit",
     "Metadata",
+    "TokenStats",
     # Document Models
     "DocumentSummary",
     "DocumentsResponse",

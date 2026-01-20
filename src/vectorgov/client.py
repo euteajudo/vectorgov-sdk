@@ -8,7 +8,7 @@ from typing import Optional, Union
 import json
 from vectorgov._http import HTTPClient
 from vectorgov.config import SDKConfig, SearchMode, MODE_CONFIG, SYSTEM_PROMPTS
-from vectorgov.models import SearchResult, Hit, Metadata
+from vectorgov.models import SearchResult, Hit, Metadata, TokenStats
 from vectorgov.exceptions import ValidationError, AuthError
 from vectorgov.integrations import tools as tool_utils
 
@@ -249,6 +249,85 @@ class VectorGov:
             data={"query_id": query_id, "is_like": like},
         )
         return response.get("success", False)
+
+    def estimate_tokens(
+        self,
+        content: Union[str, "SearchResult"],
+        query: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+    ) -> "TokenStats":
+        """Estima o número de tokens de um texto ou resultado de busca.
+
+        A contagem é feita no servidor usando tiktoken, garantindo precisão
+        sem dependências extras no cliente.
+
+        Args:
+            content: Texto para contar tokens, ou SearchResult para calcular
+                     tokens do contexto completo (to_messages)
+            query: Pergunta a ser usada (apenas se content for SearchResult).
+                   Se não informado, usa a query original do SearchResult.
+            system_prompt: Prompt de sistema customizado
+
+        Returns:
+            TokenStats com contagem detalhada de tokens
+
+        Raises:
+            ValidationError: Se os parâmetros forem inválidos
+
+        Exemplo com texto simples:
+            >>> stats = vg.estimate_tokens("Texto para contar tokens")
+            >>> print(f"Total: {stats.total_tokens} tokens")
+
+        Exemplo com SearchResult:
+            >>> results = vg.search("O que é ETP?")
+            >>> stats = vg.estimate_tokens(results)
+            >>> print(f"Contexto: {stats.context_tokens} tokens")
+            >>> print(f"Total: {stats.total_tokens} tokens")
+            >>>
+            >>> # Verificar se cabe na janela de contexto
+            >>> if stats.total_tokens > 128000:
+            ...     print("Excede limite do GPT-4!")
+
+        Exemplo com system prompt customizado:
+            >>> stats = vg.estimate_tokens(
+            ...     results,
+            ...     system_prompt=vg.get_system_prompt("detailed")
+            ... )
+        """
+        from vectorgov.models import TokenStats, SearchResult as SearchResultClass
+
+        # Se for SearchResult, extrai contexto formatado
+        if isinstance(content, SearchResultClass):
+            query = query or content.query
+            context = content.to_context()
+            hits_count = len(content.hits)
+        else:
+            # É uma string simples
+            if not content or not str(content).strip():
+                raise ValidationError("content não pode ser vazio", field="content")
+            context = str(content)
+            hits_count = 0
+            query = query or ""
+
+        # Monta o request
+        request_data = {
+            "context": context,
+            "query": query,
+            "system_prompt": system_prompt or "",
+        }
+
+        # Chama a API
+        response = self._http.post("/sdk/tokens", data=request_data)
+
+        return TokenStats(
+            context_tokens=response.get("context_tokens", 0),
+            system_tokens=response.get("system_tokens", 0),
+            query_tokens=response.get("query_tokens", 0),
+            total_tokens=response.get("total_tokens", 0),
+            hits_count=hits_count,
+            char_count=response.get("char_count", len(context)),
+            encoding=response.get("encoding", "cl100k_base"),
+        )
 
     def store_response(
         self,
