@@ -1,6 +1,6 @@
 # 🗺️ MAPA DO SDK VECTORGOV
 
-> **Versão**: 0.10.0
+> **Versão**: 0.13.0
 > **Data**: Janeiro 2025
 > **Objetivo**: Documentação completa da arquitetura e funcionamento do SDK Python VectorGov
 
@@ -92,7 +92,7 @@ O VectorGov SDK é uma biblioteca Python que permite integração simples e efic
 │   │                         API VECTORGOV                               │   │
 │   │                   https://vectorgov.io/api/v1                       │   │
 │   │                                                                     │   │
-│   │ /sdk/search  /sdk/documents  /sdk/feedback  /sdk/audit  /sdk/health     │   │
+│   │ /sdk/search  /sdk/documents  /sdk/feedback  /sdk/audit  /sdk/health  /sdk/tokens │   │
 │   └─────────────────────────────────────────────────────────────────────┘   │
 │                                       │                                     │
 │   ┌─────────────────────────────────────────────────────────────────────┐   │
@@ -147,7 +147,8 @@ vectorgov-sdk/
 │   │       ├── delete_document()
 │   │       ├── get_audit_logs()    # Logs de auditoria
 │   │       ├── get_audit_stats()   # Estatísticas de auditoria
-│   │       └── get_health()        # Status do SDK e guardrails
+│   │       ├── get_health()        # Status do SDK e guardrails
+│   │       └── estimate_tokens()   # Estimativa de tokens (v0.13.0)
 │   │
 │   ├── _http.py                 # Cliente HTTP interno (265 linhas)
 │   │   └── class HTTPClient:
@@ -173,7 +174,8 @@ vectorgov-sdk/
 │   │   ├── class DeleteResponse
 │   │   ├── class AuditLog          # Log de auditoria
 │   │   ├── class AuditLogsResponse # Resposta paginada de logs
-│   │   └── class AuditStats        # Estatísticas agregadas
+│   │   ├── class AuditStats        # Estatísticas agregadas
+│   │   └── class TokenStats        # Estatísticas de tokens (v0.13.0)
 │   │
 │   ├── config.py                # Configurações (106 linhas)
 │   │   ├── class SearchMode     # Enum: FAST, BALANCED, PRECISE
@@ -362,6 +364,28 @@ O `VectorGov` é a classe principal do SDK, responsável por todas as interaçõ
 │  │ - events_by_type, events_by_severity, events_by_category           │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
+│  ESTIMATIVA DE TOKENS (v0.13.0)                                            │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │ estimate_tokens(source, query, system_prompt) -> TokenStats        │   │
+│  │                                                                     │   │
+│  │ Estima tokens que serão usados em uma chamada LLM.                 │   │
+│  │ A contagem é feita no servidor usando tiktoken (cl100k_base).      │   │
+│  │                                                                     │   │
+│  │ Parâmetros:                                                         │   │
+│  │ - source: SearchResult | str  # Resultado de busca ou texto        │   │
+│  │ - query: str                  # Query do usuário (opcional)        │   │
+│  │ - system_prompt: str          # System prompt (opcional)           │   │
+│  │                                                                     │   │
+│  │ Retorna TokenStats com:                                            │   │
+│  │ - context_tokens: int         # Tokens do contexto                 │   │
+│  │ - system_tokens: int          # Tokens do system prompt            │   │
+│  │ - query_tokens: int           # Tokens da query                    │   │
+│  │ - total_tokens: int           # Total (context + system + query)   │   │
+│  │ - hits_count: int             # Número de hits no contexto         │   │
+│  │ - char_count: int             # Total de caracteres                │   │
+│  │ - encoding: str               # Encoding usado (cl100k_base)       │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -478,6 +502,20 @@ Cliente HTTP minimalista sem dependências externas.
 │  │  ├── blocked_count: int     # Total de requisições bloqueadas         │ │
 │  │  ├── warning_count: int     # Total de avisos                         │ │
 │  │  └── period_days: int       # Período em dias                         │ │
+│  │                                                                       │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│  TOKENS (v0.13.0)                                                          │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                       │ │
+│  │  TokenStats                  # Estatísticas de tokens                 │ │
+│  │  ├── context_tokens: int    # Tokens do contexto (hits formatados)   │ │
+│  │  ├── system_tokens: int     # Tokens do system prompt                │ │
+│  │  ├── query_tokens: int      # Tokens da query do usuário             │ │
+│  │  ├── total_tokens: int      # Total (context + system + query)       │ │
+│  │  ├── hits_count: int        # Número de hits incluídos               │ │
+│  │  ├── char_count: int        # Número total de caracteres             │ │
+│  │  └── encoding: str          # Encoding (cl100k_base para GPT-4/Claude)│ │
 │  │                                                                       │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │
 │                                                                             │
@@ -867,6 +905,33 @@ print(f"Latência: {result.latency_ms}ms")
         }
     }
 }
+```
+
+### Estimativa de Tokens (v0.13.0)
+
+```python
+from vectorgov import VectorGov
+
+vg = VectorGov(api_key="vg_xxx")
+results = vg.search("O que é ETP?", top_k=5)
+
+# Estima tokens que seriam usados com OpenAI/Claude
+stats = vg.estimate_tokens(results)
+print(f"Context: {stats.context_tokens} tokens")
+print(f"System: {stats.system_tokens} tokens")
+print(f"Query: {stats.query_tokens} tokens")
+print(f"Total: {stats.total_tokens} tokens")
+
+# Verificar se cabe na janela de contexto
+GPT4_LIMIT = 128_000
+if stats.total_tokens < GPT4_LIMIT:
+    print("✓ Cabe no GPT-4")
+else:
+    print(f"✗ Excede limite ({stats.total_tokens} > {GPT4_LIMIT})")
+
+# Estimar custo (preços Jan 2025)
+input_cost = (stats.total_tokens / 1_000_000) * 2.50  # GPT-4o input
+print(f"Custo estimado (input): ${input_cost:.6f}")
 ```
 
 ### Upload de Documento
