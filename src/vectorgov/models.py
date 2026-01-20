@@ -8,53 +8,6 @@ from datetime import datetime
 
 
 # =============================================================================
-# STREAMING MODELS
-# =============================================================================
-
-
-@dataclass
-class StreamChunk:
-    """Um chunk do stream de resposta.
-
-    Tipos de eventos:
-    - start: Início do processamento
-    - retrieval: Chunks recuperados
-    - token: Token da resposta
-    - complete: Resposta completa
-    - error: Erro
-    """
-
-    type: Literal["start", "retrieval", "token", "complete", "error"]
-    """Tipo do evento"""
-
-    content: Optional[str] = None
-    """Conteúdo (para type='token')"""
-
-    query: Optional[str] = None
-    """Query original (para type='start')"""
-
-    chunks: Optional[int] = None
-    """Número de chunks recuperados (para type='retrieval')"""
-
-    time_ms: Optional[float] = None
-    """Tempo de retrieval em ms (para type='retrieval')"""
-
-    citations: Optional[list[dict]] = None
-    """Lista de citações (para type='complete')"""
-
-    query_hash: Optional[str] = None
-    """Hash da query para feedback (para type='complete')"""
-
-    message: Optional[str] = None
-    """Mensagem de erro (para type='error')"""
-
-    def __repr__(self) -> str:
-        if self.type == "token":
-            return f"StreamChunk(type='token', content='{self.content[:20] if self.content else ''}...')"
-        return f"StreamChunk(type='{self.type}')"
-
-
-# =============================================================================
 # SEARCH MODELS
 # =============================================================================
 

@@ -7,7 +7,16 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.12.0] - 2025-01-19
+
 ### Adicionado
+
+- **Documentação: Auditoria e Segurança no README** - Seção expandida com:
+  - Por que auditoria é importante (compliance, segurança, debugging, monitoramento, billing)
+  - Explicação do isolamento/privacidade multi-tenant por API Key
+  - Documentação detalhada de `get_audit_logs()` com casos de uso e campos retornados
+  - Documentação detalhada de `get_audit_stats()` com métricas e metas ideais
+  - Documentação de `get_audit_event_types()` para descoberta dinâmica de eventos
 
 - **Documentação: Guia de Observabilidade e Auditoria** - Novo guia completo em `docs/guides/observability-audit.md`:
   - Documentação dos 3 métodos de auditoria: `get_audit_logs()`, `get_audit_stats()`, `get_audit_event_types()`

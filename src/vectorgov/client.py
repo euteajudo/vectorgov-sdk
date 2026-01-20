@@ -8,7 +8,7 @@ from typing import Optional, Union
 import json
 from vectorgov._http import HTTPClient
 from vectorgov.config import SDKConfig, SearchMode, MODE_CONFIG, SYSTEM_PROMPTS
-from vectorgov.models import SearchResult, Hit, Metadata, StreamChunk
+from vectorgov.models import SearchResult, Hit, Metadata
 from vectorgov.exceptions import ValidationError, AuthError
 from vectorgov.integrations import tools as tool_utils
 
@@ -184,80 +184,6 @@ class VectorGov:
 
         # Converte resposta
         return self._parse_search_response(query, response, mode.value)
-
-    def ask_stream(
-        self,
-        query: str,
-        top_k: Optional[int] = None,
-        mode: Optional[Union[SearchMode, str]] = None,
-    ):
-        """[INTERNO] Faz uma pergunta com resposta em streaming.
-
-        AVISO: Este metodo e de uso INTERNO da equipe VectorGov.
-        Requer API key com permissao de admin.
-
-        Para uso externo, utilize o metodo search() e integre com
-        seu proprio LLM (OpenAI, Gemini, Claude, etc.).
-
-        A resposta e gerada token por token, permitindo exibicao
-        em tempo real (util para chatbots internos).
-
-        Args:
-            query: Pergunta do usuario
-            top_k: Quantidade de documentos para contexto (1-50). Default: 5
-            mode: Modo de busca (fast, balanced, precise). Default: balanced
-
-        Yields:
-            StreamChunk com cada parte da resposta
-
-        Raises:
-            AuthenticationError: Se a API key nao tiver permissao de admin
-
-        Note:
-            Este metodo consome recursos GPU do RunPod e nao deve ser
-            disponibilizado para clientes externos.
-        """
-        # Validações
-        if not query or not query.strip():
-            raise ValidationError("Query não pode ser vazia", field="query")
-
-        query = query.strip()
-        if len(query) < 3:
-            raise ValidationError("Query deve ter pelo menos 3 caracteres", field="query")
-
-        # Valores padrão
-        top_k = top_k or self._config.default_top_k
-        mode = mode or self._config.default_mode
-        if isinstance(mode, SearchMode):
-            mode = mode.value
-
-        # Prepara request
-        request_data = {
-            "query": query,
-            "top_k": top_k,
-            "mode": mode,
-        }
-
-        # Faz requisição com streaming
-        for event in self._http.stream("/sdk/ask/stream", data=request_data):
-            event_type = event.get("type", "unknown")
-
-            chunk = StreamChunk(
-                type=event_type,
-                content=event.get("content"),
-                query=event.get("query"),
-                chunks=event.get("chunks"),
-                time_ms=event.get("time_ms"),
-                citations=event.get("citations"),
-                query_hash=event.get("query_hash"),
-                message=event.get("message"),
-            )
-
-            yield chunk
-
-            # Se for erro, para o stream
-            if event_type == "error":
-                break
 
     def _parse_search_response(
         self,

@@ -48,7 +48,6 @@ from vectorgov.models import (
     SearchResult,
     Hit,
     Metadata,
-    StreamChunk,
     DocumentSummary,
     DocumentsResponse,
     UploadResponse,
@@ -78,7 +77,7 @@ from vectorgov.formatters import (
     create_rag_prompt,
 )
 
-__version__ = "0.10.1"
+__version__ = "0.12.0"
 __all__ = [
     # Cliente principal
     "VectorGov",
@@ -86,7 +85,6 @@ __all__ = [
     "SearchResult",
     "Hit",
     "Metadata",
-    "StreamChunk",
     # Document Models
     "DocumentSummary",
     "DocumentsResponse",

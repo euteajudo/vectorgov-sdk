@@ -34,7 +34,6 @@ O VectorGov SDK é uma biblioteca Python que permite integração simples e efic
 | **Type Hints** | Tipagem completa para melhor experiência de desenvolvimento |
 | **Integrações** | Suporte nativo para OpenAI, Anthropic, Google, LangChain, Ollama, Transformers |
 | **MCP Server** | Servidor Model Context Protocol para Claude Desktop e Cursor |
-| **Streaming** | Suporte a respostas em streaming via SSE |
 | **Retry Automático** | Retry com backoff exponencial para resiliência |
 | **Auditoria** | Logs e estatísticas de eventos de segurança (PII, injeções) |
 
@@ -81,8 +80,8 @@ O VectorGov SDK é uma biblioteca Python que permite integração simples e efic
 │   │   │  (client.py)│───▶│  (_http.py)  │    │    (config.py)        │ │   │
 │   │   │             │    │              │    │                       │ │   │
 │   │   │ - search()  │    │ - request()  │    │ - base_url            │ │   │
-│   │   │ - ask_stream│    │ - stream()   │    │ - timeout             │ │   │
-│   │   │ - feedback()│    │ - get()      │    │ - default_top_k       │ │   │
+│   │   │ - feedback()│    │ - get()      │    │ - timeout             │ │   │
+│   │   │ - upload()  │    │ - stream()   │    │ - default_top_k       │ │   │
 │   │   │ - upload()  │    │ - post()     │    │ - default_mode        │ │   │
 │   │   └─────────────┘    └──────────────┘    └───────────────────────┘ │   │
 │   └─────────────────────────────────────────────────────────────────────┘   │
@@ -93,7 +92,7 @@ O VectorGov SDK é uma biblioteca Python que permite integração simples e efic
 │   │                         API VECTORGOV                               │   │
 │   │                   https://vectorgov.io/api/v1                       │   │
 │   │                                                                     │   │
-│   │ /sdk/search  /sdk/ask/stream  /sdk/documents  /sdk/feedback  /sdk/health│   │
+│   │ /sdk/search  /sdk/documents  /sdk/feedback  /sdk/audit  /sdk/health     │   │
 │   └─────────────────────────────────────────────────────────────────────┘   │
 │                                       │                                     │
 │   ┌─────────────────────────────────────────────────────────────────────┐   │
@@ -133,8 +132,8 @@ vectorgov-sdk/
 │   ├── client.py                # Cliente principal (597 linhas)
 │   │   └── class VectorGov:
 │   │       ├── search()         # Busca semântica
-│   │       ├── ask_stream()     # Resposta com streaming
 │   │       ├── feedback()       # Envio de feedback
+│   │       ├── store_response() # Salva resposta de LLM externo
 │   │       ├── to_openai_tool() # Function calling OpenAI
 │   │       ├── to_anthropic_tool()
 │   │       ├── to_google_tool()
@@ -160,7 +159,6 @@ vectorgov-sdk/
 │   │       └── post_multipart() # Upload de arquivos
 │   │
 │   ├── models.py                # Modelos de dados (425 linhas)
-│   │   ├── class StreamChunk    # Chunk do streaming
 │   │   ├── class Metadata       # Metadados do documento
 │   │   ├── class Hit            # Resultado individual
 │   │   ├── class SearchResult   # Resultado completo
@@ -318,12 +316,6 @@ O `VectorGov` é a classe principal do SDK, responsável por todas as interaçõ
 │  │ - filters: dict       # tipo, ano, orgao                           │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │ ask_stream(query, top_k, mode) -> Generator[StreamChunk]            │   │
-│  │                                                                     │   │
-│  │ Tipos de chunk: start, retrieval, token, complete, error           │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
-│                                                                             │
 │  FUNCTION CALLING                                                           │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
 │  │ to_openai_tool() -> dict      # Formato OpenAI                     │   │
@@ -383,7 +375,6 @@ Cliente HTTP minimalista sem dependências externas.
 | `get(path, params)` | HTTP GET | Listagem, status |
 | `post(path, data)` | HTTP POST | Busca, criação |
 | `delete(path, params)` | HTTP DELETE | Exclusão |
-| `stream(path, data)` | Streaming SSE | Respostas em tempo real |
 | `post_multipart(path, files, data)` | Upload multipart | Upload de PDFs |
 
 **Características**:
@@ -432,21 +423,6 @@ Cliente HTTP minimalista sem dependências externas.
 │  │  ├── paragraph: str       # Parágrafo                                │ │
 │  │  ├── item: str            # Inciso                                   │ │
 │  │  └── orgao: str           # Órgão emissor                            │ │
-│  │                                                                       │ │
-│  └───────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  STREAMING                                                                  │
-│  ┌───────────────────────────────────────────────────────────────────────┐ │
-│  │                                                                       │ │
-│  │  StreamChunk                                                          │ │
-│  │  ├── type: str            # start, retrieval, token, complete, error │ │
-│  │  ├── content: str         # Token (type=token)                       │ │
-│  │  ├── query: str           # Query (type=start)                       │ │
-│  │  ├── chunks: int          # Chunks encontrados (type=retrieval)      │ │
-│  │  ├── time_ms: float       # Tempo (type=retrieval)                   │ │
-│  │  ├── citations: list      # Citações (type=complete)                 │ │
-│  │  ├── query_hash: str      # Hash para feedback (type=complete)       │ │
-│  │  └── message: str         # Erro (type=error)                        │ │
 │  │                                                                       │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │
 │                                                                             │
@@ -609,39 +585,6 @@ Cliente HTTP minimalista sem dependências externas.
 │   response = openai.chat.completions.create(                                │
 │       messages=[...previous, {"role": "tool", "content": result}]           │
 │   )                                                                         │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Fluxo de Streaming
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                       FLUXO DE STREAMING                                    │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   for chunk in vg.ask_stream("O que é ETP?"):                               │
-│       │                                                                     │
-│       │ Evento 1: START                                                     │
-│       ├──▶ StreamChunk(type="start", query="O que é ETP?")                  │
-│       │                                                                     │
-│       │ Evento 2: RETRIEVAL                                                 │
-│       ├──▶ StreamChunk(type="retrieval", chunks=5, time_ms=1234.5)          │
-│       │                                                                     │
-│       │ Eventos 3-N: TOKENS                                                 │
-│       ├──▶ StreamChunk(type="token", content="O ")                          │
-│       ├──▶ StreamChunk(type="token", content="ETP ")                        │
-│       ├──▶ StreamChunk(type="token", content="é ")                          │
-│       ├──▶ StreamChunk(type="token", content="o ")                          │
-│       ├──▶ ... (mais tokens)                                                │
-│       │                                                                     │
-│       │ Evento Final: COMPLETE                                              │
-│       └──▶ StreamChunk(type="complete",                                     │
-│                citations=[...],                                             │
-│                query_hash="abc123...")                                      │
-│                                                                             │
-│   OU em caso de erro:                                                       │
-│       └──▶ StreamChunk(type="error", message="Rate limit exceeded")         │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -877,20 +820,6 @@ response = openai.chat.completions.create(
     messages=messages
 )
 print(response.choices[0].message.content)
-```
-
-### Com Streaming
-
-```python
-from vectorgov import VectorGov
-
-vg = VectorGov(api_key="vg_xxx")
-
-for chunk in vg.ask_stream("O que é ETP?"):
-    if chunk.type == "token":
-        print(chunk.content, end="", flush=True)
-    elif chunk.type == "complete":
-        print(f"\n\nFontes: {len(chunk.citations)}")
 ```
 
 ### Com LangChain
