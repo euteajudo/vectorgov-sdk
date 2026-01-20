@@ -56,6 +56,7 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
 - **Documentação para LLMs**
   - [llms.txt](#llmstxt)
   - [CLAUDE.md](#claudemd)
+- [Auditoria e Segurança](#auditoria-e-segurança)
 - [Obter sua API Key](#obter-sua-api-key)
 - **Do Básico ao Avançado**
   - [Nível 1: O Mínimo Necessário](#nível-1-o-mínimo-necessário)
@@ -71,6 +72,10 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
 ---
 
 ## Instalação
+
+## Requisitos
+
+- Python **>= 3.9**
 
 ```bash
 pip install vectorgov
