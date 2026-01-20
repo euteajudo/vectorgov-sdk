@@ -1485,6 +1485,167 @@ class EnrichStatus:
 
 O VectorGov possui um sistema de guardrails que monitora e registra eventos de segurança. Usuários da SDK podem acessar logs de auditoria filtrados por sua API Key.
 
+## Por que Auditoria é Importante?
+
+| Caso de Uso | Descrição |
+|-------------|-----------|
+| **Compliance** | Atenda requisitos de LGPD, auditoria interna e governança |
+| **Segurança** | Detecte tentativas de injeção, vazamento de PII e uso suspeito |
+| **Debugging** | Investigue problemas de integração e erros de validação |
+| **Monitoramento** | Acompanhe métricas de uso, latência e padrões de queries |
+| **Billing** | Entenda o consumo da API para planejamento de custos |
+
+## Privacidade: Seus Logs São Isolados
+
+O VectorGov é uma plataforma **multi-tenant**. Isso significa que:
+
+| Aspecto | Como Funciona |
+|---------|---------------|
+| **Isolamento** | Cada API Key só acessa seus próprios logs |
+| **Filtro Automático** | O backend filtra por `api_key_id` automaticamente |
+| **Sem Acesso Cruzado** | Impossível ver logs de outras organizações |
+| **Dados Sensíveis** | Queries podem conter informações confidenciais |
+
+```python
+# Empresa A só vê logs da Empresa A
+vg_a = VectorGov(api_key="vg_empresa_a_xxx")
+logs_a = vg_a.get_audit_logs()  # Apenas logs da Empresa A
+
+# Empresa B só vê logs da Empresa B
+vg_b = VectorGov(api_key="vg_empresa_b_yyy")
+logs_b = vg_b.get_audit_logs()  # Apenas logs da Empresa B
+```
+
+## Métodos Disponíveis
+
+O SDK oferece 3 métodos para acessar dados de auditoria:
+
+| Método | Função | Retorno |
+|--------|--------|---------|
+| `get_audit_logs()` | Lista eventos de auditoria com filtros | `AuditLogsResponse` |
+| `get_audit_stats()` | Estatísticas agregadas de um período | `AuditStats` |
+| `get_audit_event_types()` | Lista tipos de eventos disponíveis | `list[str]` |
+
+---
+
+## `get_audit_logs()` - Investigação e Compliance
+
+### Por que é Importante?
+
+| Cenário | Como o Método Ajuda |
+|---------|---------------------|
+| **Investigação de Incidentes** | Veja exatamente o que aconteceu, quando e qual query causou o problema |
+| **Compliance LGPD** | Prove que dados pessoais foram detectados e tratados adequadamente |
+| **Debugging** | Identifique queries mal formadas ou que causam erros de validação |
+| **Auditoria Interna** | Documente uso da API para relatórios de governança |
+
+### O que Cada Campo Retornado Significa
+
+| Campo | Significado | Ação Recomendada |
+|-------|-------------|------------------|
+| `event_type` | Tipo do evento (ex: `pii_detected`) | Filtre por tipos críticos |
+| `severity` | Gravidade (`info`, `warning`, `critical`) | Monitore `critical` em tempo real |
+| `risk_score` | Score de risco de 0.0 a 1.0 | Investigue scores > 0.7 |
+| `action_taken` | O que o sistema fez (`logged`, `blocked`, `warned`) | Revise ações `blocked` |
+| `query_text` | Query que gerou o evento (truncada) | Use para reproduzir problemas |
+| `detection_types` | O que foi detectado (ex: `["cpf", "email"]`) | Identifique padrões de PII |
+
+### Exemplo de Uso
+
+```python
+from vectorgov import VectorGov
+
+vg = VectorGov(api_key="vg_xxx")
+
+# Listar logs da sua API Key
+logs = vg.get_audit_logs(
+    limit=50,
+    severity="warning",         # Opcional: info, warning, critical
+    event_type="pii_detected",  # Opcional: filtrar por tipo
+    start_date="2025-01-01",    # Opcional: data início
+    end_date="2025-01-18"       # Opcional: data fim
+)
+
+for log in logs.logs:
+    print(f"[{log.severity}] {log.event_type}: {log.query_text}")
+    print(f"  Ação: {log.action_taken}")
+    print(f"  Risk Score: {log.risk_score}")
+    print(f"  Data: {log.created_at}")
+```
+
+---
+
+## `get_audit_stats()` - Visão Gerencial e Tendências
+
+### Por que é Importante?
+
+| Cenário | Como o Método Ajuda |
+|---------|---------------------|
+| **Dashboard Executivo** | Mostre métricas de segurança para stakeholders |
+| **Identificação de Tendências** | Detecte aumento de tentativas de injection |
+| **Planejamento de Capacidade** | Entenda volume de uso para sizing |
+| **KPIs de Segurança** | Acompanhe taxa de bloqueios vs requisições totais |
+
+### Métricas Retornadas
+
+| Campo | Significado | Meta Ideal |
+|-------|-------------|------------|
+| `total_events` | Total de eventos no período | Crescimento controlado |
+| `blocked_count` | Requisições bloqueadas | Próximo de 0 |
+| `warning_count` | Avisos gerados | Monitorar tendência |
+| `events_by_type` | Distribuição por tipo | Maioria deve ser `search_completed` |
+| `events_by_severity` | Distribuição por gravidade | Maioria deve ser `info` |
+
+### Exemplo de Uso
+
+```python
+# Obter estatísticas dos últimos 30 dias
+stats = vg.get_audit_stats(days=30)
+
+print(f"Total de eventos: {stats.total_events}")
+print(f"Bloqueados: {stats.blocked_count}")
+print(f"Alertas: {stats.warning_count}")
+
+# Por tipo de evento
+print("\nPor tipo:")
+for event_type, count in stats.events_by_type.items():
+    print(f"  {event_type}: {count}")
+
+# Por severidade
+print("\nPor severidade:")
+for severity, count in stats.events_by_severity.items():
+    print(f"  {severity}: {count}")
+```
+
+---
+
+## `get_audit_event_types()` - Descoberta e Integração
+
+### Por que é Importante?
+
+| Cenário | Como o Método Ajuda |
+|---------|---------------------|
+| **Construir Interfaces** | Popular dropdowns de filtro dinamicamente |
+| **Manter Compatibilidade** | Descobrir novos tipos de eventos adicionados |
+| **Documentação** | Gerar docs automáticos dos eventos possíveis |
+| **Validação** | Verificar se um tipo de evento existe antes de filtrar |
+
+### Exemplo de Uso
+
+```python
+# Listar todos os tipos de eventos disponíveis
+event_types = vg.get_audit_event_types()
+
+print("Tipos de eventos disponíveis:")
+for event_type in event_types:
+    print(f"  - {event_type}")
+
+# Usar para popular um dropdown de filtro
+# event_types = ['pii_detected', 'injection_blocked', 'search_completed', ...]
+```
+
+---
+
 ## Eventos Monitorados
 
 | Evento | Categoria | Descrição |
@@ -1496,47 +1657,6 @@ O VectorGov possui um sistema de guardrails que monitora e registra eventos de s
 | `citation_invalid` | validation | Citação não encontrada nos chunks |
 | `circuit_breaker_open` | performance | Circuit breaker aberto (serviço indisponível) |
 | `circuit_breaker_close` | performance | Circuit breaker fechado (serviço restaurado) |
-
-## Listar Logs de Auditoria
-
-```python
-from vectorgov import VectorGov
-
-vg = VectorGov(api_key="vg_xxx")
-
-# Listar logs da sua API Key
-logs = vg.get_audit_logs(
-    limit=50,
-    severity="warning",      # Opcional: info, warning, critical
-    event_type="pii_detected",  # Opcional: filtrar por tipo
-    start_date="2025-01-01",    # Opcional: data início
-    end_date="2025-01-18"       # Opcional: data fim
-)
-
-for log in logs.logs:
-    print(f"[{log.severity}] {log.event_type}: {log.query_text}")
-    print(f"  Ação: {log.action_taken}")
-    print(f"  Data: {log.created_at}")
-```
-
-## Estatísticas de Auditoria
-
-```python
-# Obter estatísticas dos últimos 30 dias
-stats = vg.get_audit_stats(days=30)
-
-print(f"Total de eventos: {stats.total_events}")
-print(f"Bloqueados: {stats.blocked_count}")
-print(f"Alertas: {stats.warning_count}")
-
-# Por tipo de evento
-for event_type, count in stats.events_by_type.items():
-    print(f"  {event_type}: {count}")
-
-# Por severidade
-for severity, count in stats.events_by_severity.items():
-    print(f"  {severity}: {count}")
-```
 
 ## Modelos de Resposta
 
