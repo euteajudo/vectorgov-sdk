@@ -98,6 +98,49 @@ class CitationExpansionStats:
     skipped_token_budget: int       # Excederam budget de tokens
 ```
 
+### Melhorado
+
+- **Formato de Contexto Estruturado** - `to_context()` agora divide claramente em seções para melhor compreensão do LLM:
+  - **EVIDÊNCIA DIRETA** (resultados da busca) - Chunks retornados diretamente pela busca semântica
+  - **TRECHOS CITADOS** (expansão por citação) - Chunks trazidos via Citation Expansion
+  - Cada chunk expandido agora exibe metadados completos:
+    - `CITADO POR`: source_chunk_id (qual chunk fez a citação)
+    - `CITAÇÃO ORIGINAL`: source_citation_raw (texto da citação)
+    - `ALVO (node_id)`: node_id canônico do chunk expandido
+    - `FONTE`: document_id, span_id, device_type
+  - Resumo de estatísticas ao final (controlável via `include_stats=True`)
+  - Novo parâmetro `include_stats: bool = True` em `to_context()`
+
+### Exemplo de Saída do `to_context()`
+
+```
+=== EVIDÊNCIA DIRETA (resultados da busca) ===
+[1] Lei 14.133/2021, Art. 18
+O estudo técnico preliminar será elaborado...
+
+[2] IN 65/2021, Art. 5
+A pesquisa de preços deve conter, no mínimo...
+
+=== TRECHOS CITADOS (expansão por citação) ===
+[XC-1] TRECHO CITADO (expansão por citação)
+  CITADO POR: IN-65-2021#ART-005
+  CITAÇÃO ORIGINAL: art. 18 da Lei 14.133
+  ALVO (node_id): leis:LEI-14133-2021#ART-018
+  FONTE: LEI-14133-2021, ART-018 (article)
+Texto completo do art. 18 da Lei 14.133...
+
+[Expansão: encontradas=3, resolvidas=2, expandidas=2, tempo=45ms]
+```
+
+### Benefício do Formato Estruturado
+
+| Aspecto | Benefício |
+|---------|-----------|
+| **Clareza para o LLM** | Modelo entende origem de cada trecho |
+| **Priorização** | Evidência direta tem precedência sobre trechos citados |
+| **Rastreabilidade** | node_id permite identificação única do chunk |
+| **Debugging** | Metadados facilitam verificação de qualidade |
+
 ## [0.13.0] - 2025-01-19
 
 ### Adicionado

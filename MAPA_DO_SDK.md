@@ -432,7 +432,9 @@ Cliente HTTP minimalista sem dependências externas.
 │  │  ├── expansion_stats: CitationExpansionStats # Estatísticas (v0.14.0)│ │
 │  │  │                                                                   │ │
 │  │  └── Métodos:                                                        │ │
-│  │      ├── to_context(max_chars) -> str                                │ │
+│  │      ├── to_context(max_chars, include_expanded, include_stats)      │ │
+│  │      │   → str  # Retorna contexto com seções EVIDÊNCIA DIRETA       │ │
+│  │      │          # e TRECHOS CITADOS (expansão por citação)           │ │
 │  │      ├── to_messages(query, system_prompt) -> list[dict]             │ │
 │  │      ├── to_prompt(query, system_prompt) -> str                      │ │
 │  │      └── to_dict() -> dict                                           │ │
