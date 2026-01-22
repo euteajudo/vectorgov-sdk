@@ -7,6 +7,97 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.14.0] - 2025-01-22
+
+### Adicionado
+
+- **Citation Expansion (Expansão de Citações)** - Expande automaticamente referências normativas encontradas nos resultados:
+  - Novo parâmetro `expand_citations=True` no método `search()`
+  - Novo parâmetro `citation_expansion_top_n` para limitar citações por chunk (default: 3)
+  - Quando um chunk cita outro artigo/lei (ex: "art. 18 da Lei 14.133"), o sistema busca e retorna o texto citado
+  - Novos modelos de dados:
+    - `ExpandedChunk` - Chunk obtido via expansão de citação
+    - `CitationExpansionStats` - Estatísticas de expansão
+  - Novos campos em `SearchResult`:
+    - `expanded_chunks: list[ExpandedChunk]` - Lista de chunks expandidos
+    - `expansion_stats: CitationExpansionStats` - Métricas de expansão
+  - Atualizado `to_context(include_expanded=True)` para incluir chunks expandidos
+
+### Exemplo
+
+```python
+from vectorgov import VectorGov
+
+vg = VectorGov(api_key="vg_xxx")
+
+# Busca com expansão de citações
+results = vg.search(
+    "Quando o ETP pode ser dispensado?",
+    expand_citations=True,
+    citation_expansion_top_n=3,
+)
+
+# Resultados originais
+print(f"Hits originais: {len(results.hits)}")
+
+# Chunks expandidos via citações
+print(f"Chunks expandidos: {len(results.expanded_chunks)}")
+for ec in results.expanded_chunks:
+    print(f"  - {ec.node_id}: {ec.text[:100]}...")
+    print(f"    Citado por: {ec.source_chunk_id}")
+    print(f"    Citação original: '{ec.source_citation_raw}'")
+
+# Estatísticas de expansão
+if results.expansion_stats:
+    stats = results.expansion_stats
+    print(f"Citações encontradas: {stats.citations_scanned_count}")
+    print(f"Citações resolvidas: {stats.citations_resolved_count}")
+    print(f"Chunks expandidos: {stats.expanded_chunks_count}")
+    print(f"Tempo de expansão: {stats.expansion_time_ms:.1f}ms")
+
+# O contexto formatado inclui chunks expandidos
+context = results.to_context()
+# Seção "--- Referências Expandidas ---" adicionada automaticamente
+
+# Para excluir chunks expandidos do contexto:
+context = results.to_context(include_expanded=False)
+```
+
+### Benefícios da Expansão de Citações
+
+| Benefício | Descrição |
+|-----------|-----------|
+| **Contexto Mais Rico** | LLM recebe o texto completo dos artigos citados |
+| **Menos Alucinações** | Referências são verificadas e expandidas automaticamente |
+| **Transparência** | `source_citation_raw` mostra a citação original |
+| **Controle de Tokens** | `citation_expansion_top_n` limita expansões por chunk |
+| **Deduplicação** | Mesma citação não é expandida múltiplas vezes |
+
+### Novos Modelos
+
+```python
+@dataclass
+class ExpandedChunk:
+    chunk_id: str          # ID do chunk expandido (ex: 'LEI-14133-2021#ART-018')
+    node_id: str           # Node ID canônico: leis:{document_id}#{span_id}
+    text: str              # Texto do chunk expandido
+    document_id: str       # ID do documento fonte
+    span_id: str           # ID do dispositivo (ex: 'ART-018')
+    device_type: str       # Tipo: article, paragraph, inciso, alinea
+    source_chunk_id: str   # ID do chunk que citou este
+    source_citation_raw: str  # Texto original da citação
+
+@dataclass
+class CitationExpansionStats:
+    expanded_chunks_count: int      # Chunks expandidos com sucesso
+    citations_scanned_count: int    # Citações encontradas nos hits
+    citations_resolved_count: int   # Citações resolvidas para node_ids
+    expansion_time_ms: float        # Tempo de expansão em ms
+    skipped_self_references: int    # Auto-referências ignoradas
+    skipped_duplicates: int         # Duplicatas ignoradas
+    skipped_token_budget: int       # Excederam budget de tokens
+```
+
 ## [0.13.0] - 2025-01-19
 
 ### Adicionado

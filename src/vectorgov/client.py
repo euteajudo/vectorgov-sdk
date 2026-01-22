@@ -91,6 +91,8 @@ class VectorGov:
         mode: Optional[Union[SearchMode, str]] = None,
         filters: Optional[dict] = None,
         use_cache: Optional[bool] = None,
+        expand_citations: bool = False,
+        citation_expansion_top_n: int = 3,
     ) -> SearchResult:
         """Busca informações na base de conhecimento.
 
@@ -107,9 +109,16 @@ class VectorGov:
                 Se True, sua pergunta/resposta pode ser vista por outros clientes
                 e você pode receber respostas de perguntas de outros clientes.
                 Habilite apenas se aceitar o trade-off privacidade vs latência.
+            expand_citations: Se True, expande citações normativas encontradas nos
+                resultados (ex: "art. 18 da Lei 14.133"). Chunks citados são
+                automaticamente recuperados e adicionados ao contexto.
+                Default: False
+            citation_expansion_top_n: Número máximo de citações a expandir por chunk.
+                Default: 3
 
         Returns:
-            SearchResult com os documentos encontrados
+            SearchResult com os documentos encontrados. Se expand_citations=True,
+            inclui `expanded_chunks` e `expansion_stats`.
 
         Raises:
             ValidationError: Se os parâmetros forem inválidos
@@ -122,6 +131,10 @@ class VectorGov:
             >>>
             >>> # Busca com cache (aceita compartilhamento)
             >>> results = vg.search("O que é ETP?", use_cache=True)
+            >>>
+            >>> # Busca com expansão de citações
+            >>> results = vg.search("O que é ETP?", expand_citations=True)
+            >>> print(f"Chunks expandidos: {len(results.expanded_chunks)}")
             >>>
             >>> for hit in results:
             ...     print(f"{hit.source}: {hit.text[:100]}...")
@@ -168,6 +181,8 @@ class VectorGov:
             "use_reranker": mode_config["use_reranker"],
             "use_cache": cache_enabled,
             "mode": mode.value,
+            "expand_citations": expand_citations,
+            "citation_expansion_top_n": citation_expansion_top_n,
         }
 
         # Adiciona filtros se fornecidos
@@ -192,6 +207,8 @@ class VectorGov:
         mode: str,
     ) -> SearchResult:
         """Converte resposta da API em SearchResult."""
+        from vectorgov.models import ExpandedChunk, CitationExpansionStats
+
         hits = []
         for item in response.get("hits", []):
             metadata = Metadata(
@@ -214,6 +231,34 @@ class VectorGov:
             )
             hits.append(hit)
 
+        # Parse expanded_chunks se presente
+        expanded_chunks = []
+        for ec in response.get("expanded_chunks", []):
+            expanded_chunks.append(ExpandedChunk(
+                chunk_id=ec.get("chunk_id", ""),
+                node_id=ec.get("node_id", ""),
+                text=ec.get("text", ""),
+                document_id=ec.get("document_id", ""),
+                span_id=ec.get("span_id", ""),
+                device_type=ec.get("device_type", "article"),
+                source_chunk_id=ec.get("source_chunk_id", ""),
+                source_citation_raw=ec.get("source_citation_raw", ""),
+            ))
+
+        # Parse expansion_stats se presente
+        expansion_stats = None
+        if "expansion_stats" in response and response["expansion_stats"]:
+            es = response["expansion_stats"]
+            expansion_stats = CitationExpansionStats(
+                expanded_chunks_count=es.get("expanded_chunks_count", 0),
+                citations_scanned_count=es.get("citations_scanned_count", 0),
+                citations_resolved_count=es.get("citations_resolved_count", 0),
+                expansion_time_ms=es.get("expansion_time_ms", 0.0),
+                skipped_self_references=es.get("skipped_self_references", 0),
+                skipped_duplicates=es.get("skipped_duplicates", 0),
+                skipped_token_budget=es.get("skipped_token_budget", 0),
+            )
+
         return SearchResult(
             query=query,
             hits=hits,
@@ -222,6 +267,8 @@ class VectorGov:
             cached=response.get("cached", False),
             query_id=response.get("query_id", ""),
             mode=mode,
+            expanded_chunks=expanded_chunks,
+            expansion_stats=expansion_stats,
         )
 
     def feedback(self, query_id: str, like: bool) -> bool:

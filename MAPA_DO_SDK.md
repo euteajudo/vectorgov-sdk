@@ -1,6 +1,6 @@
 # 🗺️ MAPA DO SDK VECTORGOV
 
-> **Versão**: 0.13.0
+> **Versão**: 0.14.0
 > **Data**: Janeiro 2025
 > **Objetivo**: Documentação completa da arquitetura e funcionamento do SDK Python VectorGov
 
@@ -158,10 +158,12 @@ vectorgov-sdk/
 │   │       ├── stream()         # Streaming SSE
 │   │       └── post_multipart() # Upload de arquivos
 │   │
-│   ├── models.py                # Modelos de dados (425 linhas)
+│   ├── models.py                # Modelos de dados (480+ linhas)
 │   │   ├── class Metadata       # Metadados do documento
 │   │   ├── class Hit            # Resultado individual
-│   │   ├── class SearchResult   # Resultado completo
+│   │   ├── class ExpandedChunk  # Chunk via expansão de citação (v0.14.0)
+│   │   ├── class CitationExpansionStats # Estatísticas de expansão (v0.14.0)
+│   │   ├── class SearchResult   # Resultado completo (c/ expansão v0.14.0)
 │   │   │   ├── to_context()     # Converte para string
 │   │   │   ├── to_messages()    # Formato chat
 │   │   │   └── to_prompt()      # Formato prompt único
@@ -309,12 +311,15 @@ O `VectorGov` é a classe principal do SDK, responsável por todas as interaçõ
 │                                                                             │
 │  MÉTODOS DE BUSCA                                                           │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │ search(query, top_k, mode, filters) -> SearchResult                 │   │
+│  │ search(query, top_k, mode, filters, expand_citations,              │   │
+│  │        citation_expansion_top_n) -> SearchResult                   │   │
 │  │                                                                     │   │
-│  │ - query: str          # Pergunta (3-1000 caracteres)               │   │
-│  │ - top_k: int          # 1-50 resultados                            │   │
-│  │ - mode: SearchMode    # fast, balanced, precise                    │   │
-│  │ - filters: dict       # tipo, ano, orgao                           │   │
+│  │ - query: str                    # Pergunta (3-1000 caracteres)     │   │
+│  │ - top_k: int                    # 1-50 resultados                  │   │
+│  │ - mode: SearchMode              # fast, balanced, precise          │   │
+│  │ - filters: dict                 # tipo, ano, orgao                 │   │
+│  │ - expand_citations: bool        # Habilita expansão (v0.14.0)      │   │
+│  │ - citation_expansion_top_n: int # Top N para expandir (v0.14.0)    │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
 │  FUNCTION CALLING                                                           │
@@ -423,6 +428,8 @@ Cliente HTTP minimalista sem dependências externas.
 │  │  ├── cached: bool         # Se veio do cache                         │ │
 │  │  ├── query_id: str        # ID para feedback                         │ │
 │  │  ├── mode: str            # Modo usado                               │ │
+│  │  ├── expanded_chunks: list[ExpandedChunk]  # Chunks expandidos (v0.14.0) │ │
+│  │  ├── expansion_stats: CitationExpansionStats # Estatísticas (v0.14.0)│ │
 │  │  │                                                                   │ │
 │  │  └── Métodos:                                                        │ │
 │  │      ├── to_context(max_chars) -> str                                │ │
@@ -515,6 +522,28 @@ Cliente HTTP minimalista sem dependências externas.
 │  │  ├── hits_count: int        # Número de hits incluídos               │ │
 │  │  ├── char_count: int        # Número total de caracteres             │ │
 │  │  └── encoding: str          # Encoding (cl100k_base para GPT-4/Claude)│ │
+│  │                                                                       │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│  CITATION EXPANSION (v0.14.0)                                              │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                       │ │
+│  │  ExpandedChunk               # Chunk obtido via expansão de citação   │ │
+│  │  ├── chunk_id: str          # ID completo (ex: LEI-14133-2021#ART-018)│ │
+│  │  ├── node_id: str           # ID canônico (leis:{doc}#{span})        │ │
+│  │  ├── text: str              # Texto completo do chunk                │ │
+│  │  ├── document_id: str       # ID do documento (ex: LEI-14133-2021)   │ │
+│  │  ├── span_id: str           # ID do dispositivo (ex: ART-018)        │ │
+│  │  ├── device_type: str       # Tipo: article, paragraph, inciso, alinea│ │
+│  │  ├── source_chunk_id: str   # ID do chunk que continha a citação     │ │
+│  │  └── source_citation_raw: str # Texto original da citação            │ │
+│  │                                                                       │ │
+│  │  CitationExpansionStats      # Estatísticas de expansão              │ │
+│  │  ├── citations_found: int   # Total de citações detectadas           │ │
+│  │  ├── citations_resolved: int # Citações que encontraram chunk        │ │
+│  │  ├── citations_not_found: int # Citações sem chunk correspondente    │ │
+│  │  ├── chunks_added: int      # Chunks adicionados via expansão        │ │
+│  │  └── expansion_time_ms: float # Tempo de processamento (ms)          │ │
 │  │                                                                       │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │
 │                                                                             │
@@ -1076,6 +1105,42 @@ input_cost = (stats.total_tokens / 1_000_000) * 2.50  # GPT-4o input
 print(f"Custo estimado (input): ${input_cost:.6f}")
 ```
 
+### Citation Expansion (v0.14.0)
+
+```python
+from vectorgov import VectorGov
+
+vg = VectorGov(api_key="vg_xxx")
+
+# Busca com expansão de citações
+results = vg.search(
+    "Quando o ETP pode ser dispensado?",
+    expand_citations=True,        # Habilita expansão
+    citation_expansion_top_n=3    # Expande citações dos top 3 resultados
+)
+
+# Resultados originais
+print(f"Resultados: {results.total}")
+for hit in results:
+    print(f"[{hit.score:.2f}] {hit.source}")
+
+# Chunks expandidos via citação
+if results.expanded_chunks:
+    print(f"\nChunks via citação: {len(results.expanded_chunks)}")
+    for chunk in results.expanded_chunks:
+        print(f"  - {chunk.document_id}#{chunk.span_id}")
+        print(f"    Citação: {chunk.source_citation_raw}")
+
+# Estatísticas de expansão
+if results.expansion_stats:
+    stats = results.expansion_stats
+    print(f"\nExpansão:")
+    print(f"  Citações encontradas: {stats.citations_found}")
+    print(f"  Citações resolvidas: {stats.citations_resolved}")
+    print(f"  Chunks adicionados: {stats.chunks_added}")
+    print(f"  Tempo: {stats.expansion_time_ms:.1f}ms")
+```
+
 ### Upload, Ingestão e Enriquecimento
 
 🔜 **Em breve**: Funcionalidades de upload de documentos, monitoramento de ingestão e enriquecimento automático estarão disponíveis em versões futuras da SDK pública.
@@ -1124,4 +1189,4 @@ Esses arquivos permitem que assistentes de IA aprendam automaticamente a usar o 
 
 ---
 
-*Documentação atualizada em Janeiro de 2025*
+*Documentação atualizada em Janeiro de 2025 (v0.14.0 - Citation Expansion)*

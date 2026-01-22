@@ -128,9 +128,112 @@ class Hit:
         return f"Hit(score={self.score:.3f}, source='{self.source}', text='{text_preview}')"
 
 
+# =============================================================================
+# CITATION EXPANSION MODELS
+# =============================================================================
+
+
+@dataclass
+class ExpandedChunk:
+    """Chunk obtido via expansão de citações normativas.
+
+    Quando um chunk referencia outro documento/artigo (ex: "conforme art. 18 da Lei 14.133"),
+    o sistema pode expandir automaticamente trazendo o conteúdo referenciado.
+
+    Example:
+        >>> result = vg.search("ETP", expand_citations=True)
+        >>> for expanded in result.expanded_chunks:
+        ...     print(f"Citado por: {expanded.source_chunk_id}")
+        ...     print(f"Texto: {expanded.text[:100]}...")
+    """
+
+    chunk_id: str
+    """ID do chunk expandido (ex: 'LEI-14133-2021#ART-018')"""
+
+    node_id: str
+    """Node ID canônico no formato leis:{document_id}#{span_id}"""
+
+    text: str
+    """Texto do chunk expandido"""
+
+    document_id: str
+    """ID do documento fonte"""
+
+    span_id: str
+    """ID do dispositivo (ex: 'ART-018', 'PAR-005-1')"""
+
+    device_type: str = "article"
+    """Tipo do dispositivo (article, paragraph, inciso, alinea)"""
+
+    source_chunk_id: str = ""
+    """ID do chunk que citou este (origem da referência)"""
+
+    source_citation_raw: str = ""
+    """Texto original da citação (ex: 'art. 18 da Lei nº 14.133')"""
+
+    def __repr__(self) -> str:
+        text_preview = self.text[:50] + "..." if len(self.text) > 50 else self.text
+        return f"ExpandedChunk(node_id='{self.node_id}', text='{text_preview}')"
+
+
+@dataclass
+class CitationExpansionStats:
+    """Estatísticas de expansão de citações.
+
+    Fornece métricas sobre quantas citações foram encontradas, resolvidas
+    e expandidas durante a busca.
+
+    Example:
+        >>> result = vg.search("ETP", expand_citations=True)
+        >>> stats = result.expansion_stats
+        >>> print(f"Encontradas: {stats.citations_scanned_count}")
+        >>> print(f"Resolvidas: {stats.citations_resolved_count}")
+        >>> print(f"Expandidas: {stats.expanded_chunks_count}")
+    """
+
+    expanded_chunks_count: int
+    """Número de chunks expandidos com sucesso"""
+
+    citations_scanned_count: int
+    """Total de citações encontradas nos hits originais"""
+
+    citations_resolved_count: int
+    """Citações que foram resolvidas para node_ids válidos"""
+
+    expansion_time_ms: float
+    """Tempo de expansão em milissegundos"""
+
+    skipped_self_references: int = 0
+    """Citações ignoradas por serem auto-referências"""
+
+    skipped_duplicates: int = 0
+    """Citações ignoradas por serem duplicadas"""
+
+    skipped_token_budget: int = 0
+    """Citações ignoradas por exceder budget de tokens"""
+
+    def __repr__(self) -> str:
+        return (
+            f"CitationExpansionStats(expanded={self.expanded_chunks_count}, "
+            f"scanned={self.citations_scanned_count}, "
+            f"resolved={self.citations_resolved_count})"
+        )
+
+
 @dataclass
 class SearchResult:
-    """Resultado completo de uma busca."""
+    """Resultado completo de uma busca.
+
+    Quando `expand_citations=True` é passado na busca, o resultado
+    incluirá chunks expandidos e estatísticas de expansão.
+
+    Example:
+        >>> result = vg.search("ETP", expand_citations=True)
+        >>> print(f"Hits: {len(result.hits)}")
+        >>> print(f"Expanded: {len(result.expanded_chunks)}")
+        >>> if result.expansion_stats:
+        ...     print(f"Citações encontradas: {result.expansion_stats.citations_scanned_count}")
+    """
 
     query: str
     """Query original"""
@@ -156,6 +259,12 @@ class SearchResult:
     timestamp: datetime = field(default_factory=datetime.now)
     """Timestamp da busca"""
 
+    expanded_chunks: list[ExpandedChunk] = field(default_factory=list)
+    """Chunks expandidos via citações (requer expand_citations=True)"""
+
+    expansion_stats: Optional[CitationExpansionStats] = None
+    """Estatísticas de expansão de citações (requer expand_citations=True)"""
+
     def __len__(self) -> int:
         return len(self.hits)
 
@@ -171,11 +280,16 @@ class SearchResult:
             f"total={self.total}, latency={self.latency_ms}ms, cached={self.cached})"
         )
 
-    def to_context(self, max_chars: Optional[int] = None) -> str:
+    def to_context(
+        self,
+        max_chars: Optional[int] = None,
+        include_expanded: bool = True,
+    ) -> str:
         """Converte os resultados em uma string de contexto.
 
         Args:
             max_chars: Limite máximo de caracteres (None = sem limite)
+            include_expanded: Se True, inclui chunks expandidos via citações
 
         Returns:
             String formatada com os resultados numerados
@@ -183,10 +297,14 @@ class SearchResult:
         Example:
             >>> context = results.to_context()
             >>> print(context)
+
+            >>> # Sem chunks expandidos
+            >>> context = results.to_context(include_expanded=False)
         """
         parts = []
         total_chars = 0
 
+        # Hits originais
         for i, hit in enumerate(self.hits, 1):
             entry = f"[{i}] {hit.source}\n{hit.text}\n"
 
@@ -195,6 +313,21 @@ class SearchResult:
 
             parts.append(entry)
             total_chars += len(entry)
+
+        # Chunks expandidos (se habilitado e disponíveis)
+        if include_expanded and self.expanded_chunks:
+            parts.append("\n--- Referências Expandidas ---\n")
+            total_chars += 30
+
+            for ec in self.expanded_chunks:
+                source = f"{ec.document_id}, {ec.span_id}"
+                entry = f"[Ref: {source}]\n{ec.text}\n"
+
+                if max_chars and total_chars + len(entry) > max_chars:
+                    break
+
+                parts.append(entry)
+                total_chars += len(entry)
 
         return "\n".join(parts)
 
@@ -268,7 +401,7 @@ Resposta:"""
 
     def to_dict(self) -> dict[str, Any]:
         """Converte o resultado para dicionário."""
-        return {
+        result = {
             "query": self.query,
             "hits": [
                 {
@@ -292,6 +425,35 @@ Resposta:"""
             "query_id": self.query_id,
             "mode": self.mode,
         }
+
+        # Adiciona campos de expansão se presentes
+        if self.expanded_chunks:
+            result["expanded_chunks"] = [
+                {
+                    "chunk_id": ec.chunk_id,
+                    "node_id": ec.node_id,
+                    "text": ec.text,
+                    "document_id": ec.document_id,
+                    "span_id": ec.span_id,
+                    "device_type": ec.device_type,
+                    "source_chunk_id": ec.source_chunk_id,
+                    "source_citation_raw": ec.source_citation_raw,
+                }
+                for ec in self.expanded_chunks
+            ]
+
+        if self.expansion_stats:
+            result["expansion_stats"] = {
+                "expanded_chunks_count": self.expansion_stats.expanded_chunks_count,
+                "citations_scanned_count": self.expansion_stats.citations_scanned_count,
+                "citations_resolved_count": self.expansion_stats.citations_resolved_count,
+                "expansion_time_ms": self.expansion_stats.expansion_time_ms,
+                "skipped_self_references": self.expansion_stats.skipped_self_references,
+                "skipped_duplicates": self.expansion_stats.skipped_duplicates,
+                "skipped_token_budget": self.expansion_stats.skipped_token_budget,
+            }
+
+        return result
 
 
 

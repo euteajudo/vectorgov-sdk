@@ -43,6 +43,7 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
   - [Servidor MCP](#servidor-mcp-claude-desktop-cursor-etc)
 - **Configuração**
   - [Modos de Busca](#modos-de-busca)
+  - [Citation Expansion](#citation-expansion-expansão-de-citações)
   - [Filtros](#filtros)
   - [Formatação de Resultados](#formatação-de-resultados)
   - [System Prompts](#system-prompts-customizados)
@@ -935,6 +936,99 @@ results = vg.search("query", mode="precise")
 
 # Qualquer modo COM cache (trade-off: privacidade vs latência)
 results = vg.search("query", mode="fast", use_cache=True)
+```
+
+## Citation Expansion (Expansão de Citações)
+
+A Citation Expansion permite que o SDK busque automaticamente os chunks referenciados por citações normativas nos resultados da busca. Quando um artigo menciona outro dispositivo legal (ex: "conforme art. 18 da Lei 14.133"), o SDK pode recuperar esse chunk adicional.
+
+### Como Usar
+
+```python
+# Busca com expansão de citações habilitada
+results = vg.search(
+    "O que é ETP?",
+    expand_citations=True,        # Habilita expansão
+    citation_expansion_top_n=3    # Expande citações dos top N resultados
+)
+
+# Acessar chunks expandidos
+for chunk in results.expanded_chunks:
+    print(f"Citação: {chunk.source_citation_raw}")
+    print(f"Texto: {chunk.text[:100]}...")
+    print(f"Fonte: {chunk.document_id}#{chunk.span_id}")
+    print()
+
+# Estatísticas de expansão
+if results.expansion_stats:
+    stats = results.expansion_stats
+    print(f"Citações encontradas: {stats.citations_found}")
+    print(f"Chunks adicionados: {stats.chunks_added}")
+    print(f"Tempo de expansão: {stats.expansion_time_ms}ms")
+```
+
+### Parâmetros
+
+| Parâmetro | Tipo | Default | Descrição |
+|-----------|------|---------|-----------|
+| `expand_citations` | bool | `False` | Habilita expansão de citações |
+| `citation_expansion_top_n` | int | `3` | Quantos dos top resultados terão citações expandidas |
+
+### Estrutura do ExpandedChunk
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `chunk_id` | str | ID completo do chunk (ex: `LEI-14133-2021#ART-018`) |
+| `node_id` | str | ID canônico no formato `leis:{doc}#{span}` |
+| `text` | str | Texto completo do chunk expandido |
+| `document_id` | str | ID do documento (ex: `LEI-14133-2021`) |
+| `span_id` | str | ID do dispositivo (ex: `ART-018`) |
+| `device_type` | str | Tipo: `article`, `paragraph`, `inciso`, `alinea` |
+| `source_chunk_id` | str | ID do chunk que continha a citação |
+| `source_citation_raw` | str | Texto original da citação (ex: `art. 18 da Lei 14.133`) |
+
+### Estatísticas de Expansão (CitationExpansionStats)
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `citations_found` | int | Total de citações detectadas |
+| `citations_resolved` | int | Citações que encontraram chunk correspondente |
+| `citations_not_found` | int | Citações sem chunk correspondente |
+| `chunks_added` | int | Chunks adicionados via expansão |
+| `expansion_time_ms` | float | Tempo de processamento da expansão |
+
+### Quando Usar
+
+- **Análises jurídicas**: Quando precisa do contexto completo das referências normativas
+- **Construção de cadeia de citações**: Para entender como artigos se relacionam
+- **Respostas mais completas**: Inclui automaticamente dispositivos referenciados
+
+### Exemplo Completo
+
+```python
+from vectorgov import VectorGov
+
+vg = VectorGov(api_key="vg_xxx")
+
+# Busca com expansão
+results = vg.search(
+    "Quando o ETP pode ser dispensado?",
+    mode="precise",
+    expand_citations=True,
+    citation_expansion_top_n=5
+)
+
+# Usa todos os chunks (originais + expandidos) para contexto
+all_chunks = list(results) + [
+    {"text": ec.text, "source": f"{ec.document_id}, {ec.span_id}"}
+    for ec in results.expanded_chunks
+]
+
+# Estatísticas
+if results.expansion_stats:
+    print(f"Resultados originais: {results.total}")
+    print(f"Chunks via citação: {results.expansion_stats.chunks_added}")
+    print(f"Total de contexto: {results.total + results.expansion_stats.chunks_added} chunks")
 ```
 
 ## Filtros
