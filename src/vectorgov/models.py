@@ -284,15 +284,24 @@ class SearchResult:
         self,
         max_chars: Optional[int] = None,
         include_expanded: bool = True,
+        include_stats: bool = True,
     ) -> str:
-        """Converte os resultados em uma string de contexto.
+        """Converte os resultados em uma string de contexto estruturado.
+
+        O contexto é dividido em duas seções:
+        - EVIDÊNCIA DIRETA: resultados diretos da busca semântica
+        - TRECHOS CITADOS: chunks trazidos por expansão de citações
+
+        Isso permite que o LLM entenda claramente a origem de cada trecho
+        e priorize a evidência direta nas respostas.
 
         Args:
             max_chars: Limite máximo de caracteres (None = sem limite)
             include_expanded: Se True, inclui chunks expandidos via citações
+            include_stats: Se True, inclui resumo das estatísticas de expansão
 
         Returns:
-            String formatada com os resultados numerados
+            String formatada com os resultados em seções separadas
 
         Example:
             >>> context = results.to_context()
@@ -304,7 +313,11 @@ class SearchResult:
         parts = []
         total_chars = 0
 
-        # Hits originais
+        # === SEÇÃO 1: EVIDÊNCIA DIRETA ===
+        header_direct = "=== EVIDÊNCIA DIRETA (resultados da busca) ==="
+        parts.append(header_direct)
+        total_chars += len(header_direct) + 1
+
         for i, hit in enumerate(self.hits, 1):
             entry = f"[{i}] {hit.source}\n{hit.text}\n"
 
@@ -314,20 +327,48 @@ class SearchResult:
             parts.append(entry)
             total_chars += len(entry)
 
-        # Chunks expandidos (se habilitado e disponíveis)
+        # === SEÇÃO 2: TRECHOS CITADOS (expansão por citação) ===
         if include_expanded and self.expanded_chunks:
-            parts.append("\n--- Referências Expandidas ---\n")
-            total_chars += 30
+            separator = "\n=== TRECHOS CITADOS (expansão por citação) ==="
+            parts.append(separator)
+            total_chars += len(separator) + 1
 
-            for ec in self.expanded_chunks:
-                source = f"{ec.document_id}, {ec.span_id}"
-                entry = f"[Ref: {source}]\n{ec.text}\n"
+            for j, ec in enumerate(self.expanded_chunks, 1):
+                # Informações de rastreabilidade
+                source_chunk = ec.source_chunk_id or "(origem não informada)"
+                citation_raw = ec.source_citation_raw or "(citação não informada)"
+                node_id = ec.node_id or "(node_id não informado)"
+                device_type = ec.device_type or "unknown"
+
+                # Monta bloco estruturado
+                entry_lines = [
+                    f"[XC-{j}] TRECHO CITADO (expansão por citação)",
+                    f"  CITADO POR: {source_chunk}",
+                    f"  CITAÇÃO ORIGINAL: {citation_raw}",
+                    f"  ALVO (node_id): {node_id}",
+                    f"  FONTE: {ec.document_id}, {ec.span_id} ({device_type})",
+                    f"{ec.text}",
+                    "",  # linha em branco entre chunks
+                ]
+                entry = "\n".join(entry_lines)
 
                 if max_chars and total_chars + len(entry) > max_chars:
                     break
 
                 parts.append(entry)
                 total_chars += len(entry)
+
+            # === RESUMO DE ESTATÍSTICAS (opcional) ===
+            if include_stats and self.expansion_stats:
+                stats = self.expansion_stats
+                stats_line = (
+                    f"\n[Expansão: encontradas={stats.citations_scanned_count}, "
+                    f"resolvidas={stats.citations_resolved_count}, "
+                    f"expandidas={stats.expanded_chunks_count}, "
+                    f"tempo={stats.expansion_time_ms:.0f}ms]"
+                )
+                if not max_chars or total_chars + len(stats_line) <= max_chars:
+                    parts.append(stats_line)
 
         return "\n".join(parts)
 
