@@ -123,6 +123,19 @@ class Hit:
     context: Optional[str] = None
     """Contexto adicional do chunk"""
 
+    # Curadoria (SPEC 1C) — acompanham o chunk, não disputam slots
+    nota_especialista: Optional[str] = None
+    """Nota do especialista jurídico sobre este dispositivo"""
+
+    jurisprudencia_tcu: Optional[str] = None
+    """Jurisprudência TCU relacionada a este dispositivo"""
+
+    acordao_tcu_key: Optional[str] = None
+    """Chave/número do acórdão TCU"""
+
+    acordao_tcu_link: Optional[str] = None
+    """Link para o acórdão TCU"""
+
     def __repr__(self) -> str:
         text_preview = self.text[:100] + "..." if len(self.text) > 100 else self.text
         return f"Hit(score={self.score:.3f}, source='{self.source}', text='{text_preview}')"
@@ -319,7 +332,17 @@ class SearchResult:
         total_chars += len(header_direct) + 1
 
         for i, hit in enumerate(self.hits, 1):
-            entry = f"[{i}] {hit.source}\n{hit.text}\n"
+            entry = f"[{i}] {hit.source}\n{hit.text}"
+
+            # SPEC 1C: nota e jurisprudência acompanham o chunk
+            if hit.nota_especialista:
+                entry += f"\n[Nota do Especialista]: {hit.nota_especialista}"
+            if hit.jurisprudencia_tcu:
+                entry += f"\n[Jurisprudência TCU]: {hit.jurisprudencia_tcu}"
+                if hit.acordao_tcu_link:
+                    entry += f"\n[Link Acórdão]: {hit.acordao_tcu_link}"
+
+            entry += "\n"
 
             if max_chars and total_chars + len(entry) > max_chars:
                 break
@@ -457,6 +480,10 @@ Resposta:"""
                         "paragraph": hit.metadata.paragraph,
                         "item": hit.metadata.item,
                     },
+                    **({"nota_especialista": hit.nota_especialista} if hit.nota_especialista else {}),
+                    **({"jurisprudencia_tcu": hit.jurisprudencia_tcu} if hit.jurisprudencia_tcu else {}),
+                    **({"acordao_tcu_key": hit.acordao_tcu_key} if hit.acordao_tcu_key else {}),
+                    **({"acordao_tcu_link": hit.acordao_tcu_link} if hit.acordao_tcu_link else {}),
                 }
                 for hit in self.hits
             ],

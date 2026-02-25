@@ -228,6 +228,11 @@ class VectorGov:
                 metadata=metadata,
                 chunk_id=item.get("chunk_id"),
                 context=item.get("context_header"),
+                # SPEC 1C: curadoria
+                nota_especialista=item.get("nota_especialista"),
+                jurisprudencia_tcu=item.get("jurisprudencia_tcu"),
+                acordao_tcu_key=item.get("acordao_tcu_key"),
+                acordao_tcu_link=item.get("acordao_tcu_link"),
             )
             hits.append(hit)
 
@@ -724,28 +729,55 @@ class VectorGov:
         )
 
     def start_enrichment(self, document_id: str) -> dict:
-        if not document_id or not document_id.strip():
-            raise ValidationError("document_id nao pode ser vazio", field="document_id")
+        """
+        🚨 MÉTODO DESCONTINUADO - DEPRECATED 31/01/2026 🚨
 
-        response = self._http.post("/sdk/documents/enrich", data={"document_id": document_id})
-        return {"task_id": response.get("task_id", ""), "message": response.get("message", "")}
+        O enriquecimento via LLM foi descontinuado.
+        Ver docs/DEPRECATION_ENRICHMENT.md
+
+        O sistema agora usa:
+        - Ingestão determinística (SpanParser + ArticleOrchestrator)
+        - Retrieval determinístico (Milvus hybrid + Neo4j graph)
+        - Evidências auditáveis (citation expansion)
+        """
+        import warnings
+        warnings.warn(
+            "start_enrichment() foi descontinuado em 31/01/2026. "
+            "O serviço de enriquecimento LLM não está mais disponível. "
+            "Ver docs/DEPRECATION_ENRICHMENT.md",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return {
+            "task_id": None,
+            "message": "Serviço descontinuado. Ver docs/DEPRECATION_ENRICHMENT.md",
+            "deprecated": True,
+            "deprecated_at": "2026-01-31",
+        }
 
     def get_enrichment_status(self, task_id: str) -> "EnrichStatus":
+        """
+        🚨 MÉTODO DESCONTINUADO - DEPRECATED 31/01/2026 🚨
+        Ver docs/DEPRECATION_ENRICHMENT.md
+        """
+        import warnings
         from vectorgov.models import EnrichStatus
 
-        if not task_id or not task_id.strip():
-            raise ValidationError("task_id nao pode ser vazio", field="task_id")
-
-        response = self._http.get(f"/sdk/enrich/status/{task_id}")
-
+        warnings.warn(
+            "get_enrichment_status() foi descontinuado em 31/01/2026. "
+            "O serviço de enriquecimento LLM não está mais disponível. "
+            "Ver docs/DEPRECATION_ENRICHMENT.md",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return EnrichStatus(
             task_id=task_id,
-            status=response.get("status", "unknown"),
-            progress=response.get("progress", 0.0),
-            chunks_enriched=response.get("chunks_enriched", 0),
-            chunks_pending=response.get("chunks_pending", 0),
-            chunks_failed=response.get("chunks_failed", 0),
-            errors=response.get("errors", []),
+            status="service_discontinued",
+            progress=0.0,
+            chunks_enriched=0,
+            chunks_pending=0,
+            chunks_failed=0,
+            errors=["Serviço descontinuado em 31/01/2026"],
         )
 
     def delete_document(self, document_id: str) -> "DeleteResponse":
