@@ -17,6 +17,7 @@ class SearchMode(str, Enum):
     FAST = "fast"
     BALANCED = "balanced"
     PRECISE = "precise"
+    SMART = "smart"
 
 
 class DocumentType(str, Enum):

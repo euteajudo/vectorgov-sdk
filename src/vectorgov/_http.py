@@ -153,9 +153,14 @@ class HTTPClient:
         """Requisição GET."""
         return self.request("GET", path, params=params)
 
-    def post(self, path: str, data: Optional[dict] = None) -> dict[str, Any]:
+    def post(
+        self,
+        path: str,
+        data: Optional[dict] = None,
+        timeout: Optional[int] = None,
+    ) -> dict[str, Any]:
         """Requisição POST."""
-        return self.request("POST", path, data=data)
+        return self.request("POST", path, data=data, timeout=timeout)
 
     def stream(
         self,

@@ -1,0 +1,40 @@
+{
+    "hits": [
+        {
+            "text": "Art. 33. O julgamento das propostas será realizado de acordo com os seguintes critérios:\nI - menor preço;\nII - maior desconto;\nIII - melhor técnica ou conteúdo artístico;\nIV - técnica e preço;\nV - maior lance, no caso de leilão;\nVI - maior retorno econômico.",
+            "score": 0.972,
+            "source": "Lei 14.133/2021, Art. 33",
+            "chunk_id": "leis:LEI-14.133-2021#ART-033",
+            "tipo_documento": "LEI",
+            "numero": "14133",
+            "ano": 2021,
+            "article_number": "33",
+            "context_header": "TÍTULO II - DAS LICITAÇÕES",
+            "nota_especialista": null,
+            "jurisprudencia_tcu": null,
+            "acordao_tcu_key": null,
+            "acordao_tcu_link": null
+        },
+        {
+            "text": "Art. 36. O julgamento por técnica e preço considerará a maior pontuação obtida a partir da ponderação...",
+            "score": 0.933,
+            "source": "Lei 14.133/2021, Art. 36",
+            "chunk_id": "leis:LEI-14.133-2021#ART-036",
+            "tipo_documento": "LEI",
+            "numero": "14133",
+            "ano": 2021,
+            "article_number": "36",
+            "context_header": "TÍTULO II - DAS LICITAÇÕES",
+            "nota_especialista": "Quando do preenchimento do DFD no sistema PGC, atentar para a justificativa da escolha do critério.",
+            "jurisprudencia_tcu": "Acórdão 2831/2021-TCU-Plenário",
+            "acordao_tcu_key": "2831/2021",
+            "acordao_tcu_link": "https://pesquisa.apps.tcu.gov.br/documento/acordao/2831/2021"
+        }
+    ],
+    "total": 2,
+    "latency_ms": 45230,
+    "cached": false,
+    "query_id": "ss_abc123def456",
+    "expanded_chunks": [],
+    "expansion_stats": null
+}

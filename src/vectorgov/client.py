@@ -336,7 +336,7 @@ class VectorGov:
         if len(query) > 1000:
             raise ValidationError("Query deve ter no máximo 1000 caracteres", field="query")
 
-        top_k = top_k or self._config.default_top_k
+        top_k = top_k if top_k is not None else self._config.default_top_k
         if top_k < 1 or top_k > 50:
             raise ValidationError("top_k deve estar entre 1 e 50", field="top_k")
 
@@ -348,13 +348,11 @@ class VectorGov:
             "citation_expansion_top_n": citation_expansion_top_n,
         }
 
-        # Timeout 120s, retry 2x (pipeline é caro)
-        response = self._http.request(
-            "POST",
+        # Timeout 120s (pipeline MOC v4 é mais lento)
+        response = self._http.post(
             "/sdk/smart-search",
             data=request_data,
             timeout=120,
-            max_retries=2,
         )
 
         return self._parse_smart_search_response(query, response)
@@ -369,7 +367,7 @@ class VectorGov:
         Reutiliza _parse_search_response e converte para SmartSearchResult.
         """
         # Reutiliza o parser do search (mesmo schema de resposta)
-        search_result = self._parse_search_response(query, response, "precise")
+        search_result = self._parse_search_response(query, response, "smart")
 
         # Converte para SmartSearchResult (mantém todos os campos)
         return SmartSearchResult(
@@ -381,7 +379,7 @@ class VectorGov:
             timestamp=search_result.timestamp,
             _raw_response=search_result._raw_response,
             hits=search_result.hits,
-            mode="precise",
+            mode="smart",
             expanded_chunks=search_result.expanded_chunks,
             expansion_stats=search_result.expansion_stats,
         )
