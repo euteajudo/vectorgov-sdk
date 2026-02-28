@@ -75,6 +75,7 @@ from vectorgov.config import SearchMode, SYSTEM_PROMPTS
 from vectorgov.exceptions import (
     VectorGovError,
     AuthError,
+    TierError,
     RateLimitError,
     ValidationError,
     ServerError,
@@ -125,6 +126,7 @@ __all__ = [
     # Exceções
     "VectorGovError",
     "AuthError",
+    "TierError",
     "RateLimitError",
     "ValidationError",
     "ServerError",

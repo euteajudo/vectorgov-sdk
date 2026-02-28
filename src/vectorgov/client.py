@@ -8,7 +8,7 @@ from typing import Optional, Union
 import json
 from vectorgov._http import HTTPClient
 from vectorgov.config import SDKConfig, SearchMode, MODE_CONFIG, SYSTEM_PROMPTS
-from vectorgov.models import SearchResult, Hit, Metadata, TokenStats, HybridResult, LookupResult
+from vectorgov.models import SearchResult, SmartSearchResult, Hit, Metadata, TokenStats, HybridResult, LookupResult
 from vectorgov.exceptions import ValidationError, AuthError
 from vectorgov.integrations import tools as tool_utils
 
@@ -287,6 +287,103 @@ class VectorGov:
             expanded_chunks=expanded_chunks,
             expansion_stats=expansion_stats,
             _raw_response=response,
+        )
+
+    def smart_search(
+        self,
+        query: str,
+        top_k: Optional[int] = None,
+        expand_citations: bool = False,
+        citation_expansion_top_n: int = 3,
+    ) -> SmartSearchResult:
+        """Busca premium com pipeline MOC v4 (Pensador → Motor → Juiz).
+
+        Internamente executa análise LLM multi-etapa para retornar apenas
+        chunks aprovados por um juiz de relevância. A resposta tem o mesmo
+        formato do ``search()``, mas com qualidade superior.
+
+        Args:
+            query: Texto da consulta (3-1000 chars)
+            top_k: Máximo de chunks aprovados retornados (1-50). Default: 5
+            expand_citations: Expandir citações normativas. Default: False
+            citation_expansion_top_n: Top N para expansão de citações. Default: 3
+
+        Returns:
+            SmartSearchResult com chunks aprovados pelo Juiz.
+            Herda de SearchResult — mesmos métodos (to_context, to_xml, etc.)
+            ``endpoint_type`` retorna ``"smart_search"`` para billing diferenciado.
+
+        Raises:
+            ValidationError: Se os parâmetros forem inválidos
+            AuthError: Se a API key for inválida
+            TierError: Se o plano não inclui smart-search (403)
+            RateLimitError: Se exceder o rate limit
+            TimeoutError: Se o pipeline exceder 120s
+
+        Example:
+            >>> results = vg.smart_search("Critérios de julgamento na licitação")
+            >>> print(results.endpoint_type)  # "smart_search"
+            >>> context = results.to_context()
+        """
+        # Validações (mesmas do search)
+        if not query or not query.strip():
+            raise ValidationError("Query não pode ser vazia", field="query")
+
+        query = query.strip()
+        if len(query) < 3:
+            raise ValidationError("Query deve ter pelo menos 3 caracteres", field="query")
+
+        if len(query) > 1000:
+            raise ValidationError("Query deve ter no máximo 1000 caracteres", field="query")
+
+        top_k = top_k or self._config.default_top_k
+        if top_k < 1 or top_k > 50:
+            raise ValidationError("top_k deve estar entre 1 e 50", field="top_k")
+
+        # Request — sem mode/use_hyde/use_reranker/use_cache (MOC v4 decide)
+        request_data = {
+            "query": query,
+            "top_k": top_k,
+            "expand_citations": expand_citations,
+            "citation_expansion_top_n": citation_expansion_top_n,
+        }
+
+        # Timeout 120s, retry 2x (pipeline é caro)
+        response = self._http.request(
+            "POST",
+            "/sdk/smart-search",
+            data=request_data,
+            timeout=120,
+            max_retries=2,
+        )
+
+        return self._parse_smart_search_response(query, response)
+
+    def _parse_smart_search_response(
+        self,
+        query: str,
+        response: dict,
+    ) -> SmartSearchResult:
+        """Converte resposta do smart-search em SmartSearchResult.
+
+        Reutiliza _parse_search_response e converte para SmartSearchResult.
+        """
+        # Reutiliza o parser do search (mesmo schema de resposta)
+        search_result = self._parse_search_response(query, response, "precise")
+
+        # Converte para SmartSearchResult (mantém todos os campos)
+        return SmartSearchResult(
+            query=search_result.query,
+            total=search_result.total,
+            latency_ms=search_result.latency_ms,
+            cached=search_result.cached,
+            query_id=search_result.query_id,
+            timestamp=search_result.timestamp,
+            _raw_response=search_result._raw_response,
+            hits=search_result.hits,
+            mode="precise",
+            expanded_chunks=search_result.expanded_chunks,
+            expansion_stats=search_result.expansion_stats,
         )
 
     def hybrid(

@@ -47,14 +47,20 @@ class HTTPClient:
 
     def _handle_error(self, status_code: int, response_body: str) -> None:
         """Converte erros HTTP em exceções apropriadas."""
+        from vectorgov.exceptions import TierError
+
         try:
             error_data = json.loads(response_body)
             message = error_data.get("detail", error_data.get("message", response_body))
         except json.JSONDecodeError:
+            error_data = {}
             message = response_body
 
         if status_code == 401:
             raise AuthError(message)
+        elif status_code == 403:
+            upgrade_url = error_data.get("upgrade_url") if isinstance(error_data, dict) else None
+            raise TierError(message, upgrade_url=upgrade_url)
         elif status_code == 429:
             retry_after = None
             if isinstance(error_data, dict):
@@ -74,6 +80,8 @@ class HTTPClient:
         path: str,
         data: Optional[dict] = None,
         params: Optional[dict] = None,
+        timeout: Optional[int] = None,
+        max_retries: Optional[int] = None,
     ) -> dict[str, Any]:
         """Faz uma requisição HTTP.
 
@@ -82,6 +90,8 @@ class HTTPClient:
             path: Caminho da API (ex: /sdk/search)
             data: Dados para enviar no body (JSON)
             params: Query parameters
+            timeout: Timeout em segundos (override do padrão)
+            max_retries: Máximo de tentativas (override do padrão)
 
         Returns:
             Response JSON como dicionário
@@ -90,6 +100,8 @@ class HTTPClient:
             VectorGovError: Em caso de erro
         """
         url = f"{self.base_url}{path}"
+        req_timeout = timeout if timeout is not None else self.timeout
+        req_retries = max_retries if max_retries is not None else self.max_retries
 
         # Adiciona query params
         if params:
@@ -104,7 +116,7 @@ class HTTPClient:
 
         # Tenta com retry
         last_error = None
-        for attempt in range(self.max_retries):
+        for attempt in range(req_retries):
             try:
                 request = Request(
                     url,
@@ -113,7 +125,7 @@ class HTTPClient:
                     method=method,
                 )
 
-                with urlopen(request, timeout=self.timeout) as response:
+                with urlopen(request, timeout=req_timeout) as response:
                     response_body = response.read().decode("utf-8")
                     return json.loads(response_body)
 
@@ -123,13 +135,13 @@ class HTTPClient:
 
             except URLError as e:
                 last_error = ConnectionError(f"Erro de conexão: {e.reason}")
-                if attempt < self.max_retries - 1:
+                if attempt < req_retries - 1:
                     time.sleep(self.retry_delay * (attempt + 1))
                 continue
 
             except TimeoutError:
                 last_error = TimeoutError()
-                if attempt < self.max_retries - 1:
+                if attempt < req_retries - 1:
                     time.sleep(self.retry_delay * (attempt + 1))
                 continue
 

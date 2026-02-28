@@ -58,6 +58,24 @@ class ValidationError(VectorGovError):
         self.field = field
 
 
+class TierError(VectorGovError):
+    """Tier do cliente não inclui o recurso solicitado (ex: smart-search requer Premium)."""
+
+    def __init__(
+        self,
+        message: str = "Recurso não disponível no seu plano atual",
+        upgrade_url: Optional[str] = None,
+    ):
+        super().__init__(message, status_code=403)
+        self.upgrade_url = upgrade_url
+
+    def __str__(self) -> str:
+        base = super().__str__()
+        if self.upgrade_url:
+            return f"{base}. Upgrade: {self.upgrade_url}"
+        return base
+
+
 class ServerError(VectorGovError):
     """Erro interno do servidor."""
 
