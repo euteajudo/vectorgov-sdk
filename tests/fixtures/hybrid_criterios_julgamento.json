@@ -1,0 +1,125 @@
+{
+  "direct_evidence": [
+    {
+      "text": "Art. 33. O julgamento das propostas será realizado de acordo com os seguintes critérios: I - menor preço; II - maior desconto; III - melhor técnica ou conteúdo artístico; IV - técnica e preço; V - maior lance, no caso de leilão; VI - maior retorno econômico.",
+      "score": 0.92,
+      "source": "Lei 14.133/2021, Art. 33",
+      "chunk_id": "LEI-14133-2021#ART-033",
+      "tipo_documento": "LEI",
+      "numero": "14133",
+      "ano": 2021,
+      "article_number": "33",
+      "device_type": "article",
+      "context_header": "Critérios de julgamento das propostas licitatórias",
+      "stitched_text": "[CONTEXTO: Capítulo II - Dos Critérios de Julgamento] Art. 33. O julgamento das propostas será realizado de acordo com os seguintes critérios: I - menor preço; II - maior desconto; III - melhor técnica ou conteúdo artístico; IV - técnica e preço; V - maior lance, no caso de leilão; VI - maior retorno econômico.",
+      "pure_rerank_score": 0.89,
+      "parent_node_id": null,
+      "is_parent": false,
+      "is_sibling": false,
+      "is_child_of_seed": false,
+      "evidence_url": "/api/v1/evidence/LEI-14133-2021%23ART-033",
+      "document_url": null,
+      "sha256_source": "f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2",
+      "graph_boost_applied": 0.05,
+      "curation_boost_applied": null,
+      "nota_especialista": "Os critérios de julgamento são taxativos e devem ser definidos no edital.",
+      "jurisprudencia_tcu": null,
+      "acordao_tcu_key": null,
+      "acordao_tcu_link": null
+    },
+    {
+      "text": "Art. 34. O julgamento por menor preço ou maior desconto e, quando couber, por técnica e preço considerará o menor dispêndio para a Administração, atendidos os parâmetros mínimos de qualidade definidos no edital de licitação.",
+      "score": 0.85,
+      "source": "Lei 14.133/2021, Art. 34",
+      "chunk_id": "LEI-14133-2021#ART-034",
+      "tipo_documento": "LEI",
+      "numero": "14133",
+      "ano": 2021,
+      "article_number": "34",
+      "device_type": "article",
+      "context_header": "Julgamento por menor preço ou maior desconto",
+      "stitched_text": null,
+      "pure_rerank_score": 0.82,
+      "parent_node_id": null,
+      "is_parent": false,
+      "is_sibling": false,
+      "is_child_of_seed": false,
+      "evidence_url": "/api/v1/evidence/LEI-14133-2021%23ART-034",
+      "document_url": null,
+      "sha256_source": null,
+      "graph_boost_applied": null,
+      "curation_boost_applied": null,
+      "nota_especialista": null,
+      "jurisprudencia_tcu": null,
+      "acordao_tcu_key": null,
+      "acordao_tcu_link": null
+    }
+  ],
+  "graph_expansion": [
+    {
+      "chunk_id": "LEI-14133-2021#ART-036",
+      "node_id": "leis:LEI-14133-2021#ART-036",
+      "text": "Art. 36. A técnica será avaliada com base em parâmetros e critérios objetivos definidos no edital de licitação.",
+      "document_id": "LEI-14133-2021",
+      "span_id": "ART-036",
+      "device_type": "article",
+      "hop": 1,
+      "frequency": 5,
+      "paths": [
+        ["leis:LEI-14133-2021#ART-033", "leis:LEI-14133-2021#ART-036"],
+        ["leis:LEI-14133-2021#ART-034", "leis:LEI-14133-2021#ART-036"]
+      ],
+      "origin_type": "self",
+      "relacao": "citacao"
+    },
+    {
+      "chunk_id": "LEI-14133-2021#ART-040",
+      "node_id": "leis:LEI-14133-2021#ART-040",
+      "text": "Art. 40. O maior retorno econômico será utilizado exclusivamente para a celebração de contrato de eficiência que tenha por objeto a prestação de serviços.",
+      "document_id": "LEI-14133-2021",
+      "span_id": "ART-040",
+      "device_type": "article",
+      "hop": 2,
+      "frequency": 2,
+      "paths": [
+        ["leis:LEI-14133-2021#ART-033", "leis:LEI-14133-2021#ART-036", "leis:LEI-14133-2021#ART-040"]
+      ],
+      "origin_type": "self",
+      "relacao": "citacao"
+    }
+  ],
+  "stats": {
+    "timings": {
+      "embedding_ms": 48,
+      "search_ms": 82,
+      "rerank_ms": 45,
+      "graph_ms": 32,
+      "total_ms": 207
+    },
+    "hits_milvus": 8,
+    "seeds_count": 2,
+    "graph_nodes": 2,
+    "total_chunks": 4
+  },
+  "confidence": 0.87,
+  "search_time_ms": 207,
+  "hyde_used": true,
+  "docfilter_active": true,
+  "docfilter_detected_doc_id": "LEI-14133-2021",
+  "query_rewrite_active": true,
+  "query_rewrite_clean_query": "critérios julgamento propostas licitação",
+  "query_rewrite_document_id": "LEI-14133-2021",
+  "dual_lane_active": true,
+  "dual_lane_filtered_doc": "LEI-14133-2021",
+  "dual_lane_from_filtered": 5,
+  "dual_lane_from_free": 3,
+  "cached": false,
+  "query_id": "q-hybrid-criterios-001",
+  "mode": "hybrid",
+  "reranker": true,
+  "query_interpretation": {
+    "original_query": "Quais os critérios de julgamento?",
+    "rewritten_query": "critérios julgamento propostas licitação",
+    "detected_document_id": "LEI-14133-2021"
+  }
+}

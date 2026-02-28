@@ -2,6 +2,7 @@
 Modelos de dados do VectorGov SDK.
 """
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Optional, Iterator, Any, Literal
 from datetime import datetime
@@ -87,6 +88,9 @@ class Metadata:
     orgao: Optional[str] = None
     """Órgão emissor"""
 
+    device_type: Optional[str] = None
+    """Tipo do dispositivo (article, paragraph, inciso, alinea, article_consolidated)"""
+
     extra: dict = field(default_factory=dict)
     """Metadados adicionais"""
 
@@ -136,6 +140,89 @@ class Hit:
     acordao_tcu_link: Optional[str] = None
     """Link para o acórdão TCU"""
 
+    page_number: Optional[int] = None
+    """Número da página no PDF original (1-indexed)"""
+
+    canonical_hash: Optional[str] = None
+    """SHA-256 do texto canônico (para verificação de integridade)"""
+
+    canonical_start: Optional[int] = None
+    """Offset de início no texto canônico (para ordenação posicional)"""
+
+    origin_type: Optional[str] = None
+    """Proveniência: 'self' (próprio documento) ou outro tipo (referência cruzada)"""
+
+    origin_reference: Optional[str] = None
+    """Referência à fonte original se proveniência cruzada (ex: 'Lei 14.133/2021, Art. 75')"""
+
+    stitched_text: Optional[str] = None
+    """Texto consolidado (contexto + conteúdo). Prioridade sobre text no XML."""
+
+    pure_rerank_score: Optional[float] = None
+    """Score original do reranker, antes de boosts institucionais."""
+
+    parent_node_id: Optional[str] = None
+    """node_id do chunk pai (quando hit veio de parent-child expansion)."""
+
+    is_parent: bool = False
+    """Se este hit é um chunk pai trazido por expansão."""
+
+    is_sibling: bool = False
+    """Se este hit é um irmão do seed."""
+
+    is_child_of_seed: bool = False
+    """Se este hit é filho de um seed."""
+
+    evidence_url: Optional[str] = None
+    """URL direta para a evidência verificável."""
+
+    document_url: Optional[str] = None
+    """URL para o documento fonte."""
+
+    sha256_source: Optional[str] = None
+    """SHA-256 do texto fonte (verificação de integridade)."""
+
+    graph_boost_applied: Optional[float] = None
+    """Boost aplicado pelo grafo institucional."""
+
+    curation_boost_applied: Optional[float] = None
+    """Boost aplicado pela curadoria."""
+
+    # --- Campos unificados (graph_nodes, lookup) ---
+
+    node_id: Optional[str] = None
+    """Node ID canônico (ex: leis:LEI-14133-2021#ART-033)"""
+
+    span_id: Optional[str] = None
+    """Span ID do dispositivo (ex: ART-033)"""
+
+    document_id: Optional[str] = None
+    """ID do documento (ex: LEI-14133-2021)"""
+
+    device_type: Optional[str] = None
+    """Tipo: article, paragraph, inciso, alinea"""
+
+    article_number: Optional[str] = None
+    """Número do artigo"""
+
+    tipo_documento: Optional[str] = None
+    """Tipo do documento (LEI, DECRETO, IN)"""
+
+    hop: Optional[int] = None
+    """Distância no grafo em relação ao seed (1 = citação direta)"""
+
+    frequency: Optional[int] = None
+    """Frequência de citação no grafo"""
+
+    paths: list = field(default_factory=list)
+    """Caminhos no grafo (listas de node_ids)"""
+
+    relacao: Optional[str] = None
+    """Tipo de relacionamento (citacao, regulamenta, referencia)"""
+
+    is_current: bool = False
+    """Se este hit é o dispositivo consultado (em siblings de lookup)"""
+
     def __repr__(self) -> str:
         text_preview = self.text[:100] + "..." if len(self.text) > 100 else self.text
         return f"Hit(score={self.score:.3f}, source='{self.source}', text='{text_preview}')"
@@ -183,6 +270,21 @@ class ExpandedChunk:
 
     source_citation_raw: str = ""
     """Texto original da citação (ex: 'art. 18 da Lei nº 14.133')"""
+
+    hop: int = 1
+    """Distância no grafo em relação ao seed (1 = citação direta, 2 = 2 saltos)"""
+
+    relacao: str = "citacao"
+    """Tipo de relacionamento (citacao, regulamenta, referencia, etc.)"""
+
+    frequency: int = 0
+    """Frequência de citação no grafo (quantas vezes citado)."""
+
+    paths: list = field(default_factory=list)
+    """Caminhos no grafo (listas de node_ids)."""
+
+    origin_type: str = "self"
+    """Proveniência: 'self' ou tipo de referência cruzada."""
 
     def __repr__(self) -> str:
         text_preview = self.text[:50] + "..." if len(self.text) > 50 else self.text
@@ -233,8 +335,57 @@ class CitationExpansionStats:
         )
 
 
+@dataclass  # type: ignore[misc]
+class BaseResult(ABC):
+    """Classe base abstrata para todos os tipos de resultado do SDK.
+
+    Define campos e métodos comuns a SearchResult, HybridResult e LookupResult.
+    """
+
+    query: str = ""
+    """Query original"""
+
+    total: int = 0
+    """Quantidade total de resultados"""
+
+    latency_ms: float = 0.0
+    """Tempo de resposta em milissegundos"""
+
+    cached: bool = False
+    """Se o resultado veio do cache"""
+
+    query_id: str = ""
+    """ID único da query (para feedback)"""
+
+    timestamp: datetime = field(default_factory=datetime.now)
+    """Timestamp da busca"""
+
+    _raw_response: Optional[dict] = field(default=None, repr=False)
+    """Resposta bruta da API (uso interno para to_dict)"""
+
+    @property
+    @abstractmethod
+    def endpoint_type(self) -> str:
+        """Tipo do endpoint para billing."""
+        ...
+
+    @abstractmethod
+    def to_xml(self, level: str = "data") -> str:
+        """Gera payload XML estruturado para LLMs."""
+        ...
+
+    @abstractmethod
+    def to_markdown(self) -> str:
+        """Gera representação Markdown legível."""
+        ...
+
+    def to_dict(self) -> dict:
+        """Serialização base — subclasses podem sobrescrever."""
+        return {"endpoint_type": self.endpoint_type, "query": self.query}
+
+
 @dataclass
-class SearchResult:
+class SearchResult(BaseResult):
     """Resultado completo de uma busca.
 
     Quando `expand_citations=True` é passado na busca, o resultado
@@ -248,35 +399,22 @@ class SearchResult:
         ...     print(f"Citações encontradas: {result.expansion_stats.citations_scanned_count}")
     """
 
-    query: str
-    """Query original"""
-
-    hits: list[Hit]
+    hits: list[Hit] = field(default_factory=list)
     """Lista de resultados encontrados"""
 
-    total: int
-    """Quantidade total de resultados"""
-
-    latency_ms: int
-    """Tempo de resposta em milissegundos"""
-
-    cached: bool
-    """Se o resultado veio do cache"""
-
-    query_id: str
-    """ID único da query (para feedback)"""
-
-    mode: str
+    mode: str = ""
     """Modo de busca utilizado"""
-
-    timestamp: datetime = field(default_factory=datetime.now)
-    """Timestamp da busca"""
 
     expanded_chunks: list[ExpandedChunk] = field(default_factory=list)
     """Chunks expandidos via citações (requer expand_citations=True)"""
 
     expansion_stats: Optional[CitationExpansionStats] = None
     """Estatísticas de expansão de citações (requer expand_citations=True)"""
+
+    @property
+    def endpoint_type(self) -> str:
+        """Tipo do endpoint para billing: ``'search'``."""
+        return "search"
 
     def __len__(self) -> int:
         return len(self.hits)
@@ -400,6 +538,7 @@ class SearchResult:
         query: Optional[str] = None,
         system_prompt: Optional[str] = None,
         max_context_chars: Optional[int] = None,
+        level: Optional[str] = None,
     ) -> list[dict[str, str]]:
         """Converte os resultados em formato de mensagens para chat completions.
 
@@ -407,14 +546,23 @@ class SearchResult:
             query: Pergunta a ser feita (usa self.query se não informado)
             system_prompt: Prompt de sistema customizado
             max_context_chars: Limite de caracteres do contexto
+            level: Se informado, usa payload XML estruturado em vez de texto plano.
+                Valores: "data", "instructions", "full".
 
         Returns:
             Lista de mensagens no formato OpenAI/Anthropic
 
         Example:
+            >>> # Legacy (texto plano)
             >>> messages = results.to_messages("O que é ETP?")
+            >>> # Novo (XML estruturado)
+            >>> messages = results.to_messages("O que é ETP?", level="instructions")
             >>> response = openai.chat.completions.create(messages=messages)
         """
+        if level is not None:
+            from vectorgov.payload import build_messages_xml
+            return build_messages_xml(self, query=query, level=level)
+
         from vectorgov.config import SYSTEM_PROMPTS
 
         query = query or self.query
@@ -433,6 +581,7 @@ class SearchResult:
         query: Optional[str] = None,
         system_prompt: Optional[str] = None,
         max_context_chars: Optional[int] = None,
+        level: Optional[str] = None,
     ) -> str:
         """Converte os resultados em um prompt único (para Gemini e similares).
 
@@ -440,14 +589,23 @@ class SearchResult:
             query: Pergunta a ser feita (usa self.query se não informado)
             system_prompt: Prompt de sistema customizado
             max_context_chars: Limite de caracteres do contexto
+            level: Se informado, usa payload XML estruturado em vez de texto plano.
+                Valores: "data", "instructions", "full".
 
         Returns:
             String com o prompt completo
 
         Example:
+            >>> # Legacy (texto plano)
             >>> prompt = results.to_prompt("O que é ETP?")
+            >>> # Novo (XML estruturado)
+            >>> prompt = results.to_prompt("O que é ETP?", level="full")
             >>> response = model.generate_content(prompt)
         """
+        if level is not None:
+            from vectorgov.payload import build_prompt_xml
+            return build_prompt_xml(self, query=query, level=level)
+
         from vectorgov.config import SYSTEM_PROMPTS
 
         query = query or self.query
@@ -464,7 +622,14 @@ Pergunta: {query}
 Resposta:"""
 
     def to_dict(self) -> dict[str, Any]:
-        """Converte o resultado para dicionário."""
+        """Converte o resultado para dicionário.
+
+        Prioriza _raw_response (resposta completa da API) quando disponível,
+        caso contrário reconstrói manualmente a partir dos campos.
+        """
+        if self._raw_response is not None:
+            return dict(self._raw_response)
+
         result = {
             "query": self.query,
             "hits": [
@@ -523,6 +688,652 @@ Resposta:"""
 
         return result
 
+    # =================================================================
+    # XML / Markdown / Schema — novos em v0.14.0
+    # =================================================================
+
+    def to_xml(self, level: str = "data") -> str:
+        """Gera payload XML estruturado para LLMs.
+
+        Todas as 7 seções de dados estão presentes em todos os níveis.
+        A diferença entre níveis é apenas quais instruções são adicionadas.
+
+        Args:
+            level: Nível de instrução:
+                - "data": só dados (7 seções), sem instruções
+                - "instructions": dados + <instrucoes> com 7 regras leves
+                - "full": dados + <instrucoes_completas> com anti-alucinação
+                    e contrato dinâmico (whitelist de IDs, mapa de evidências)
+
+        Returns:
+            String XML pretty-printed.
+
+        Example:
+            >>> xml = results.to_xml("full")
+            >>> print(xml)
+        """
+        from vectorgov.payload import build_xml
+        return build_xml(self, level=level)
+
+    def to_markdown(self) -> str:
+        """Gera representação Markdown legível dos resultados.
+
+        Returns:
+            String Markdown formatada.
+
+        Example:
+            >>> md = results.to_markdown()
+            >>> print(md)
+        """
+        from vectorgov.payload import build_markdown
+        return build_markdown(self)
+
+    def to_response_schema(
+        self,
+        include_jurisprudencia: bool = False,
+        include_observacoes: bool = False,
+    ) -> Optional[dict]:
+        """Gera JSON Schema para structured output (response_format).
+
+        Retorna wrapper ``{name, strict, schema}`` com schema detalhado
+        contendo ``fundamentacao`` (array de afirmações jurídicas) e
+        ``dispositivo_id`` com enum restrito aos span IDs presentes nos
+        resultados, prevenindo alucinação mecanicamente via constrained decoding.
+
+        Args:
+            include_jurisprudencia: Mantido para compatibilidade (no-op).
+            include_observacoes: Mantido para compatibilidade (no-op).
+
+        Returns:
+            Dict wrapper ``{name, strict, schema}``, ou None se não houver hits.
+
+        Example:
+            >>> wrapper = results.to_response_schema()
+            >>> response = openai.chat.completions.create(
+            ...     model="gpt-4o",
+            ...     messages=results.to_messages(level="instructions"),
+            ...     response_format={"type": "json_schema", "json_schema": wrapper},
+            ... )
+        """
+        from vectorgov.payload import build_response_schema
+        return build_response_schema(
+            self,
+            include_jurisprudencia=include_jurisprudencia,
+            include_observacoes=include_observacoes,
+        )
+
+    def to_anthropic_tool_schema(self) -> Optional[dict]:
+        """Gera schema no formato Anthropic tool_use para structured output.
+
+        Returns:
+            Dict no formato Anthropic tool, ou None se não houver hits.
+
+        Example:
+            >>> tool = results.to_anthropic_tool_schema()
+            >>> response = anthropic.messages.create(
+            ...     model="claude-sonnet-4-20250514",
+            ...     messages=[{"role": "user", "content": query}],
+            ...     tools=[tool],
+            ... )
+        """
+        from vectorgov.payload import build_anthropic_tool_schema
+        return build_anthropic_tool_schema(self)
+
+    # =================================================================
+    # Properties de acesso granular — novos em v0.14.0
+    # =================================================================
+
+    @property
+    def confidence(self) -> float:
+        """Score de confiança do resultado (0.0 a 1.0).
+
+        Calculado como média ponderada dos scores (peso = score²),
+        com penalidade para poucos hits e bonus para top hit forte.
+        """
+        from vectorgov.payload import _calculate_confidence
+        return _calculate_confidence(self)
+
+    @property
+    def normative_trail(self) -> list[str]:
+        """Lista deduplicada de fontes normativas dos resultados.
+
+        Example:
+            >>> results.normative_trail
+            ['LEI 14133/2021', 'IN 65/2021']
+        """
+        from vectorgov.payload import _extract_normative_trail
+        return _extract_normative_trail(self)
+
+    @property
+    def query_interpretation(self) -> dict:
+        """Interpretação da query pela API (quando disponível via _raw_response).
+
+        Returns:
+            Dict com campos como 'original_query', 'rewritten_query',
+            'detected_entities', etc. Dict vazio se não disponível.
+        """
+        if self._raw_response and "query_interpretation" in self._raw_response:
+            return dict(self._raw_response["query_interpretation"])
+        return {"original_query": self.query}
+
+
+@dataclass
+class SmartSearchResult(SearchResult):
+    """Resultado de smart search (billing diferenciado).
+
+    Herda todos os campos e métodos de SearchResult, mas com
+    endpoint_type 'smart_search' para billing.
+    """
+
+    @property
+    def endpoint_type(self) -> str:
+        return "smart_search"
+
+
+# =============================================================================
+# HYBRID RESULT MODEL
+# =============================================================================
+
+
+@dataclass
+class HybridResult(BaseResult):
+    """Resultado de busca híbrida (Milvus + Neo4j grafo).
+
+    Combina evidências diretas (busca semântica) com expansão
+    via grafo de citações normativas.
+
+    Example:
+        >>> result = vg.hybrid("critérios de julgamento")
+        >>> print(f"Evidências: {len(result.hits)}")
+        >>> print(f"Expandidos: {len(result.graph_nodes)}")
+        >>> xml = result.to_xml("full")
+    """
+
+    hits: list[Hit] = field(default_factory=list)
+    """Evidências diretas da busca semântica (Milvus).
+
+    Alias: ``direct_evidence`` (backward-compatible).
+    """
+
+    graph_nodes: list[Hit] = field(default_factory=list)
+    """Chunks expandidos via grafo de citações (Neo4j) — agora como Hit.
+
+    Alias: ``graph_expansion`` (backward-compatible).
+    """
+
+    stats: dict = field(default_factory=dict)
+    """Estatísticas do pipeline (timings, contagens)"""
+
+    confidence: float = 0.0
+    """Confiança calculada pelo backend"""
+
+    hyde_used: bool = False
+    """Se HyDE (Hypothetical Document Embeddings) foi utilizado"""
+
+    docfilter_active: bool = False
+    """Se filtro por documento foi ativado automaticamente"""
+
+    docfilter_detected_doc_id: Optional[str] = None
+    """Document ID detectado automaticamente pelo filtro"""
+
+    query_rewrite_active: bool = False
+    """Se a query foi reescrita"""
+
+    query_rewrite_clean_query: Optional[str] = None
+    """Query limpa após reescrita"""
+
+    query_rewrite_document_id: Optional[str] = None
+    """Document ID extraído da query"""
+
+    dual_lane_active: bool = False
+    """Se dual-lane (filtrado + livre) foi ativado"""
+
+    dual_lane_filtered_doc: Optional[str] = None
+    """Documento filtrado na lane restrita"""
+
+    dual_lane_from_filtered: int = 0
+    """Hits vindos da lane filtrada"""
+
+    dual_lane_from_free: int = 0
+    """Hits vindos da lane livre"""
+
+    mode: str = "hybrid"
+    """Modo de busca utilizado"""
+
+    # --- Backward-compatible properties ---
+
+    @property
+    def direct_evidence(self) -> list[Hit]:
+        """Alias backward-compatible para ``hits``."""
+        return self.hits
+
+    @property
+    def graph_expansion(self) -> list[Hit]:
+        """Alias backward-compatible para ``graph_nodes``."""
+        return self.graph_nodes
+
+    @property
+    def search_time_ms(self) -> float:
+        """Alias backward-compatible para ``latency_ms``."""
+        return self.latency_ms
+
+    @property
+    def endpoint_type(self) -> str:
+        """Tipo do endpoint para billing: ``'hybrid'``."""
+        return "hybrid"
+
+    def __len__(self) -> int:
+        return len(self.hits)
+
+    def __iter__(self) -> Iterator[Hit]:
+        return iter(self.hits)
+
+    def __getitem__(self, index: int) -> Hit:
+        return self.hits[index]
+
+    def __repr__(self) -> str:
+        return (
+            f"HybridResult(query='{self.query[:50]}...', "
+            f"evidence={len(self.hits)}, "
+            f"graph={len(self.graph_nodes)}, "
+            f"confidence={self.confidence:.3f})"
+        )
+
+    @property
+    def normative_trail(self) -> list[str]:
+        """Lista deduplicada de fontes normativas."""
+        seen: set[str] = set()
+        trail: list[str] = []
+        for hit in self.direct_evidence:
+            m = hit.metadata
+            doc_type = m.document_type.upper() if m.document_type else "DOC"
+            name = f"{doc_type} {m.document_number or '?'}/{m.year or '?'}"
+            if name not in seen:
+                seen.add(name)
+                trail.append(name)
+        return trail
+
+    @property
+    def query_interpretation(self) -> dict:
+        """Interpretação da query pela API (quando disponível via _raw_response).
+
+        Agrega campos de reescrita e filtro em um dict unificado.
+
+        Returns:
+            Dict com campos como 'original_query', 'rewritten_query',
+            'detected_document_id', etc. Dict mínimo se não disponível.
+        """
+        if self._raw_response and "query_interpretation" in self._raw_response:
+            return dict(self._raw_response["query_interpretation"])
+        result: dict[str, Any] = {"original_query": self.query}
+        if self.query_rewrite_active and self.query_rewrite_clean_query:
+            result["rewritten_query"] = self.query_rewrite_clean_query
+        if self.docfilter_detected_doc_id:
+            result["detected_document_id"] = self.docfilter_detected_doc_id
+        if self.query_rewrite_document_id:
+            result["query_rewrite_document_id"] = self.query_rewrite_document_id
+        return result
+
+    def to_xml(self, level: str = "data") -> str:
+        """Gera payload XML estruturado para LLMs.
+
+        Args:
+            level: "data", "instructions" ou "full"
+
+        Returns:
+            String XML pretty-printed.
+        """
+        from vectorgov.payload import build_hybrid_xml
+        return build_hybrid_xml(self, level=level)
+
+    def to_messages(
+        self,
+        query: Optional[str] = None,
+        level: str = "instructions",
+    ) -> list[dict[str, str]]:
+        """Gera lista de mensagens com XML no system e query no user."""
+        from vectorgov.payload import build_hybrid_messages_xml
+        return build_hybrid_messages_xml(self, query=query, level=level)
+
+    def to_prompt(
+        self,
+        query: Optional[str] = None,
+        level: str = "instructions",
+    ) -> str:
+        """Gera prompt único com XML + query."""
+        from vectorgov.payload import build_hybrid_prompt_xml
+        return build_hybrid_prompt_xml(self, query=query, level=level)
+
+    def to_markdown(self) -> str:
+        """Gera representação Markdown legível."""
+        from vectorgov.payload import build_hybrid_markdown
+        return build_hybrid_markdown(self)
+
+    def to_response_schema(self) -> Optional[dict]:
+        """Gera JSON Schema para structured output."""
+        from vectorgov.payload import build_response_schema, _collect_authorized_ids_from_hits
+        authorized_ids = _collect_authorized_ids_from_hits(self.direct_evidence, self.graph_expansion)
+        if not authorized_ids:
+            return None
+        from vectorgov.payload import _build_schema_dict
+        return _build_schema_dict(authorized_ids)
+
+    def to_anthropic_tool_schema(self) -> Optional[dict]:
+        """Gera schema no formato Anthropic tool_use."""
+        wrapper = self.to_response_schema()
+        if wrapper is None:
+            return None
+        return {
+            "name": wrapper["name"],
+            "description": (
+                "Gera uma resposta jurídica fundamentada nos dispositivos legais fornecidos. "
+                "Use APENAS as fontes listadas no enum de dispositivo_id."
+            ),
+            "input_schema": wrapper["schema"],
+        }
+
+    def to_dict(self) -> dict[str, Any]:
+        """Converte o resultado para dicionário."""
+        if self._raw_response is not None:
+            return dict(self._raw_response)
+        return {
+            "query": self.query,
+            "direct_evidence": [
+                {"text": h.text, "score": h.score, "source": h.source}
+                for h in self.hits
+            ],
+            "graph_expansion": [
+                {"chunk_id": h.chunk_id, "text": h.text, "hop": h.hop, "frequency": h.frequency}
+                for h in self.graph_nodes
+            ],
+            "confidence": self.confidence,
+            "cached": self.cached,
+            "mode": self.mode,
+        }
+
+    def to_context(
+        self,
+        max_chars: Optional[int] = None,
+        include_expanded: bool = True,
+    ) -> str:
+        """Converte em string de contexto estruturado."""
+        parts = []
+        total_chars = 0
+
+        header = "=== EVIDÊNCIA DIRETA (busca híbrida) ==="
+        parts.append(header)
+        total_chars += len(header) + 1
+
+        for i, hit in enumerate(self.hits, 1):
+            entry = f"[{i}] {hit.source}\n{hit.text}\n"
+            if max_chars and total_chars + len(entry) > max_chars:
+                break
+            parts.append(entry)
+            total_chars += len(entry)
+
+        if include_expanded and self.graph_nodes:
+            sep = "\n=== EXPANSÃO VIA GRAFO ==="
+            parts.append(sep)
+            total_chars += len(sep) + 1
+
+            for j, hit in enumerate(self.graph_nodes, 1):
+                entry = (
+                    f"[G-{j}] {hit.document_id}, {hit.span_id} "
+                    f"(hop={hit.hop}, freq={hit.frequency})\n{hit.text}\n"
+                )
+                if max_chars and total_chars + len(entry) > max_chars:
+                    break
+                parts.append(entry)
+                total_chars += len(entry)
+
+        return "\n".join(parts)
+
+
+# =============================================================================
+# LOOKUP RESULT MODELS
+# =============================================================================
+
+
+@dataclass
+class LookupMatch:
+    """Deprecated: use Hit instead."""
+
+    node_id: str = ""
+    span_id: str = ""
+    document_id: str = ""
+    text: str = ""
+    device_type: str = ""
+    article_number: Optional[str] = None
+    tipo_documento: Optional[str] = None
+    origin_type: Optional[str] = None
+    evidence_url: Optional[str] = None
+
+
+@dataclass
+class LookupParent:
+    """Deprecated: use Hit instead."""
+
+    node_id: str = ""
+    span_id: str = ""
+    text: str = ""
+    device_type: str = ""
+
+
+@dataclass
+class LookupSibling:
+    """Deprecated: use Hit instead."""
+
+    span_id: str = ""
+    node_id: str = ""
+    device_type: str = ""
+    text: str = ""
+    is_current: bool = False
+
+
+@dataclass
+class LookupResolved:
+    """Deprecated: use dict instead."""
+
+    device_type: Optional[str] = None
+    article_number: Optional[str] = None
+    paragraph_number: Optional[str] = None
+    inciso_number: Optional[str] = None
+    alinea_letter: Optional[str] = None
+    document_alias: Optional[str] = None
+    resolved_document_id: Optional[str] = None
+    resolved_span_id: Optional[str] = None
+
+
+@dataclass
+class LookupCandidate:
+    """Candidato para referência ambígua."""
+
+    document_id: str
+    """Document ID do candidato"""
+
+    node_id: str
+    """Node ID do candidato"""
+
+    text: str
+    """Texto do candidato"""
+
+    tipo_documento: Optional[str] = None
+    """Tipo do documento"""
+
+
+@dataclass
+class LookupResult(BaseResult):
+    """Resultado de lookup de dispositivo normativo.
+
+    O lookup resolve referências textuais (ex: "Art. 33 da Lei 14.133")
+    para o dispositivo exato, incluindo contexto hierárquico (pai, irmãos).
+
+    Example:
+        >>> result = vg.lookup("Inc. III do Art. 9 da IN 58")
+        >>> if result.status == "found":
+        ...     print(result.match.text)
+        ...     for sibling in result.siblings:
+        ...         print(f"  {'>' if sibling.is_current else ' '} {sibling.span_id}")
+    """
+
+    status: str = ""
+    """Status: 'found', 'not_found', 'ambiguous', 'parse_failed'"""
+
+    message: Optional[str] = None
+    """Mensagem informativa"""
+
+    match: Optional[Hit] = None
+    """Dispositivo encontrado (quando status=found)"""
+
+    parent: Optional[Hit] = None
+    """Chunk pai do dispositivo"""
+
+    siblings: list[Hit] = field(default_factory=list)
+    """Dispositivos irmãos na hierarquia"""
+
+    resolved: Optional[dict] = None
+    """Componentes parseados da referência"""
+
+    candidates: list[LookupCandidate] = field(default_factory=list)
+    """Candidatos (quando status=ambiguous)"""
+
+    @property
+    def endpoint_type(self) -> str:
+        """Tipo do endpoint para billing: ``'lookup'``."""
+        return "lookup"
+
+    @property
+    def reference(self) -> str:
+        """Alias backward-compatible para query."""
+        return self.query
+
+    @reference.setter
+    def reference(self, value: str) -> None:
+        self.query = value
+
+    @property
+    def elapsed_ms(self) -> float:
+        """Alias backward-compatible para latency_ms."""
+        return self.latency_ms
+
+    @elapsed_ms.setter
+    def elapsed_ms(self, value: float) -> None:
+        self.latency_ms = value
+
+    def __repr__(self) -> str:
+        return f"LookupResult(reference='{self.query}', status='{self.status}')"
+
+    def to_xml(self, level: str = "data") -> str:
+        """Gera payload XML estruturado.
+
+        Args:
+            level: "data", "instructions" ou "full"
+
+        Returns:
+            String XML pretty-printed.
+        """
+        from vectorgov.payload import build_lookup_xml
+        return build_lookup_xml(self, level=level)
+
+    def to_markdown(self) -> str:
+        """Gera representação Markdown legível."""
+        from vectorgov.payload import build_lookup_markdown
+        return build_lookup_markdown(self)
+
+    def to_prompt(
+        self,
+        query: Optional[str] = None,
+        level: str = "instructions",
+    ) -> str:
+        """Gera prompt único com XML + query para lookup.
+
+        Args:
+            query: Pergunta do usuário (usa self.reference se omitido).
+            level: Nível de instrução ("data", "instructions", "full").
+
+        Returns:
+            String com XML seguido da query.
+        """
+        from vectorgov.payload import build_lookup_prompt_xml
+        return build_lookup_prompt_xml(self, query=query, level=level)
+
+    def to_messages(
+        self,
+        query: Optional[str] = None,
+        level: str = "instructions",
+    ) -> list[dict[str, str]]:
+        """Gera lista de mensagens com XML no system e query no user.
+
+        Args:
+            query: Pergunta do usuário (usa self.reference se omitido).
+            level: Nível de instrução ("data", "instructions", "full").
+
+        Returns:
+            Lista de dicts no formato OpenAI/Anthropic chat messages.
+        """
+        from vectorgov.payload import build_lookup_messages_xml
+        return build_lookup_messages_xml(self, query=query, level=level)
+
+    def to_response_schema(self) -> Optional[dict]:
+        """Gera JSON Schema para structured output.
+
+        Coleta IDs de match, parent e siblings para restringir
+        o enum de dispositivo_id, prevenindo alucinação.
+
+        Returns:
+            Dict wrapper ``{name, strict, schema}``, ou None se não houver match.
+        """
+        authorized_ids: list[str] = []
+        if self.match:
+            authorized_ids.append(self.match.span_id)
+        if self.parent and self.parent.span_id not in authorized_ids:
+            authorized_ids.append(self.parent.span_id)
+        for sib in self.siblings:
+            if sib.span_id not in authorized_ids:
+                authorized_ids.append(sib.span_id)
+        if not authorized_ids:
+            return None
+        from vectorgov.payload import _build_schema_dict
+        return _build_schema_dict(authorized_ids)
+
+    def to_anthropic_tool_schema(self) -> Optional[dict]:
+        """Gera schema no formato Anthropic tool_use.
+
+        Returns:
+            Dict no formato Anthropic tool, ou None se não houver match.
+        """
+        wrapper = self.to_response_schema()
+        if wrapper is None:
+            return None
+        return {
+            "name": wrapper["name"],
+            "description": (
+                "Gera uma resposta jurídica fundamentada nos dispositivos legais fornecidos. "
+                "Use APENAS as fontes listadas no enum de dispositivo_id."
+            ),
+            "input_schema": wrapper["schema"],
+        }
+
+    def to_dict(self) -> dict[str, Any]:
+        """Converte o resultado para dicionário."""
+        if self._raw_response is not None:
+            return dict(self._raw_response)
+        result: dict[str, Any] = {
+            "reference": self.query,
+            "status": self.status,
+            "elapsed_ms": self.latency_ms,
+        }
+        if self.message:
+            result["message"] = self.message
+        if self.match:
+            result["match"] = {
+                "node_id": self.match.node_id,
+                "span_id": self.match.span_id,
+                "document_id": self.match.document_id,
+                "text": self.match.text,
+                "device_type": self.match.device_type,
+            }
+        return result
 
 
 # =============================================================================

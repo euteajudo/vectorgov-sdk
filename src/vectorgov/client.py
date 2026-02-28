@@ -8,7 +8,7 @@ from typing import Optional, Union
 import json
 from vectorgov._http import HTTPClient
 from vectorgov.config import SDKConfig, SearchMode, MODE_CONFIG, SYSTEM_PROMPTS
-from vectorgov.models import SearchResult, Hit, Metadata, TokenStats
+from vectorgov.models import SearchResult, Hit, Metadata, TokenStats, HybridResult, LookupResult
 from vectorgov.exceptions import ValidationError, AuthError
 from vectorgov.integrations import tools as tool_utils
 
@@ -233,6 +233,18 @@ class VectorGov:
                 jurisprudencia_tcu=item.get("jurisprudencia_tcu"),
                 acordao_tcu_key=item.get("acordao_tcu_key"),
                 acordao_tcu_link=item.get("acordao_tcu_link"),
+                # Novos campos v0.15.0
+                stitched_text=item.get("stitched_text"),
+                pure_rerank_score=item.get("pure_rerank_score"),
+                parent_node_id=item.get("parent_node_id"),
+                is_parent=item.get("is_parent", False),
+                is_sibling=item.get("is_sibling", False),
+                is_child_of_seed=item.get("is_child_of_seed", False),
+                evidence_url=item.get("evidence_url"),
+                document_url=item.get("document_url"),
+                sha256_source=item.get("sha256_source"),
+                graph_boost_applied=item.get("graph_boost_applied"),
+                curation_boost_applied=item.get("curation_boost_applied"),
             )
             hits.append(hit)
 
@@ -274,6 +286,283 @@ class VectorGov:
             mode=mode,
             expanded_chunks=expanded_chunks,
             expansion_stats=expansion_stats,
+            _raw_response=response,
+        )
+
+    def hybrid(
+        self,
+        query: str,
+        top_k: Optional[int] = None,
+        collections: Optional[list[str]] = None,
+        hops: int = 2,
+        use_cache: Optional[bool] = None,
+    ) -> HybridResult:
+        """Busca híbrida combinando Milvus (semântica) + Neo4j (grafo).
+
+        Retorna evidências diretas da busca vetorial e expansão via
+        grafo de citações normativas.
+
+        Args:
+            query: Texto da consulta
+            top_k: Quantidade de resultados diretos (1-20). Default: 8
+            collections: Collections a buscar. Default: ["leis_v4"]
+            hops: Máximo de saltos no grafo (1-2). Default: 2
+            use_cache: Usar cache. Default: False
+
+        Returns:
+            HybridResult com evidências diretas e expansão via grafo
+
+        Raises:
+            ValidationError: Se os parâmetros forem inválidos
+
+        Example:
+            >>> result = vg.hybrid("critérios de julgamento")
+            >>> print(f"Evidências: {len(result.direct_evidence)}")
+            >>> print(f"Grafo: {len(result.graph_expansion)}")
+            >>> xml = result.to_xml("full")
+        """
+        if not query or not query.strip():
+            raise ValidationError("Query não pode ser vazia", field="query")
+
+        query = query.strip()
+        if len(query) < 3:
+            raise ValidationError("Query deve ter pelo menos 3 caracteres", field="query")
+
+        if len(query) > 1000:
+            raise ValidationError("Query deve ter no máximo 1000 caracteres", field="query")
+
+        top_k = top_k or 8
+        if top_k < 1 or top_k > 20:
+            raise ValidationError("top_k deve estar entre 1 e 20", field="top_k")
+
+        if hops not in (1, 2):
+            raise ValidationError("hops deve ser 1 ou 2", field="hops")
+
+        request_data = {
+            "query": query,
+            "top_k": top_k,
+            "collections": collections or ["leis_v4"],
+            "hops": hops,
+            "use_cache": use_cache if use_cache is not None else False,
+        }
+
+        response = self._http.post("/sdk/hybrid", data=request_data)
+        return self._parse_hybrid_response(query, response)
+
+    def _parse_hybrid_response(
+        self,
+        query: str,
+        response: dict,
+    ) -> HybridResult:
+        """Converte resposta da API em HybridResult."""
+        # Parse hits (direct_evidence)
+        hits = []
+        for item in response.get("direct_evidence", []):
+            metadata = Metadata(
+                document_type=item.get("tipo_documento", ""),
+                document_number=item.get("numero", ""),
+                year=item.get("ano", 0),
+                article=item.get("article_number"),
+                device_type=item.get("device_type"),
+            )
+            hit = Hit(
+                text=item.get("text", ""),
+                score=item.get("score", 0.0),
+                source=item.get("source", str(metadata)),
+                metadata=metadata,
+                chunk_id=item.get("chunk_id"),
+                context=item.get("context_header"),
+                stitched_text=item.get("stitched_text"),
+                pure_rerank_score=item.get("pure_rerank_score"),
+                parent_node_id=item.get("parent_node_id"),
+                is_parent=item.get("is_parent", False),
+                is_sibling=item.get("is_sibling", False),
+                is_child_of_seed=item.get("is_child_of_seed", False),
+                evidence_url=item.get("evidence_url"),
+                document_url=item.get("document_url"),
+                sha256_source=item.get("sha256_source"),
+                graph_boost_applied=item.get("graph_boost_applied"),
+                curation_boost_applied=item.get("curation_boost_applied"),
+                nota_especialista=item.get("nota_especialista"),
+                jurisprudencia_tcu=item.get("jurisprudencia_tcu"),
+                acordao_tcu_key=item.get("acordao_tcu_key"),
+                acordao_tcu_link=item.get("acordao_tcu_link"),
+            )
+            hits.append(hit)
+
+        # Parse graph_nodes (was graph_expansion → now list[Hit])
+        graph_nodes = []
+        for gn in response.get("graph_expansion", []):
+            graph_nodes.append(Hit(
+                chunk_id=gn.get("chunk_id", ""),
+                node_id=gn.get("node_id", ""),
+                text=gn.get("text", ""),
+                score=0.0,
+                source=gn.get("document_id", ""),
+                metadata=Metadata(
+                    document_type=gn.get("tipo_documento", ""),
+                    document_number="",
+                    year=0,
+                ),
+                document_id=gn.get("document_id", ""),
+                span_id=gn.get("span_id", ""),
+                device_type=gn.get("device_type", "article"),
+                hop=gn.get("hop", 1),
+                frequency=gn.get("frequency", 0),
+                paths=gn.get("paths", []),
+                relacao=gn.get("relacao", "citacao"),
+            ))
+
+        return HybridResult(
+            query=query,
+            hits=hits,
+            graph_nodes=graph_nodes,
+            stats=response.get("stats", {}),
+            confidence=response.get("confidence", 0.0),
+            latency_ms=response.get("search_time_ms", response.get("latency_ms", 0.0)),
+            hyde_used=response.get("hyde_used", False),
+            docfilter_active=response.get("docfilter_active", False),
+            docfilter_detected_doc_id=response.get("docfilter_detected_doc_id"),
+            query_rewrite_active=response.get("query_rewrite_active", False),
+            query_rewrite_clean_query=response.get("query_rewrite_clean_query"),
+            query_rewrite_document_id=response.get("query_rewrite_document_id"),
+            dual_lane_active=response.get("dual_lane_active", False),
+            dual_lane_filtered_doc=response.get("dual_lane_filtered_doc"),
+            dual_lane_from_filtered=response.get("dual_lane_from_filtered", 0),
+            dual_lane_from_free=response.get("dual_lane_from_free", 0),
+            cached=response.get("cached", False),
+            query_id=response.get("query_id", ""),
+            mode=response.get("mode", "hybrid"),
+            _raw_response=response,
+        )
+
+    def lookup(
+        self,
+        reference: str,
+        collection: str = "leis_v4",
+        include_parent: bool = True,
+        include_siblings: bool = True,
+    ) -> LookupResult:
+        """Busca um dispositivo normativo específico por referência textual.
+
+        Resolve referências como "Art. 33 da Lei 14.133" ou "Inc. III do
+        Art. 9 da IN 58" para o dispositivo exato, incluindo contexto
+        hierárquico (pai e irmãos).
+
+        Args:
+            reference: Referência textual ao dispositivo (ex: "Art. 33 da Lei 14.133")
+            collection: Collection a buscar. Default: "leis_v4"
+            include_parent: Incluir chunk pai. Default: True
+            include_siblings: Incluir irmãos. Default: True
+
+        Returns:
+            LookupResult com dispositivo encontrado e contexto hierárquico
+
+        Raises:
+            ValidationError: Se reference for vazia
+
+        Example:
+            >>> result = vg.lookup("Inc. III do Art. 9 da IN 58")
+            >>> if result.status == "found":
+            ...     print(result.match.text)
+        """
+        if not reference or not reference.strip():
+            raise ValidationError("reference não pode ser vazia", field="reference")
+
+        reference = reference.strip()
+
+        request_data = {
+            "reference": reference,
+            "collection": collection,
+            "include_parent": include_parent,
+            "include_siblings": include_siblings,
+        }
+
+        response = self._http.post("/sdk/lookup", data=request_data)
+        return self._parse_lookup_response(reference, response)
+
+    def _parse_lookup_response(
+        self,
+        reference: str,
+        response: dict,
+    ) -> LookupResult:
+        """Converte resposta da API em LookupResult."""
+        from vectorgov.models import LookupCandidate
+
+        # Parse match → Hit
+        match = None
+        match_data = response.get("match")
+        if match_data:
+            match = Hit(
+                node_id=match_data.get("node_id", ""),
+                span_id=match_data.get("span_id", ""),
+                document_id=match_data.get("document_id", ""),
+                text=match_data.get("text", ""),
+                score=0.0,
+                source=match_data.get("document_id", ""),
+                metadata=Metadata(
+                    document_type=match_data.get("tipo_documento", ""),
+                    document_number="",
+                    year=0,
+                ),
+                device_type=match_data.get("device_type", ""),
+                article_number=match_data.get("article_number"),
+                tipo_documento=match_data.get("tipo_documento"),
+                evidence_url=match_data.get("evidence_url"),
+            )
+
+        # Parse parent → Hit
+        parent = None
+        parent_data = response.get("parent")
+        if parent_data:
+            parent = Hit(
+                node_id=parent_data.get("node_id", ""),
+                span_id=parent_data.get("span_id", ""),
+                text=parent_data.get("text", ""),
+                score=0.0,
+                source="",
+                metadata=Metadata(document_type="", document_number="", year=0),
+                device_type=parent_data.get("device_type", ""),
+            )
+
+        # Parse siblings → list[Hit]
+        siblings = []
+        for sib_data in response.get("siblings", []):
+            siblings.append(Hit(
+                span_id=sib_data.get("span_id", ""),
+                node_id=sib_data.get("node_id", ""),
+                device_type=sib_data.get("device_type", ""),
+                text=sib_data.get("text", ""),
+                score=0.0,
+                source="",
+                metadata=Metadata(document_type="", document_number="", year=0),
+                is_current=sib_data.get("is_current", False),
+            ))
+
+        # Parse resolved → dict (was LookupResolved)
+        resolved = response.get("resolved")
+
+        # Parse candidates
+        candidates = []
+        for cand_data in response.get("candidates", []):
+            candidates.append(LookupCandidate(
+                document_id=cand_data.get("document_id", ""),
+                node_id=cand_data.get("node_id", ""),
+                text=cand_data.get("text", ""),
+                tipo_documento=cand_data.get("tipo_documento"),
+            ))
+
+        return LookupResult(
+            query=reference,
+            status=response.get("status", "not_found"),
+            latency_ms=response.get("elapsed_ms", 0.0),
+            message=response.get("message"),
+            match=match,
+            parent=parent,
+            siblings=siblings,
+            resolved=resolved,
+            candidates=candidates,
+            _raw_response=response,
         )
 
     def feedback(self, query_id: str, like: bool) -> bool:

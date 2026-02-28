@@ -45,7 +45,9 @@ Com MCP (Claude Desktop, Cursor, etc.):
 
 from vectorgov.client import VectorGov
 from vectorgov.models import (
+    BaseResult,
     SearchResult,
+    SmartSearchResult,
     Hit,
     Metadata,
     TokenStats,
@@ -60,6 +62,14 @@ from vectorgov.models import (
     AuditLog,
     AuditLogsResponse,
     AuditStats,
+    # Hybrid & Lookup Models
+    HybridResult,
+    LookupResult,
+    LookupMatch,
+    LookupParent,
+    LookupSibling,
+    LookupResolved,
+    LookupCandidate,
 )
 from vectorgov.config import SearchMode, SYSTEM_PROMPTS
 from vectorgov.exceptions import (
@@ -78,12 +88,14 @@ from vectorgov.formatters import (
     create_rag_prompt,
 )
 
-__version__ = "0.13.0"
+__version__ = "0.15.0"
 __all__ = [
     # Cliente principal
     "VectorGov",
     # Modelos
+    "BaseResult",
     "SearchResult",
+    "SmartSearchResult",
     "Hit",
     "Metadata",
     "TokenStats",
@@ -99,6 +111,14 @@ __all__ = [
     "AuditLog",
     "AuditLogsResponse",
     "AuditStats",
+    # Hybrid & Lookup Models
+    "HybridResult",
+    "LookupResult",
+    "LookupMatch",
+    "LookupParent",
+    "LookupSibling",
+    "LookupResolved",
+    "LookupCandidate",
     # Configuração
     "SearchMode",
     "SYSTEM_PROMPTS",

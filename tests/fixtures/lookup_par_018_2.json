@@ -1,0 +1,56 @@
+{
+  "status": "found",
+  "elapsed_ms": 38.5,
+  "message": null,
+  "match": {
+    "node_id": "leis:LEI-14133-2021#PAR-018-2",
+    "span_id": "PAR-018-2",
+    "document_id": "LEI-14133-2021",
+    "text": "§ 2º O estudo técnico preliminar a que se refere o inciso I do caput deste artigo deverá evidenciar o problema a ser resolvido e a sua melhor solução, de modo a permitir a avaliação da viabilidade técnica e econômica da contratação.",
+    "device_type": "paragraph",
+    "article_number": "18",
+    "tipo_documento": "LEI",
+    "origin_type": "self",
+    "evidence_url": "/api/v1/evidence/LEI-14133-2021%23PAR-018-2"
+  },
+  "parent": {
+    "node_id": "leis:LEI-14133-2021#ART-018",
+    "span_id": "ART-018",
+    "text": "Art. 18. A fase preparatória do processo licitatório é caracterizada pelo planejamento e deve compatibilizar-se com o plano de contratações anual de que trata o inciso VII do caput do art. 12 desta Lei, quando elaborado, e target, entre outros, os seguintes documentos: I - documento de formalização de demanda; II - estudo técnico preliminar; III - anteprojeto, projeto básico ou projeto executivo; IV - estudo de viabilidade técnica; V - matriz de riscos.",
+    "device_type": "article"
+  },
+  "siblings": [
+    {
+      "span_id": "PAR-018-1",
+      "node_id": "leis:LEI-14133-2021#PAR-018-1",
+      "device_type": "paragraph",
+      "text": "§ 1º Quando o objeto da licitação se limitar a aquisição de bens, a Administração poderá substituir o estudo técnico preliminar por outro documento simplificado.",
+      "is_current": false
+    },
+    {
+      "span_id": "PAR-018-2",
+      "node_id": "leis:LEI-14133-2021#PAR-018-2",
+      "device_type": "paragraph",
+      "text": "§ 2º O estudo técnico preliminar a que se refere o inciso I do caput deste artigo deverá evidenciar o problema a ser resolvido e a sua melhor solução, de modo a permitir a avaliação da viabilidade técnica e econômica da contratação.",
+      "is_current": true
+    },
+    {
+      "span_id": "PAR-018-3",
+      "node_id": "leis:LEI-14133-2021#PAR-018-3",
+      "device_type": "paragraph",
+      "text": "§ 3º O estudo técnico preliminar deverá conter ao menos os elementos previstos nos incisos I, IV e VI do § 1º do art. 18 da Lei nº 14.133, de 2021.",
+      "is_current": false
+    }
+  ],
+  "resolved": {
+    "device_type": "paragraph",
+    "article_number": "18",
+    "paragraph_number": "2",
+    "inciso_number": null,
+    "alinea_letter": null,
+    "document_alias": "Lei 14.133",
+    "resolved_document_id": "LEI-14133-2021",
+    "resolved_span_id": "PAR-018-2"
+  },
+  "candidates": []
+}
