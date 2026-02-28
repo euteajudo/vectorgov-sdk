@@ -3,7 +3,6 @@ Configurações do VectorGov SDK.
 """
 
 from enum import Enum
-from typing import Optional
 from dataclasses import dataclass, field
 
 
@@ -17,7 +16,6 @@ class SearchMode(str, Enum):
     FAST = "fast"
     BALANCED = "balanced"
     PRECISE = "precise"
-    SMART = "smart"
 
 
 class DocumentType(str, Enum):

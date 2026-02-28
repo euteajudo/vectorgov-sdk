@@ -1,9 +1,10 @@
-"""Testes para smart_search() — endpoint premium MOC v4."""
+"""Testes para smart_search() — endpoint turnkey MOC v4 (ADDENDUM v2)."""
 
 import pytest
 import json
 from unittest.mock import patch, MagicMock
 from vectorgov import VectorGov, TierError, ValidationError, SearchResult
+from vectorgov.models import SmartSearchResult
 
 
 @pytest.fixture
@@ -41,111 +42,136 @@ class TestSmartSearchValidation:
         with pytest.raises(ValidationError, match="1000 caracteres"):
             vg.smart_search("x" * 1001)
 
-    def test_invalid_top_k_raises(self, vg):
-        with pytest.raises(ValidationError, match="top_k"):
-            vg.smart_search("query válida", top_k=0)
 
-        with pytest.raises(ValidationError, match="top_k"):
-            vg.smart_search("query válida", top_k=51)
-
-
-class TestSmartSearchRequest:
-    """Testes de construção do request."""
+class TestSmartSearchSignature:
+    """O smart_search() aceita APENAS query + use_cache."""
 
     @patch.object(VectorGov, '_parse_search_response')
-    def test_calls_correct_endpoint(self, mock_parse, vg):
+    def test_accepts_only_query_and_cache(self, mock_parse, vg):
         mock_parse.return_value = MagicMock()
         with patch.object(vg._http, 'post', return_value={}) as mock_post:
-            vg.smart_search("query de teste")
-            mock_post.assert_called_once()
-            args, kwargs = mock_post.call_args
-            assert args[0] == "/sdk/smart-search"
+            vg.smart_search("critérios de julgamento")
 
-    @patch.object(VectorGov, '_parse_search_response')
-    def test_timeout_120s(self, mock_parse, vg):
-        mock_parse.return_value = MagicMock()
-        with patch.object(vg._http, 'post', return_value={}) as mock_post:
-            vg.smart_search("query de teste")
             _, kwargs = mock_post.call_args
-            assert kwargs.get("timeout") == 120
+            data = kwargs.get("data", {})
+
+            # SÓ query + use_cache
+            assert set(data.keys()) == {"query", "use_cache"}
+            assert data["query"] == "critérios de julgamento"
+            assert data["use_cache"] is False
+
+    @patch.object(VectorGov, '_parse_search_response')
+    def test_no_top_k_in_request(self, mock_parse, vg):
+        mock_parse.return_value = MagicMock()
+        with patch.object(vg._http, 'post', return_value={}) as mock_post:
+            vg.smart_search("query")
+            data = mock_post.call_args[1].get("data", {})
+            assert "top_k" not in data
+
+    @patch.object(VectorGov, '_parse_search_response')
+    def test_no_expand_citations_in_request(self, mock_parse, vg):
+        mock_parse.return_value = MagicMock()
+        with patch.object(vg._http, 'post', return_value={}) as mock_post:
+            vg.smart_search("query")
+            data = mock_post.call_args[1].get("data", {})
+            assert "expand_citations" not in data
+            assert "citation_expansion_top_n" not in data
 
     @patch.object(VectorGov, '_parse_search_response')
     def test_no_mode_in_request(self, mock_parse, vg):
         mock_parse.return_value = MagicMock()
         with patch.object(vg._http, 'post', return_value={}) as mock_post:
-            vg.smart_search("query de teste")
-            _, kwargs = mock_post.call_args
-            request_data = kwargs.get("data")
-            # mode não deve estar no request
-            if isinstance(request_data, dict):
-                assert "mode" not in request_data
-                assert "use_hyde" not in request_data
-                assert "use_reranker" not in request_data
-                assert "use_cache" not in request_data
+            vg.smart_search("query")
+            data = mock_post.call_args[1].get("data", {})
+            assert "mode" not in data
+            assert "use_hyde" not in data
+            assert "use_reranker" not in data
 
     @patch.object(VectorGov, '_parse_search_response')
-    def test_expand_citations_passed(self, mock_parse, vg):
+    def test_use_cache_true(self, mock_parse, vg):
         mock_parse.return_value = MagicMock()
         with patch.object(vg._http, 'post', return_value={}) as mock_post:
-            vg.smart_search("query", expand_citations=True, citation_expansion_top_n=5)
+            vg.smart_search("query", use_cache=True)
+            data = mock_post.call_args[1].get("data", {})
+            assert data["use_cache"] is True
+
+    @patch.object(VectorGov, '_parse_search_response')
+    def test_timeout_120s(self, mock_parse, vg):
+        mock_parse.return_value = MagicMock()
+        with patch.object(vg._http, 'post', return_value={}) as mock_post:
+            vg.smart_search("query")
             _, kwargs = mock_post.call_args
-            request_data = kwargs.get("data")
-            if isinstance(request_data, dict):
-                assert request_data["expand_citations"] is True
-                assert request_data["citation_expansion_top_n"] == 5
+            assert kwargs.get("timeout") == 120
 
 
 class TestSmartSearchResponse:
-    """Testes de parsing da resposta."""
+    """Resposta é SmartSearchResult (herda SearchResult)."""
 
-    def test_returns_search_result(self, vg, smart_response):
+    def test_returns_smart_search_result(self, vg, smart_response):
         with patch.object(vg._http, 'post', return_value=smart_response):
-            result = vg.smart_search("critérios de julgamento")
+            result = vg.smart_search("critérios")
+            assert isinstance(result, SmartSearchResult)
             assert isinstance(result, SearchResult)
+
+    def test_endpoint_type_is_smart_search(self, vg, smart_response):
+        with patch.object(vg._http, 'post', return_value=smart_response):
+            result = vg.smart_search("critérios")
+            assert result.endpoint_type == "smart_search"
 
     def test_mode_is_smart(self, vg, smart_response):
         with patch.object(vg._http, 'post', return_value=smart_response):
-            result = vg.smart_search("critérios de julgamento")
+            result = vg.smart_search("critérios")
             assert result.mode == "smart"
 
-    def test_hits_parsed(self, vg, smart_response):
-        with patch.object(vg._http, 'post', return_value=smart_response):
-            result = vg.smart_search("critérios de julgamento")
-            assert len(result.hits) == 2
-            assert result.hits[0].score == 0.972
-            assert "Art. 33" in result.hits[0].source
-
-    def test_curadoria_fields(self, vg, smart_response):
-        with patch.object(vg._http, 'post', return_value=smart_response):
-            result = vg.smart_search("critérios de julgamento")
-            # Segundo hit tem curadoria
-            assert result.hits[1].nota_especialista is not None
-            assert result.hits[1].jurisprudencia_tcu is not None
-            assert result.hits[1].acordao_tcu_link is not None
-
-    def test_to_context_works(self, vg, smart_response):
+    def test_total_equals_approved_hits(self, vg, smart_response):
         with patch.object(vg._http, 'post', return_value=smart_response):
             result = vg.smart_search("critérios")
-            context = result.to_context()
-            assert "Art. 33" in context
+            assert result.total == len(result.hits)
+            assert result.total == 2
+
+    def test_curadoria_fields_present(self, vg, smart_response):
+        with patch.object(vg._http, 'post', return_value=smart_response):
+            result = vg.smart_search("critérios")
+            hit = result.hits[0]
+            assert hit.nota_especialista is not None
+            assert hit.jurisprudencia_tcu is not None
+            assert hit.acordao_tcu_link is not None
+
+    def test_evidence_url_present(self, vg, smart_response):
+        with patch.object(vg._http, 'post', return_value=smart_response):
+            result = vg.smart_search("critérios")
+            for hit in result.hits:
+                assert hit.evidence_url is not None
+                assert "/api/v1/evidence/" in hit.evidence_url
+
+    def test_document_url_present(self, vg, smart_response):
+        with patch.object(vg._http, 'post', return_value=smart_response):
+            result = vg.smart_search("critérios")
+            for hit in result.hits:
+                assert hit.document_url is not None
+                assert "/api/v1/documents/" in hit.document_url
+
+    def test_to_xml_works(self, vg, smart_response):
+        with patch.object(vg._http, 'post', return_value=smart_response):
+            result = vg.smart_search("critérios")
+            xml = result.to_xml("full")
+            assert "vectorgov_knowledge_package" in xml
+            assert "base_normativa" in xml
 
     def test_to_messages_works(self, vg, smart_response):
         with patch.object(vg._http, 'post', return_value=smart_response):
             result = vg.smart_search("critérios")
-            messages = result.to_messages("Quais os critérios?")
+            messages = result.to_messages("Quais os critérios?", level="full")
             assert len(messages) == 2
             assert messages[0]["role"] == "system"
             assert messages[1]["role"] == "user"
 
-    def test_query_id_preserved(self, vg, smart_response):
+    def test_to_response_schema_works(self, vg, smart_response):
         with patch.object(vg._http, 'post', return_value=smart_response):
             result = vg.smart_search("critérios")
-            assert result.query_id.startswith("ss_")
-
-    def test_cached_always_false(self, vg, smart_response):
-        with patch.object(vg._http, 'post', return_value=smart_response):
-            result = vg.smart_search("critérios")
-            assert result.cached is False
+            schema = result.to_response_schema()
+            assert schema is not None
+            assert "fundamentacao" in str(schema)
 
 
 class TestSmartSearchErrors:
@@ -208,4 +234,3 @@ class TestSmartSearchIntegration:
         """smart_search não afeta function calling tools."""
         tool = vg.to_openai_tool()
         assert tool["type"] == "function"
-        # Tool continua apontando para search, não smart_search

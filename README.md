@@ -43,6 +43,7 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
   - [Servidor MCP](#servidor-mcp-claude-desktop-cursor-etc)
 - **Configuração**
   - [Modos de Busca](#modos-de-busca)
+  - [Smart Search](#smart-search-busca-inteligente)
   - [Citation Expansion](#citation-expansion-expansão-de-citações)
   - [Filtros](#filtros)
   - [Formatação de Resultados](#formatação-de-resultados)
@@ -936,6 +937,56 @@ results = vg.search("query", mode="precise")
 
 # Qualquer modo COM cache (trade-off: privacidade vs latência)
 results = vg.search("query", mode="fast", use_cache=True)
+```
+
+## Smart Search (Busca Inteligente)
+
+O `smart_search()` e um endpoint turnkey que executa o pipeline completo MOC v4 (Pensador, Motor, Juiz). O pipeline decide tudo: quantidade de chunks, estrategia de busca, expansao de citacoes. O cliente so faz a pergunta.
+
+```python
+# Uso basico - o pipeline decide tudo
+result = vg.smart_search("Quais os criterios de julgamento na Lei 14.133?")
+
+# Com cache habilitado
+result = vg.smart_search("criterios de julgamento", use_cache=True)
+```
+
+**Parametros aceitos:**
+
+| Parametro | Tipo | Default | Descricao |
+|-----------|------|---------|-----------|
+| `query` | str | - | Pergunta (3 a 1000 caracteres) |
+| `use_cache` | bool | `False` | Usar cache semantico |
+
+> **Importante:** `smart_search()` nao aceita `top_k`, `mode`, `expand_citations` ou qualquer outro parametro de controle. O pipeline MOC v4 toma todas as decisoes automaticamente. Enviar campos extras resulta em erro 422.
+
+**Resposta:**
+
+O retorno e um `SmartSearchResult` (herda de `SearchResult`), com todos os campos de curadoria e verificabilidade:
+
+```python
+result = vg.smart_search("criterios de julgamento")
+
+for hit in result.hits:
+    print(hit.source)             # "Lei 14.133/2021, Art. 33"
+    print(hit.nota_especialista)  # Nota do especialista (curadoria)
+    print(hit.evidence_url)       # Link para verificacao
+    print(hit.document_url)       # Link para PDF com highlight
+
+# Compativel com todos os metodos de formatacao
+xml = result.to_xml("full")
+messages = result.to_messages("Quais os criterios?", level="full")
+schema = result.to_response_schema()
+```
+
+**Fallback para planos sem acesso:**
+
+```python
+try:
+    result = vg.smart_search("query")
+except TierError:
+    # Fallback automatico para busca tradicional
+    result = vg.search("query", mode="precise")
 ```
 
 ## Citation Expansion (Expansão de Citações)

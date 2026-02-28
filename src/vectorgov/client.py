@@ -205,8 +205,9 @@ class VectorGov:
         query: str,
         response: dict,
         mode: str,
+        result_class: Optional[type] = None,
     ) -> SearchResult:
-        """Converte resposta da API em SearchResult."""
+        """Converte resposta da API em SearchResult (ou subclasse via result_class)."""
         from vectorgov.models import ExpandedChunk, CitationExpansionStats
 
         hits = []
@@ -276,7 +277,8 @@ class VectorGov:
                 skipped_token_budget=es.get("skipped_token_budget", 0),
             )
 
-        return SearchResult(
+        cls = result_class or SearchResult
+        return cls(
             query=query,
             hits=hits,
             total=response.get("total", len(hits)),
@@ -292,96 +294,93 @@ class VectorGov:
     def smart_search(
         self,
         query: str,
-        top_k: Optional[int] = None,
-        expand_citations: bool = False,
-        citation_expansion_top_n: int = 3,
+        use_cache: bool = False,
     ) -> SmartSearchResult:
-        """Busca premium com pipeline MOC v4 (Pensador → Motor → Juiz).
+        """Busca com curadoria inteligente — endpoint premium turnkey.
 
-        Internamente executa análise LLM multi-etapa para retornar apenas
-        chunks aprovados por um juiz de relevância. A resposta tem o mesmo
-        formato do ``search()``, mas com qualidade superior.
+        O pipeline VectorGov analisa a query, busca os dispositivos mais
+        relevantes, filtra por qualidade, e entrega um pacote completo:
+        chunks aprovados + notas de especialista + jurisprudência TCU +
+        links verificáveis — pronto para alimentar seu LLM.
+
+        Você não configura nada. O pipeline decide:
+        - Quantos chunks retornar
+        - Qual estratégia de busca usar
+        - Se expande citações normativas
+        - Se inclui dispositivos relacionados via grafo
 
         Args:
-            query: Texto da consulta (3-1000 chars)
-            top_k: Máximo de chunks aprovados retornados (1-50). Default: 5
-            expand_citations: Expandir citações normativas. Default: False
-            citation_expansion_top_n: Top N para expansão de citações. Default: 3
+            query: Texto da consulta (3-1000 caracteres).
+            use_cache: Se True, reutiliza resultado cacheado para mesma query.
+                Default False — cada execução produz curadoria independente.
 
         Returns:
-            SmartSearchResult com chunks aprovados pelo Juiz.
-            Herda de SearchResult — mesmos métodos (to_context, to_xml, etc.)
-            ``endpoint_type`` retorna ``"smart_search"`` para billing diferenciado.
+            SmartSearchResult (herda SearchResult). Mesma interface:
+            .to_context(), .to_xml(), .to_messages(), .to_prompt(), .to_dict()
+
+            Campos especiais do smart-search presentes nos hits:
+            - hit.nota_especialista — curadoria do especialista jurídico
+            - hit.jurisprudencia_tcu — entendimento do TCU
+            - hit.acordao_tcu_link — link para baixar acórdão citado
+            - hit.evidence_url — link para verificar trecho no PDF original
+            - hit.document_url — link para baixar documento com highlights
 
         Raises:
-            ValidationError: Se os parâmetros forem inválidos
-            AuthError: Se a API key for inválida
-            TierError: Se o plano não inclui smart-search (403)
-            RateLimitError: Se exceder o rate limit
-            TimeoutError: Se o pipeline exceder 120s
+            TierError: Plano não inclui smart-search (403). Use search() como fallback.
+            ValidationError: Query inválida
+            AuthError: API key inválida
+            RateLimitError: Rate limit excedido
+            TimeoutError: Pipeline excedeu 120s
 
         Example:
-            >>> results = vg.smart_search("Critérios de julgamento na licitação")
-            >>> print(results.endpoint_type)  # "smart_search"
-            >>> context = results.to_context()
+            >>> results = vg.smart_search("Quais os critérios de julgamento?")
+            >>> for hit in results:
+            ...     print(f"{hit.source}: {hit.text[:100]}")
+            ...     if hit.nota_especialista:
+            ...         print(f"  Nota: {hit.nota_especialista}")
+            ...     if hit.acordao_tcu_link:
+            ...         print(f"  Acórdão: {hit.acordao_tcu_link}")
+            >>>
+            >>> # Alimentar seu LLM (mesma interface de search)
+            >>> messages = results.to_messages("Quais os critérios?", level="full")
+
+        Fallback:
+            >>> try:
+            ...     results = vg.smart_search("query")
+            ... except TierError:
+            ...     results = vg.search("query", mode="precise")
         """
-        # Validações (mesmas do search)
+        # ── Validação ──
         if not query or not query.strip():
             raise ValidationError("Query não pode ser vazia", field="query")
 
         query = query.strip()
         if len(query) < 3:
-            raise ValidationError("Query deve ter pelo menos 3 caracteres", field="query")
-
+            raise ValidationError(
+                "Query deve ter pelo menos 3 caracteres", field="query"
+            )
         if len(query) > 1000:
-            raise ValidationError("Query deve ter no máximo 1000 caracteres", field="query")
+            raise ValidationError(
+                "Query deve ter no máximo 1000 caracteres", field="query"
+            )
 
-        top_k = top_k if top_k is not None else self._config.default_top_k
-        if top_k < 1 or top_k > 50:
-            raise ValidationError("top_k deve estar entre 1 e 50", field="top_k")
-
-        # Request — sem mode/use_hyde/use_reranker/use_cache (MOC v4 decide)
+        # ── Request (só query + use_cache, nada mais) ──
         request_data = {
             "query": query,
-            "top_k": top_k,
-            "expand_citations": expand_citations,
-            "citation_expansion_top_n": citation_expansion_top_n,
+            "use_cache": use_cache,
         }
 
-        # Timeout 120s (pipeline MOC v4 é mais lento)
+        # ── HTTP com timeout estendido (120s) ──
         response = self._http.post(
             "/sdk/smart-search",
             data=request_data,
             timeout=120,
         )
 
-        return self._parse_smart_search_response(query, response)
-
-    def _parse_smart_search_response(
-        self,
-        query: str,
-        response: dict,
-    ) -> SmartSearchResult:
-        """Converte resposta do smart-search em SmartSearchResult.
-
-        Reutiliza _parse_search_response e converte para SmartSearchResult.
-        """
-        # Reutiliza o parser do search (mesmo schema de resposta)
-        search_result = self._parse_search_response(query, response, "smart")
-
-        # Converte para SmartSearchResult (mantém todos os campos)
-        return SmartSearchResult(
-            query=search_result.query,
-            total=search_result.total,
-            latency_ms=search_result.latency_ms,
-            cached=search_result.cached,
-            query_id=search_result.query_id,
-            timestamp=search_result.timestamp,
-            _raw_response=search_result._raw_response,
-            hits=search_result.hits,
-            mode="smart",
-            expanded_chunks=search_result.expanded_chunks,
-            expansion_stats=search_result.expansion_stats,
+        # ── Parse (mesmo schema do search → reutiliza parser) ──
+        return self._parse_search_response(
+            query, response, mode="smart",
+            result_class=SmartSearchResult,
         )
 
     def hybrid(
