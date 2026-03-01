@@ -78,8 +78,20 @@ target-version = ["py39", "py310", "py311", "py312"]
 [tool.ruff]
 line-length = 100
 target-version = "py39"
-select = ["E", "F", "W", "I", "N", "D", "UP"]
-ignore = ["D100", "D104"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N"]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "F401",   # unused imports (re-exports intencionais em __init__.py e lazy imports)
+    "F821",   # undefined name (lazy imports com string annotations -> "Type")
+    "N802",   # function name should be lowercase
+    "N803",   # argument name should be lowercase
+    "N806",   # variable in function should be lowercase
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["vectorgov"]
 
 [tool.mypy]
 python_version = "3.9"

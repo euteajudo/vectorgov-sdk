@@ -2,8 +2,8 @@
 Configurações do VectorGov SDK.
 """
 
-from enum import Enum
 from dataclasses import dataclass, field
+from enum import Enum
 
 
 class SearchMode(str, Enum):

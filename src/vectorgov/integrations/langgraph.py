@@ -41,15 +41,15 @@ Exemplo com grafo customizado:
     >>> graph = builder.compile()
 """
 
-from typing import Optional, List, Any, TypedDict, Annotated, Callable, Sequence
-import os
 import operator
+import os
+from typing import Annotated, Any, Callable, List, Optional, Sequence, TypedDict
 
 # Imports condicionais para LangGraph
 try:
-    from langchain_core.tools import BaseTool, tool
     from langchain_core.documents import Document
-    from langchain_core.messages import BaseMessage, AIMessage, HumanMessage
+    from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+    from langchain_core.tools import BaseTool, tool
     from pydantic import Field, PrivateAttr
 
     LANGGRAPH_AVAILABLE = True
@@ -321,7 +321,7 @@ def create_legal_rag_graph(
     _check_langgraph()
 
     try:
-        from langgraph.graph import StateGraph, START, END
+        from langgraph.graph import END, START, StateGraph
     except ImportError:
         raise ImportError(
             "LangGraph não está instalado. Instale com:\n"

@@ -43,51 +43,51 @@ Com MCP (Claude Desktop, Cursor, etc.):
     }
 """
 
-from vectorgov.client import VectorGov
 from vectorgov._async import AsyncVectorGov
+from vectorgov.client import VectorGov
+from vectorgov.config import SYSTEM_PROMPTS, SearchMode
+from vectorgov.exceptions import (
+    AuthError,
+    ConnectionError,
+    RateLimitError,
+    ServerError,
+    TierError,
+    TimeoutError,
+    ValidationError,
+    VectorGovError,
+)
+from vectorgov.formatters import (
+    create_rag_prompt,
+    format_citations,
+    to_langchain_docs,
+    to_llamaindex_nodes,
+)
 from vectorgov.models import (
-    BaseResult,
-    SearchResult,
-    SmartSearchResult,
-    Hit,
-    Metadata,
-    TokenStats,
-    DocumentSummary,
-    DocumentsResponse,
-    UploadResponse,
-    IngestStatus,
-    EnrichStatus,
-    DeleteResponse,
-    StoreResponseResult,
     # Audit Models
     AuditLog,
     AuditLogsResponse,
     AuditStats,
+    BaseResult,
+    DeleteResponse,
+    DocumentsResponse,
+    DocumentSummary,
+    EnrichStatus,
+    Hit,
     # Hybrid & Lookup Models
     HybridResult,
-    LookupResult,
+    IngestStatus,
+    LookupCandidate,
     LookupMatch,
     LookupParent,
-    LookupSibling,
     LookupResolved,
-    LookupCandidate,
-)
-from vectorgov.config import SearchMode, SYSTEM_PROMPTS
-from vectorgov.exceptions import (
-    VectorGovError,
-    AuthError,
-    TierError,
-    RateLimitError,
-    ValidationError,
-    ServerError,
-    ConnectionError,
-    TimeoutError,
-)
-from vectorgov.formatters import (
-    to_langchain_docs,
-    to_llamaindex_nodes,
-    format_citations,
-    create_rag_prompt,
+    LookupResult,
+    LookupSibling,
+    Metadata,
+    SearchResult,
+    SmartSearchResult,
+    StoreResponseResult,
+    TokenStats,
+    UploadResponse,
 )
 
 __version__ = "0.15.0"

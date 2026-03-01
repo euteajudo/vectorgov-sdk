@@ -18,19 +18,19 @@ from typing import Optional, Union
 from vectorgov.client import VectorGov
 from vectorgov.config import SearchMode
 from vectorgov.models import (
-    SearchResult,
-    SmartSearchResult,
-    HybridResult,
-    LookupResult,
-    TokenStats,
-    DocumentsResponse,
-    UploadResponse,
-    IngestStatus,
-    EnrichStatus,
-    DeleteResponse,
-    StoreResponseResult,
     AuditLogsResponse,
     AuditStats,
+    DeleteResponse,
+    DocumentsResponse,
+    EnrichStatus,
+    HybridResult,
+    IngestStatus,
+    LookupResult,
+    SearchResult,
+    SmartSearchResult,
+    StoreResponseResult,
+    TokenStats,
+    UploadResponse,
 )
 
 

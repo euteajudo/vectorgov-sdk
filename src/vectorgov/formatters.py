@@ -5,7 +5,7 @@ Este módulo contém funções auxiliares para formatar resultados
 de busca para diferentes LLMs e frameworks.
 """
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from vectorgov.models import SearchResult

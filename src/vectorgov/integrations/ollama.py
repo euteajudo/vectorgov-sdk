@@ -29,11 +29,10 @@ Modelos recomendados:
 
 import json
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
-
 
 # URL padrão do Ollama
 DEFAULT_OLLAMA_URL = "http://localhost:11434"

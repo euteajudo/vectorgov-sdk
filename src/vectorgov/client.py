@@ -2,16 +2,24 @@
 Cliente principal do VectorGov SDK.
 """
 
+import json
 import os
 import re
 from typing import Optional, Union
 
-import json
 from vectorgov._http import HTTPClient
-from vectorgov.config import SDKConfig, SearchMode, MODE_CONFIG, SYSTEM_PROMPTS
-from vectorgov.models import SearchResult, SmartSearchResult, Hit, Metadata, TokenStats, HybridResult, LookupResult
-from vectorgov.exceptions import ValidationError, AuthError
+from vectorgov.config import MODE_CONFIG, SYSTEM_PROMPTS, SDKConfig, SearchMode
+from vectorgov.exceptions import AuthError, ValidationError
 from vectorgov.integrations import tools as tool_utils
+from vectorgov.models import (
+    Hit,
+    HybridResult,
+    LookupResult,
+    Metadata,
+    SearchResult,
+    SmartSearchResult,
+    TokenStats,
+)
 
 _SAFE_PATH_RE = re.compile(r"^[\w\-.:]+$")
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
@@ -753,7 +761,8 @@ class VectorGov:
             ...     system_prompt=vg.get_system_prompt("detailed")
             ... )
         """
-        from vectorgov.models import TokenStats, SearchResult as SearchResultClass
+        from vectorgov.models import SearchResult as SearchResultClass
+        from vectorgov.models import TokenStats
 
         # Se for SearchResult, extrai contexto formatado
         if isinstance(content, SearchResultClass):
@@ -1066,7 +1075,7 @@ class VectorGov:
         page: int = 1,
         limit: int = 20,
     ) -> "DocumentsResponse":
-        from vectorgov.models import DocumentSummary, DocumentsResponse
+        from vectorgov.models import DocumentsResponse, DocumentSummary
 
         if limit < 1 or limit > 100:
             raise ValidationError("limit deve estar entre 1 e 100", field="limit")
@@ -1114,8 +1123,9 @@ class VectorGov:
         )
 
     def upload_pdf(self, file_path: str, tipo_documento: str, numero: str, ano: int) -> "UploadResponse":
-        from vectorgov.models import UploadResponse
         import os as _os
+
+        from vectorgov.models import UploadResponse
 
         if not _os.path.exists(file_path):
             raise FileNotFoundError(f"Arquivo nao encontrado: {file_path}")
@@ -1133,7 +1143,7 @@ class VectorGov:
         valid_types = ["LEI", "DECRETO", "IN", "PORTARIA", "RESOLUCAO"]
         tipo_documento = tipo_documento.upper()
         if tipo_documento not in valid_types:
-            raise ValidationError(f"tipo_documento invalido", field="tipo_documento")
+            raise ValidationError("tipo_documento invalido", field="tipo_documento")
 
         if not numero:
             raise ValidationError("numero nao pode ser vazio", field="numero")
@@ -1203,6 +1213,7 @@ class VectorGov:
         Ver docs/DEPRECATION_ENRICHMENT.md
         """
         import warnings
+
         from vectorgov.models import EnrichStatus
 
         warnings.warn(

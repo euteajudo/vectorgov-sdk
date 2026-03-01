@@ -34,7 +34,7 @@ from urllib.parse import quote
 from xml.sax.saxutils import escape as _sax_escape
 
 if TYPE_CHECKING:
-    from vectorgov.models import Hit, SearchResult, HybridResult, LookupResult
+    from vectorgov.models import Hit, HybridResult, LookupResult, SearchResult
 
 
 # =============================================================================
@@ -1038,7 +1038,7 @@ def build_hybrid_markdown(result: HybridResult) -> str:
     )
 
     if result.hyde_used:
-        parts.append(f"**HyDE:** ativo\n")
+        parts.append("**HyDE:** ativo\n")
     if result.docfilter_active and result.docfilter_detected_doc_id:
         parts.append(f"**Doc Foco:** {result.docfilter_detected_doc_id}\n")
 
@@ -1606,7 +1606,7 @@ def serialize_to_xml(
         >>> xml = serialize_to_xml(result, level="full")
     """
     # Import local para evitar circular
-    from vectorgov.models import SearchResult, HybridResult, LookupResult
+    from vectorgov.models import HybridResult, LookupResult, SearchResult
 
     if isinstance(result, HybridResult):
         return build_hybrid_xml(result, level=level)

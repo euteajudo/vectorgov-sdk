@@ -50,13 +50,13 @@ Exemplo com Ollama (modelos locais):
 """
 
 from vectorgov.integrations.tools import (
-    TOOL_SCHEMA,
-    TOOL_NAME,
     TOOL_DESCRIPTION,
-    to_openai_tool,
+    TOOL_NAME,
+    TOOL_SCHEMA,
+    parse_tool_arguments,
     to_anthropic_tool,
     to_google_tool,
-    parse_tool_arguments,
+    to_openai_tool,
 )
 
 __all__ = [

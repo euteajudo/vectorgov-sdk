@@ -4,11 +4,10 @@ Modelos de dados do VectorGov SDK.
 
 import warnings
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field, asdict
-from functools import cached_property
-from typing import Optional, Iterator, Any, Literal
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
-
+from functools import cached_property
+from typing import Any, Iterator, Literal, Optional
 
 # =============================================================================
 # TOKEN STATS MODEL
@@ -930,7 +929,7 @@ class HybridResult(BaseResult):
 
     def to_response_schema(self) -> Optional[dict]:
         """Gera JSON Schema para structured output."""
-        from vectorgov.payload import build_response_schema, _collect_authorized_ids_from_hits
+        from vectorgov.payload import _collect_authorized_ids_from_hits, build_response_schema
         authorized_ids = _collect_authorized_ids_from_hits(self.direct_evidence, self.graph_expansion)
         if not authorized_ids:
             return None

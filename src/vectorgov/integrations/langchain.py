@@ -41,14 +41,14 @@ Exemplo com LCEL:
     >>> answer = chain.invoke("O que é ETP?")
 """
 
-from typing import Optional, List, Any, Union
 import os
+from typing import Any, List, Optional, Union
 
 # Imports condicionais para LangChain
 try:
-    from langchain_core.retrievers import BaseRetriever
-    from langchain_core.documents import Document
     from langchain_core.callbacks import CallbackManagerForRetrieverRun
+    from langchain_core.documents import Document
+    from langchain_core.retrievers import BaseRetriever
     from langchain_core.tools import BaseTool
     from pydantic import Field, PrivateAttr
 

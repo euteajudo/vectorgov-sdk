@@ -33,8 +33,8 @@ Exemplo com Toolset:
     ... )
 """
 
-from typing import Optional, List, Dict, Any, Callable
 import os
+from typing import Any, Callable, Dict, List, Optional
 
 # Verificação de disponibilidade do Google ADK
 try:
