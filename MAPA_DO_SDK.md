@@ -1,7 +1,7 @@
 # 🗺️ MAPA DO SDK VECTORGOV
 
-> **Versão**: 0.14.0
-> **Data**: Janeiro 2025
+> **Versão**: 0.15.0
+> **Data**: Marco 2026
 > **Objetivo**: Documentação completa da arquitetura e funcionamento do SDK Python VectorGov
 
 ---
@@ -93,7 +93,8 @@ O VectorGov SDK é uma biblioteca Python que permite integração simples e efic
 │   │                         API VECTORGOV                               │   │
 │   │                   https://vectorgov.io/api/v1                       │   │
 │   │                                                                     │   │
-│   │ /sdk/search  /sdk/documents  /sdk/feedback  /sdk/audit  /sdk/health  /sdk/tokens │   │
+│   │ /sdk/search  /sdk/smart-search  /retrieve/hybrid  /retrieve/lookup │   │
+│   │ /sdk/documents  /sdk/feedback  /sdk/audit  /sdk/health  /sdk/tokens│   │
 │   └─────────────────────────────────────────────────────────────────────┘   │
 │                                       │                                     │
 │   ┌─────────────────────────────────────────────────────────────────────┐   │
@@ -320,6 +321,32 @@ O `VectorGov` é a classe principal do SDK, responsável por todas as interaçõ
 │  │ - filters: dict                 # tipo, ano, orgao                 │   │
 │  │ - expand_citations: bool        # Habilita expansão (v0.14.0)      │   │
 │  │ - citation_expansion_top_n: int # Top N para expandir (v0.14.0)    │   │
+│  │                                                                     │   │
+│  │ smart_search(query, use_cache, trace_id)                           │   │
+│  │   -> SmartSearchResult   (v0.15.0)                                │   │
+│  │                                                                     │   │
+│  │ - query: str          # Pergunta (3-1000 caracteres)               │   │
+│  │ - use_cache: bool     # Default False                              │   │
+│  │ - trace_id: str       # ID de rastreamento (opcional)              │   │
+│  │ Nota: pipeline MOC v4 decide tudo, sem top_k/mode/filters          │   │
+│  │                                                                     │   │
+│  │ hybrid(query, top_k, collections, hops, graph_expansion,           │   │
+│  │        token_budget, use_cache, trace_id)                          │   │
+│  │   -> HybridResult   (v0.15.0)                                     │   │
+│  │                                                                     │   │
+│  │ - query: str          # Pergunta                                   │   │
+│  │ - top_k: int          # 1-20 (default: 8)                         │   │
+│  │ - hops: int           # 1-2 (default: 1)                          │   │
+│  │ - graph_expansion: str # bidirectional ou forward                  │   │
+│  │ - token_budget: int   # Limite de tokens (default: 3500)           │   │
+│  │                                                                     │   │
+│  │ lookup(reference, collection, include_parent, include_siblings,     │   │
+│  │        trace_id) -> LookupResult   (v0.15.0)                      │   │
+│  │                                                                     │   │
+│  │ - reference: str      # "Art. 33 da Lei 14.133"                    │   │
+│  │ - collection: str     # default: "leis_v4"                         │   │
+│  │ - include_parent: bool # default: True                             │   │
+│  │ - include_siblings: bool # default: True                           │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
 │  FUNCTION CALLING                                                           │
@@ -417,27 +444,47 @@ Cliente HTTP minimalista sem dependências externas.
 │                           MODELOS DE DADOS                                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  BUSCA                                                                      │
+│  HERANCA DE RESULTADOS (v0.15.0)                                           │
 │  ┌───────────────────────────────────────────────────────────────────────┐ │
 │  │                                                                       │ │
-│  │  SearchResult                                                         │ │
-│  │  ├── query: str           # Pergunta original                        │ │
-│  │  ├── hits: list[Hit]      # Lista de resultados                      │ │
-│  │  ├── total: int           # Total encontrado                         │ │
-│  │  ├── latency_ms: int      # Tempo de resposta                        │ │
-│  │  ├── cached: bool         # Se veio do cache                         │ │
-│  │  ├── query_id: str        # ID para feedback                         │ │
-│  │  ├── mode: str            # Modo usado                               │ │
-│  │  ├── expanded_chunks: list[ExpandedChunk]  # Chunks expandidos (v0.14.0) │ │
-│  │  ├── expansion_stats: CitationExpansionStats # Estatísticas (v0.14.0)│ │
-│  │  │                                                                   │ │
+│  │  BaseResult (ABC)            # Classe base abstrata                   │ │
+│  │  ├── query: str              # Pergunta original                     │ │
+│  │  ├── total: int              # Total encontrado                      │ │
+│  │  ├── latency_ms: float       # Tempo de resposta                     │ │
+│  │  ├── cached: bool            # Se veio do cache                      │ │
 │  │  └── Métodos:                                                        │ │
-│  │      ├── to_context(max_chars, include_expanded, include_stats)      │ │
-│  │      │   → str  # Retorna contexto com seções EVIDÊNCIA DIRETA       │ │
-│  │      │          # e TRECHOS CITADOS (expansão por citação)           │ │
+│  │      ├── to_context() -> str                                         │ │
 │  │      ├── to_messages(query, system_prompt) -> list[dict]             │ │
 │  │      ├── to_prompt(query, system_prompt) -> str                      │ │
-│  │      └── to_dict() -> dict                                           │ │
+│  │      ├── to_xml(level) -> str                                        │ │
+│  │      ├── __iter__() -> Iterator[Hit]                                 │ │
+│  │      └── __len__() -> int                                            │ │
+│  │          │                                                           │ │
+│  │          ├── SearchResult (herda BaseResult)                         │ │
+│  │          │   ├── hits, query_id, mode                                │ │
+│  │          │   ├── expanded_chunks, expansion_stats                    │ │
+│  │          │   └── to_dict(), to_response_schema()                     │ │
+│  │          │       │                                                   │ │
+│  │          │       └── SmartSearchResult (herda SearchResult)          │ │
+│  │          │           ├── confianca, raciocinio, tentativas           │ │
+│  │          │           └── normas_presentes                            │ │
+│  │          │                                                           │ │
+│  │          ├── HybridResult (herda BaseResult)                         │ │
+│  │          │   ├── hits: list[Hit]        # Evidências diretas         │ │
+│  │          │   ├── graph_nodes: list[Hit]  # Expansão via grafo        │ │
+│  │          │   └── stats: dict             # Estatísticas              │ │
+│  │          │                                                           │ │
+│  │          └── LookupResult (herda BaseResult)                         │ │
+│  │              ├── status: str   # found/not_found/ambiguous           │ │
+│  │              ├── match: Hit    # Dispositivo encontrado              │ │
+│  │              ├── parent: Hit   # Chunk pai                           │ │
+│  │              ├── siblings: list[Hit]  # Irmãos                       │ │
+│  │              └── candidates: list[LookupCandidate]                   │ │
+│  │                                                                       │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│  BUSCA                                                                      │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
 │  │                                                                       │ │
 │  │  Hit                                                                  │ │
 │  │  ├── text: str            # Texto do chunk                           │ │
@@ -445,7 +492,21 @@ Cliente HTTP minimalista sem dependências externas.
 │  │  ├── source: str          # Fonte formatada                          │ │
 │  │  ├── metadata: Metadata   # Metadados completos                      │ │
 │  │  ├── chunk_id: str        # ID interno                               │ │
-│  │  └── context: str         # Contexto adicional                       │ │
+│  │  ├── context: str         # Contexto adicional                       │ │
+│  │  │                                                                   │ │
+│  │  │  Campos de Proveniência (v0.15.0):                                │ │
+│  │  ├── is_graph_expanded    # Veio do grafo?                           │ │
+│  │  ├── hop, graph_score     # Distância e score do grafo               │ │
+│  │  ├── is_parent, is_sibling, is_child_of_seed                         │ │
+│  │  ├── source               # "seed", "family", "graph"               │ │
+│  │  │                                                                   │ │
+│  │  │  Campos de Curadoria (v0.15.0):                                   │ │
+│  │  ├── nota_especialista, resumo_ia, aliases, ativo                    │ │
+│  │  │                                                                   │ │
+│  │  │  Campos de Verificabilidade (v0.15.0):                            │ │
+│  │  ├── evidence_url, document_url                                      │ │
+│  │  ├── canonical_hash, canonical_start, canonical_end                  │ │
+│  │  └── page_number, bbox_x0, bbox_y0, bbox_x1, bbox_y1                │ │
 │  │                                                                       │ │
 │  │  Metadata                                                             │ │
 │  │  ├── document_type: str   # lei, decreto, in...                      │ │
@@ -455,6 +516,12 @@ Cliente HTTP minimalista sem dependências externas.
 │  │  ├── paragraph: str       # Parágrafo                                │ │
 │  │  ├── item: str            # Inciso                                   │ │
 │  │  └── orgao: str           # Órgão emissor                            │ │
+│  │                                                                       │ │
+│  │  LookupCandidate          # Para referências ambíguas (v0.15.0)      │ │
+│  │  ├── document_id: str                                                │ │
+│  │  ├── node_id: str                                                    │ │
+│  │  ├── text: str                                                       │ │
+│  │  └── tipo_documento: str                                             │ │
 │  │                                                                       │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │
 │                                                                             │
@@ -527,25 +594,27 @@ Cliente HTTP minimalista sem dependências externas.
 │  │                                                                       │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │
 │                                                                             │
-│  CITATION EXPANSION (v0.14.0)                                              │
+│  CITATION EXPANSION (v0.14.0 — DEPRECADO em v0.15.0)                       │
 │  ┌───────────────────────────────────────────────────────────────────────┐ │
 │  │                                                                       │ │
-│  │  ExpandedChunk               # Chunk obtido via expansão de citação   │ │
-│  │  ├── chunk_id: str          # ID completo (ex: LEI-14133-2021#ART-018)│ │
-│  │  ├── node_id: str           # ID canônico (leis:{doc}#{span})        │ │
-│  │  ├── text: str              # Texto completo do chunk                │ │
-│  │  ├── document_id: str       # ID do documento (ex: LEI-14133-2021)   │ │
-│  │  ├── span_id: str           # ID do dispositivo (ex: ART-018)        │ │
-│  │  ├── device_type: str       # Tipo: article, paragraph, inciso, alinea│ │
-│  │  ├── source_chunk_id: str   # ID do chunk que continha a citação     │ │
-│  │  └── source_citation_raw: str # Texto original da citação            │ │
+│  │  ⚠ ExpandedChunk e CitationExpansionStats estão DEPRECADOS.          │ │
+│  │  A partir de v0.15.0 são retornados como dict.                       │ │
+│  │  Classes mantidas com DeprecationWarning para compatibilidade.       │ │
+│  │  Serão removidos em v1.0.                                            │ │
 │  │                                                                       │ │
-│  │  CitationExpansionStats      # Estatísticas de expansão              │ │
-│  │  ├── citations_found: int   # Total de citações detectadas           │ │
-│  │  ├── citations_resolved: int # Citações que encontraram chunk        │ │
-│  │  ├── citations_not_found: int # Citações sem chunk correspondente    │ │
-│  │  ├── chunks_added: int      # Chunks adicionados via expansão        │ │
-│  │  └── expansion_time_ms: float # Tempo de processamento (ms)          │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│  EXCEÇÕES (v0.15.0)                                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                       │ │
+│  │  VectorGovError (base)                                                │ │
+│  │  ├── AuthError              # API key inválida                       │ │
+│  │  ├── TierError              # Recurso não disponível no plano        │ │
+│  │  ├── RateLimitError         # Rate limit excedido                    │ │
+│  │  ├── ValidationError        # Parâmetros inválidos                   │ │
+│  │  ├── ServerError            # Erro interno do servidor               │ │
+│  │  ├── ConnectionError        # Falha de conexão                       │ │
+│  │  └── TimeoutError           # Timeout na requisição                  │ │
 │  │                                                                       │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │
 │                                                                             │

@@ -7,6 +7,99 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-03-01
+
+### Adicionado
+
+- **Smart Search (`smart_search()`)** — Pipeline MOC v4 completo com Juiz de confianca:
+  - Novo modelo `SmartSearchResult` (herda de `SearchResult`)
+  - Campos extras: `confianca`, `raciocinio`, `tentativas`, `normas_presentes`
+  - Cada hit inclui `nota_especialista`, `evidence_url`, `document_url`
+  - Requer tier Premium (`TierError` se nao disponivel)
+
+- **Busca Hibrida (`hybrid()`)** — Milvus (semantica) + Neo4j (grafo de citacoes):
+  - Novo modelo `HybridResult` (herda de `BaseResult`)
+  - Campos: `hits` (evidencias diretas), `graph_nodes` (expansao via grafo), `stats`
+  - Parametros: `top_k`, `hops` (1-2), `graph_expansion` (bidirectional/forward), `token_budget`
+  - Metodos herdados: `to_context()`, `to_xml()`, `to_messages()`, `to_prompt()`
+
+- **Lookup de Dispositivo (`lookup()`)** — Resolucao de referencias normativas:
+  - Novo modelo `LookupResult` (herda de `BaseResult`)
+  - Resolucao de referencia textual para dispositivo exato (ex: "Art. 33 da Lei 14.133")
+  - Contexto hierarquico: `match`, `parent`, `siblings`
+  - Status: `found`, `not_found`, `ambiguous`, `parse_failed`
+  - `LookupCandidate` para referencias ambiguas
+
+- **Classe Base `BaseResult`** — ABC com campos e metodos comuns:
+  - Campos: `query`, `total`, `latency_ms`, `cached`
+  - Metodos: `to_context()`, `to_messages()`, `to_prompt()`, `to_xml()`, `__iter__()`, `__len__()`
+  - `SearchResult`, `HybridResult`, `LookupResult` herdam dela
+
+- **Excecao `TierError`** — Tier do plano nao inclui o recurso solicitado:
+  - Lancada quando smart_search() e chamado sem tier Premium
+  - Inclui `upgrade_url` opcional para pagina de upgrade
+
+- **Cliente Assincrono `AsyncVectorGov`** — Mesma API, mas async/await:
+  - Import: `from vectorgov import AsyncVectorGov`
+  - Todos os metodos sao `async`: `await vg.search()`, `await vg.hybrid()`, etc.
+
+- **Campos de Proveniencia nos Hits**:
+  - `is_graph_expanded`, `hop`, `graph_score` — Origem no grafo
+  - `is_parent`, `is_sibling`, `is_child_of_seed` — Relacao hierarquica
+  - `source` — Origem do chunk: `seed`, `family`, `graph`
+
+- **Campos de Curadoria nos Hits**:
+  - `resumo_ia` — Resumo gerado por IA
+  - `aliases` — Nomes alternativos do dispositivo
+  - `ativo` — Se o dispositivo esta vigente
+
+- **Campos de Verificabilidade nos Hits**:
+  - `canonical_hash`, `canonical_start`, `canonical_end` — Rastreabilidade do texto
+  - `page_number`, `bbox_x0`, `bbox_y0`, `bbox_x1`, `bbox_y1` — Localizacao no PDF
+
+### Deprecado
+
+- `ExpandedChunk` — Agora retornado como dict. Classe mantida com `DeprecationWarning`.
+- `CitationExpansionStats` — Agora retornado como dict. Classe mantida com `DeprecationWarning`.
+- `LookupMatch`, `LookupParent`, `LookupSibling`, `LookupResolved` — Usar `Hit` no lugar. Mantidos com `DeprecationWarning`.
+
+### Alterado
+
+- `SearchResult` agora herda de `BaseResult` (ABC)
+- `pyproject.toml` version alinhada com `__init__.py` (`0.15.0`)
+
+### Exemplos
+
+```python
+# Smart Search — pipeline turnkey
+from vectorgov import VectorGov, TierError
+
+vg = VectorGov(api_key="vg_xxx")
+
+try:
+    result = vg.smart_search("Quais os criterios de julgamento?")
+    print(result.confianca)     # "ALTO", "MEDIO" ou "BAIXO"
+    print(result.raciocinio)    # Texto do Juiz
+    for hit in result:
+        print(hit.nota_especialista)
+except TierError:
+    result = vg.search("criterios de julgamento", mode="precise")
+
+# Busca Hibrida — Milvus + Neo4j
+result = vg.hybrid("Dispensa de licitacao por baixo valor", hops=2)
+print(f"Evidencias diretas: {len(result.hits)}")
+print(f"Expansao via grafo: {len(result.graph_nodes)}")
+context = result.to_context()
+
+# Lookup de Dispositivo
+result = vg.lookup("Inc. III do Art. 9 da IN 58")
+if result.status == "found":
+    print(result.match.text)
+    for sib in result.siblings:
+        marker = ">" if sib.is_current else " "
+        print(f"  {marker} {sib.span_id}")
+```
+
 ## [0.14.0] - 2025-01-22
 
 ### Adicionado
@@ -624,7 +717,9 @@ results = vg.search("O que é ETP?", use_cache=True)
 - Retry automático com backoff exponencial
 - Timeout configurável
 
-[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.14.0...v0.15.0
+[0.14.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.10.0...v0.12.0
 [0.10.0]: https://github.com/euteajudo/vectorgov-sdk/compare/v0.9.0...v0.10.0

@@ -44,6 +44,8 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
 - **Configuração**
   - [Modos de Busca](#modos-de-busca)
   - [Smart Search](#smart-search-busca-inteligente)
+  - [Busca Hibrida (Grafo)](#busca-hibrida-milvus--grafo)
+  - [Lookup de Dispositivo](#lookup-de-dispositivo)
   - [Citation Expansion](#citation-expansion-expansão-de-citações)
   - [Filtros](#filtros)
   - [Formatação de Resultados](#formatação-de-resultados)
@@ -989,6 +991,80 @@ except TierError:
     result = vg.search("query", mode="precise")
 ```
 
+## Busca Hibrida (Milvus + Grafo)
+
+O metodo `hybrid()` combina busca semantica (Milvus) com expansao via grafo de citacoes normativas (Neo4j). Retorna evidencias diretas e artigos citados.
+
+```python
+# Busca hibrida com expansao de grafo
+result = vg.hybrid("Dispensa de licitacao por baixo valor")
+
+# Evidencias diretas (busca semantica)
+for hit in result.hits:
+    print(f"{hit.source}: {hit.text[:100]}...")
+
+# Expansao via grafo (artigos citados)
+for node in result.graph_nodes:
+    print(f"[hop={node.hop}] {node.source}: {node.text[:100]}...")
+
+# Contexto formatado para LLM (inclui ambas secoes)
+context = result.to_context()
+messages = result.to_messages("Dispensa de licitacao por baixo valor")
+```
+
+**Parametros:**
+
+| Parametro | Tipo | Default | Descricao |
+|-----------|------|---------|-----------|
+| `query` | str | - | Pergunta (3-1000 caracteres) |
+| `top_k` | int | 8 | Resultados diretos (1-20) |
+| `hops` | int | 1 | Saltos no grafo (1-2) |
+| `graph_expansion` | str | `"bidirectional"` | Direcao da expansao |
+| `token_budget` | int | 3500 | Limite de tokens do contexto |
+| `collections` | list | `["leis_v4"]` | Collections a buscar |
+
+**Modelo retornado:** `HybridResult` (herda de `BaseResult`), com:
+- `hits` — Evidencias diretas (lista de `Hit`)
+- `graph_nodes` — Expansao via grafo (lista de `Hit` com `hop` e `graph_score`)
+- `stats` — Estatisticas da busca (seeds, graph_nodes, tokens, truncated)
+
+## Lookup de Dispositivo
+
+O metodo `lookup()` resolve referencias textuais para o dispositivo normativo exato, incluindo contexto hierarquico (pai e irmaos).
+
+```python
+# Buscar dispositivo por referencia textual
+result = vg.lookup("Art. 33 da Lei 14.133")
+
+if result.status == "found":
+    print(f"Encontrado: {result.match.text[:200]}...")
+
+    # Chunk pai (artigo completo quando match e paragrafo/inciso)
+    if result.parent:
+        print(f"Pai: {result.parent.span_id}")
+
+    # Irmaos (mesmo nivel hierarquico)
+    for sib in result.siblings:
+        marker = ">" if sib.is_current else " "
+        print(f"  {marker} {sib.span_id}: {sib.text[:80]}...")
+
+elif result.status == "ambiguous":
+    print("Referencia ambigua. Candidatos:")
+    for c in result.candidates:
+        print(f"  - {c.document_id}: {c.text[:80]}...")
+```
+
+**Parametros:**
+
+| Parametro | Tipo | Default | Descricao |
+|-----------|------|---------|-----------|
+| `reference` | str | - | Referencia textual (ex: "Art. 33 da Lei 14.133") |
+| `collection` | str | `"leis_v4"` | Collection a buscar |
+| `include_parent` | bool | `True` | Incluir chunk pai |
+| `include_siblings` | bool | `True` | Incluir irmaos |
+
+**Status possiveis:** `found`, `not_found`, `ambiguous`, `parse_failed`
+
 ## Citation Expansion (Expansão de Citações)
 
 A Citation Expansion permite que o SDK busque automaticamente os chunks referenciados por citações normativas nos resultados da busca. Quando um artigo menciona outro dispositivo legal (ex: "conforme art. 18 da Lei 14.133"), o SDK pode recuperar esse chunk adicional.
@@ -1026,6 +1102,8 @@ if results.expansion_stats:
 | `citation_expansion_top_n` | int | `3` | Quantos dos top resultados terão citações expandidas |
 
 ### Estrutura do ExpandedChunk
+
+> **Nota (v0.15.0):** `ExpandedChunk` e `CitationExpansionStats` estao deprecados e serao removidos em v1.0. A partir de v0.15.0 sao retornados como `dict`. As classes foram mantidas com `DeprecationWarning` para compatibilidade.
 
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
