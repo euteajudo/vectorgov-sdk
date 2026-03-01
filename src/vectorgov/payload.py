@@ -1454,6 +1454,21 @@ def build_lookup_xml(result: LookupResult, level: str = "data") -> str:
                 el.set("atual", str(sib.is_current).lower())
                 el.text = sib.text or ""
 
+        # Filhos
+        if result.children:
+            filhos = ET.SubElement(hier, "dispositivos_filhos")
+            filhos.set("count", str(len(result.children)))
+            for child in result.children:
+                el = ET.SubElement(filhos, "filho")
+                el.set("id", child.span_id or "")
+                el.set("tipo", child.device_type or "")
+                el.text = child.text or ""
+
+        # Texto consolidado (caput + filhos)
+        if result.stitched_text:
+            stitched = ET.SubElement(hier, "texto_consolidado")
+            stitched.text = result.stitched_text
+
     # Candidatos (ambiguous)
     if result.status == "ambiguous" and result.candidates:
         cands = ET.SubElement(root, "candidatos")
@@ -1493,6 +1508,9 @@ def _build_lookup_instrucoes_completas(result: LookupResult, root: ET.Element) -
         for sib in result.siblings:
             if sib.span_id not in ids:
                 ids.append(sib.span_id)
+        for child in result.children:
+            if child.span_id not in ids:
+                ids.append(child.span_id)
         ET.SubElement(cr, "dispositivos_autorizados").text = (
             "Você SÓ pode citar os seguintes IDs:\n" + ", ".join(ids)
         )
@@ -1552,6 +1570,15 @@ def build_lookup_markdown(result: LookupResult) -> str:
         parts.append("## Dispositivo Principal\n")
         parts.append(f"**{result.match.span_id}** ({result.match.device_type})\n")
         parts.append(f"{result.match.text}\n")
+
+        if result.children:
+            parts.append(f"## Dispositivos Filhos ({len(result.children)})\n")
+            for child in result.children:
+                parts.append(f"- **{child.span_id}** ({child.device_type}) — {child.text[:80]}...\n")
+
+        if result.stitched_text:
+            parts.append("## Texto Consolidado\n")
+            parts.append(f"{result.stitched_text}\n")
 
         if result.parent:
             parts.append("## Artigo Pai\n")

@@ -129,13 +129,13 @@ class AsyncVectorGov:
 
     async def lookup(
         self,
-        reference: str,
+        reference: Union[str, list[str]],
         collection: str = "leis_v4",
         include_parent: bool = True,
         include_siblings: bool = True,
         trace_id: Optional[str] = None,
     ) -> LookupResult:
-        """Lookup assíncrono de dispositivo normativo."""
+        """Lookup assíncrono de dispositivo normativo (single ou batch)."""
         return await asyncio.to_thread(
             self._sync.lookup,
             reference,

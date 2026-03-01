@@ -341,12 +341,15 @@ O `VectorGov` é a classe principal do SDK, responsável por todas as interaçõ
 │  │ - token_budget: int   # Limite de tokens (default: 3500)           │   │
 │  │                                                                     │   │
 │  │ lookup(reference, collection, include_parent, include_siblings,     │   │
-│  │        trace_id) -> LookupResult   (v0.15.0)                      │   │
+│  │        trace_id) -> LookupResult   (v0.15.2)                      │   │
 │  │                                                                     │   │
-│  │ - reference: str      # "Art. 33 da Lei 14.133"                    │   │
+│  │ - reference: str | list[str] # single ou batch (max 20)            │   │
 │  │ - collection: str     # default: "leis_v4"                         │   │
 │  │ - include_parent: bool # default: True                             │   │
 │  │ - include_siblings: bool # default: True                           │   │
+│  │                                                                     │   │
+│  │ Retorno: LookupResult com .children, .stitched_text               │   │
+│  │ Batch: status="batch", iterável com for r in result               │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                             │
 │  FUNCTION CALLING                                                           │
@@ -475,10 +478,13 @@ Cliente HTTP minimalista sem dependências externas.
 │  │          │   └── stats: dict             # Estatísticas              │ │
 │  │          │                                                           │ │
 │  │          └── LookupResult (herda BaseResult)                         │ │
-│  │              ├── status: str   # found/not_found/ambiguous           │ │
+│  │              ├── status: str   # found/not_found/ambiguous/batch     │ │
 │  │              ├── match: Hit    # Dispositivo encontrado              │ │
 │  │              ├── parent: Hit   # Chunk pai                           │ │
 │  │              ├── siblings: list[Hit]  # Irmãos                       │ │
+│  │              ├── children: list[Hit]  # Filhos (v0.15.2)            │ │
+│  │              ├── stitched_text: str   # Caput+filhos (v0.15.2)      │ │
+│  │              ├── results: list[LookupResult] # Batch (v0.15.2)      │ │
 │  │              └── candidates: list[LookupCandidate]                   │ │
 │  │                                                                       │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │

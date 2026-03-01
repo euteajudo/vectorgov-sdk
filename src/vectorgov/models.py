@@ -1112,18 +1112,25 @@ class LookupResult(BaseResult):
     """Resultado de lookup de dispositivo normativo.
 
     O lookup resolve referências textuais (ex: "Art. 33 da Lei 14.133")
-    para o dispositivo exato, incluindo contexto hierárquico (pai, irmãos).
+    para o dispositivo exato, incluindo contexto hierárquico (pai, irmãos,
+    filhos) e texto consolidado (stitched).
 
     Example:
-        >>> result = vg.lookup("Inc. III do Art. 9 da IN 58")
+        >>> result = vg.lookup("Art. 18 da Lei 14.133")
         >>> if result.status == "found":
-        ...     print(result.match.text)
-        ...     for sibling in result.siblings:
-        ...         print(f"  {'>' if sibling.is_current else ' '} {sibling.span_id}")
+        ...     print(result.match.text)           # caput
+        ...     print(result.stitched_text)         # caput + filhos
+        ...     for child in result.children:
+        ...         print(f"  {child.span_id}: {child.text[:60]}")
+
+    Batch:
+        >>> results = vg.lookup(["Art. 18 da Lei 14.133", "Art. 9 da IN 65"])
+        >>> for r in results:
+        ...     print(r.reference, r.status)
     """
 
     status: str = ""
-    """Status: 'found', 'not_found', 'ambiguous', 'parse_failed'"""
+    """Status: 'found', 'not_found', 'ambiguous', 'parse_failed', 'batch'"""
 
     message: Optional[str] = None
     """Mensagem informativa"""
@@ -1137,11 +1144,20 @@ class LookupResult(BaseResult):
     siblings: list[Hit] = field(default_factory=list)
     """Dispositivos irmãos na hierarquia"""
 
+    children: list[Hit] = field(default_factory=list)
+    """Dispositivos filhos na hierarquia (paragrafos, incisos, alineas)"""
+
+    stitched_text: Optional[str] = None
+    """Texto consolidado: caput + todos os filhos concatenados"""
+
     resolved: Optional[dict] = None
     """Componentes parseados da referência"""
 
     candidates: list[LookupCandidate] = field(default_factory=list)
     """Candidatos (quando status=ambiguous)"""
+
+    results: Optional[list["LookupResult"]] = field(default=None)
+    """Lista de resultados individuais (quando status=batch)"""
 
     @property
     def endpoint_type(self) -> str:
@@ -1167,7 +1183,21 @@ class LookupResult(BaseResult):
         self.latency_ms = value
 
     def __repr__(self) -> str:
+        if self.status == "batch" and self.results is not None:
+            return f"LookupResult(batch={len(self.results)} refs)"
         return f"LookupResult(reference='{self.query}', status='{self.status}')"
+
+    def __iter__(self) -> Iterator["LookupResult"]:
+        """Itera sobre resultados individuais (batch) ou sobre o próprio resultado."""
+        if self.results is not None:
+            return iter(self.results)
+        return iter([self])
+
+    def __len__(self) -> int:
+        """Número de resultados (batch) ou 1."""
+        if self.results is not None:
+            return len(self.results)
+        return 1
 
     def to_xml(self, level: str = "data") -> str:
         """Gera payload XML estruturado.
@@ -1223,7 +1253,7 @@ class LookupResult(BaseResult):
     def to_response_schema(self) -> Optional[dict]:
         """Gera JSON Schema para structured output.
 
-        Coleta IDs de match, parent e siblings para restringir
+        Coleta IDs de match, parent, siblings e children para restringir
         o enum de dispositivo_id, prevenindo alucinação.
 
         Returns:
@@ -1237,6 +1267,9 @@ class LookupResult(BaseResult):
         for sib in self.siblings:
             if sib.span_id not in authorized_ids:
                 authorized_ids.append(sib.span_id)
+        for child in self.children:
+            if child.span_id not in authorized_ids:
+                authorized_ids.append(child.span_id)
         if not authorized_ids:
             return None
         from vectorgov.payload import _build_schema_dict
@@ -1279,6 +1312,20 @@ class LookupResult(BaseResult):
                 "text": self.match.text,
                 "device_type": self.match.device_type,
             }
+        if self.children:
+            result["children"] = [
+                {
+                    "node_id": c.node_id,
+                    "span_id": c.span_id,
+                    "text": c.text,
+                    "device_type": c.device_type,
+                }
+                for c in self.children
+            ]
+        if self.stitched_text:
+            result["stitched_text"] = self.stitched_text
+        if self.results is not None:
+            result["results"] = [r.to_dict() for r in self.results]
         return result
 
 

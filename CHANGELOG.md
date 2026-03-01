@@ -7,6 +7,41 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.15.2] - 2026-03-01
+
+### Adicionado
+
+- **Lookup: Children Stitching** — dispositivos filhos e texto consolidado:
+  - `LookupResult.children` — lista de `Hit` com filhos (paragrafos, incisos, alineas)
+  - `LookupResult.stitched_text` — texto do caput + todos os filhos concatenados
+  - Funciona para artigos (filhos: paragrafos + incisos), paragrafos (filhos: incisos) e incisos (filhos: alineas)
+  - XML e Markdown atualizado com secoes `<dispositivos_filhos>` e `<texto_consolidado>`
+
+- **Lookup: Batch** — multiplas referencias em uma chamada:
+  - `vg.lookup(["Art. 18 da Lei 14.133", "Art. 9 da IN 65"])` — aceita lista (max 20)
+  - Retorna `LookupResult` com `status="batch"` e `results: list[LookupResult]`
+  - Iteravel: `for r in result: print(r.reference, r.status)`
+  - Retrocompativel: `vg.lookup("Art. 18 da Lei 14.133")` continua funcionando
+  - `AsyncVectorGov.lookup()` tambem aceita lista
+
+### Exemplos
+
+```python
+# Children stitching — texto completo do artigo
+result = vg.lookup("Art. 18 da Lei 14.133")
+print(result.stitched_text)  # caput + todos os filhos
+print(f"{len(result.children)} filhos")
+
+# Batch lookup — multiplas referencias
+results = vg.lookup([
+    "Art. 18 da Lei 14.133",
+    "Art. 9 da IN 65",
+    "Art. 5 da IN 65",
+])
+for r in results:
+    print(f"{r.reference}: {r.status} ({len(r.children)} filhos)")
+```
+
 ## [0.15.0] - 2026-03-01
 
 ### Adicionado

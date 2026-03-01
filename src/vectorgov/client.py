@@ -560,52 +560,88 @@ class VectorGov:
 
     def lookup(
         self,
-        reference: str,
+        reference: Union[str, list[str]],
         collection: str = "leis_v4",
         include_parent: bool = True,
         include_siblings: bool = True,
         trace_id: Optional[str] = None,
     ) -> LookupResult:
-        """Busca um dispositivo normativo específico por referência textual.
+        """Busca dispositivos normativos por referência textual.
 
         Resolve referências como "Art. 33 da Lei 14.133" ou "Inc. III do
         Art. 9 da IN 58" para o dispositivo exato, incluindo contexto
-        hierárquico (pai e irmãos).
+        hierárquico (pai, irmãos, filhos) e texto consolidado.
+
+        Aceita uma referência (single) ou lista de referências (batch, max 20).
 
         Args:
-            reference: Referência textual ao dispositivo (ex: "Art. 33 da Lei 14.133")
+            reference: Referência textual ou lista de referências (max 20).
             collection: Collection a buscar. Default: "leis_v4"
             include_parent: Incluir chunk pai. Default: True
             include_siblings: Incluir irmãos. Default: True
             trace_id: ID de rastreamento para correlação de logs.
 
         Returns:
-            LookupResult com dispositivo encontrado e contexto hierárquico
+            LookupResult — single ou batch (iterável com ``for r in result``).
 
         Raises:
-            ValidationError: Se reference for vazia
+            ValidationError: Se reference for vazia ou batch > 20.
 
-        Example:
-            >>> result = vg.lookup("Inc. III do Art. 9 da IN 58")
-            >>> if result.status == "found":
-            ...     print(result.match.text)
+        Example (single):
+            >>> result = vg.lookup("Art. 18 da Lei 14.133")
+            >>> print(result.stitched_text)  # caput + filhos
+
+        Example (batch):
+            >>> results = vg.lookup(["Art. 18 da Lei 14.133", "Art. 9 da IN 65"])
+            >>> for r in results:
+            ...     print(r.reference, r.status, len(r.children))
         """
-        if not reference or not reference.strip():
-            raise ValidationError("reference não pode ser vazia", field="reference")
+        is_batch = isinstance(reference, list)
 
-        reference = reference.strip()
+        if is_batch:
+            if not reference:
+                raise ValidationError("Lista de referências não pode ser vazia", field="references")
+            if len(reference) > 20:
+                raise ValidationError("Máximo de 20 referências por batch", field="references")
+            request_data: dict = {
+                "references": reference,
+                "collection": collection,
+                "include_parent": include_parent,
+                "include_siblings": include_siblings,
+            }
+        else:
+            if not reference or not reference.strip():
+                raise ValidationError("reference não pode ser vazia", field="reference")
+            reference = reference.strip()
+            request_data = {
+                "reference": reference,
+                "collection": collection,
+                "include_parent": include_parent,
+                "include_siblings": include_siblings,
+            }
 
-        request_data = {
-            "reference": reference,
-            "collection": collection,
-            "include_parent": include_parent,
-            "include_siblings": include_siblings,
-        }
         if trace_id:
             request_data["trace_id"] = trace_id
 
         response = self._http.post("/sdk/lookup", data=request_data)
-        return self._parse_lookup_response(reference, response)
+
+        # Batch response: status="batch" com "results" list
+        if response.get("status") == "batch" and "results" in response:
+            refs = reference if is_batch else [reference]
+            batch_results = []
+            for i, sub in enumerate(response["results"]):
+                ref_str = refs[i] if i < len(refs) else ""
+                batch_results.append(self._parse_lookup_response(ref_str, sub))
+            return LookupResult(
+                query=f"{len(refs)} referências",
+                status="batch",
+                latency_ms=response.get("elapsed_ms", 0.0),
+                results=batch_results,
+                _raw_response=response,
+            )
+
+        ref_str = reference if isinstance(reference, str) else ", ".join(reference)
+        return self._parse_lookup_response(ref_str, response)
 
     def _parse_lookup_response(
         self,
@@ -665,6 +701,24 @@ class VectorGov:
                 is_current=sib_data.get("is_current", False),
             ))
 
+        # Parse children → list[Hit]
+        children = []
+        for child_data in response.get("children", []):
+            children.append(Hit(
+                span_id=child_data.get("span_id", ""),
+                node_id=child_data.get("node_id", ""),
+                device_type=child_data.get("device_type", ""),
+                text=child_data.get("text", ""),
+                score=0.0,
+                source="",
+                metadata=Metadata(document_type="", document_number="", year=0),
+                document_id=child_data.get("document_id"),
+                article_number=child_data.get("article_number"),
+            ))
+
+        # Parse stitched_text
+        stitched_text = response.get("stitched_text")
+
         # Parse resolved → dict (was LookupResolved)
         resolved = response.get("resolved")
 
@@ -686,6 +740,8 @@ class VectorGov:
             match=match,
             parent=parent,
             siblings=siblings,
+            children=children,
+            stitched_text=stitched_text,
             resolved=resolved,
             candidates=candidates,
             _raw_response=response,
