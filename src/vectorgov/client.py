@@ -246,6 +246,18 @@ class VectorGov:
                 sha256_source=item.get("sha256_source"),
                 graph_boost_applied=item.get("graph_boost_applied"),
                 curation_boost_applied=item.get("curation_boost_applied"),
+                # Identificação (smart-search e hybrid)
+                node_id=item.get("node_id"),
+                document_id=item.get("document_id"),
+                device_type=item.get("device_type"),
+                article_number=item.get("article_number"),
+                tipo_documento=item.get("tipo_documento"),
+                # Proveniência (smart-search)
+                origin_type=item.get("origin_type"),
+                origin_reference=item.get("origin_reference"),
+                origin_reference_name=item.get("origin_reference_name"),
+                is_external_material=item.get("is_external_material", False),
+                theme=item.get("theme"),
             )
             hits.append(hit)
 
@@ -278,7 +290,8 @@ class VectorGov:
             )
 
         cls = result_class or SearchResult
-        return cls(
+
+        base_kwargs = dict(
             query=query,
             hits=hits,
             total=response.get("total", len(hits)),
@@ -290,6 +303,19 @@ class VectorGov:
             expansion_stats=expansion_stats,
             _raw_response=response,
         )
+
+        # SmartSearchResult recebe campos extras do Juiz
+        if cls is SmartSearchResult:
+            base_kwargs.update(
+                confianca=response.get("confianca", ""),
+                raciocinio=response.get("raciocinio", ""),
+                tentativas=response.get("tentativas", 1),
+                normas_presentes=response.get("normas_presentes", []),
+                quantidade_normas=response.get("quantidade_normas", 0),
+                relacoes_count=response.get("relacoes_count", 0),
+            )
+
+        return cls(**base_kwargs)
 
     def smart_search(
         self,

@@ -155,6 +155,15 @@ class Hit:
     origin_reference: Optional[str] = None
     """Referência à fonte original se proveniência cruzada (ex: 'Lei 14.133/2021, Art. 75')"""
 
+    origin_reference_name: Optional[str] = None
+    """Nome legível do documento de referência (ex: 'Lei 14.133/2021')"""
+
+    is_external_material: bool = False
+    """Se este hit é material externo (não pertence à base principal)"""
+
+    theme: Optional[str] = None
+    """Tema do dispositivo (curadoria)"""
+
     stitched_text: Optional[str] = None
     """Texto consolidado (contexto + conteúdo). Prioridade sobre text no XML."""
 
@@ -819,11 +828,38 @@ Resposta:"""
 
 @dataclass
 class SmartSearchResult(SearchResult):
-    """Resultado de smart search (billing diferenciado).
+    """Resultado de smart search (pipeline MOC v4 completo).
 
-    Herda todos os campos e métodos de SearchResult, mas com
-    endpoint_type 'smart_search' para billing.
+    Herda todos os campos e métodos de SearchResult, e adiciona
+    metadados do Juiz (confiança, raciocínio) e contexto normativo.
+
+    Example:
+        >>> r = vg.smart_search("dispensa de licitação por baixo valor")
+        >>> print(r.confianca)       # "ALTO", "MEDIO" ou "BAIXO"
+        >>> print(r.raciocinio)      # Texto completo do Juiz
+        >>> print(r.tentativas)      # 1 ou 2 (se houve retry)
+        >>> print(r.normas_presentes) # ["LEI-14.133-2021", "IN-65-2021", ...]
     """
+
+    # Julgamento do Juiz
+    confianca: str = ""
+    """Nível de confiança do Juiz: 'ALTO', 'MEDIO' ou 'BAIXO'"""
+
+    raciocinio: str = ""
+    """Raciocínio completo do Juiz sobre a completude dos resultados"""
+
+    tentativas: int = 1
+    """Número de tentativas do pipeline (1 = sem retry, 2 = com retry)"""
+
+    # Contexto normativo
+    normas_presentes: list[str] = field(default_factory=list)
+    """Lista de document_ids das normas encontradas (ex: ['LEI-14.133-2021', 'IN-65-2021'])"""
+
+    quantidade_normas: int = 0
+    """Quantidade de normas distintas presentes nos resultados"""
+
+    relacoes_count: int = 0
+    """Quantidade de relações normativas encontradas via grafo"""
 
     @property
     def endpoint_type(self) -> str:

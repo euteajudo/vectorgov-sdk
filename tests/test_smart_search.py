@@ -173,6 +173,58 @@ class TestSmartSearchResponse:
             assert schema is not None
             assert "fundamentacao" in str(schema)
 
+    # ── Campos do Juiz (pipeline MOC v4) ──
+
+    def test_confianca_present(self, vg, smart_response):
+        with patch.object(vg._http, 'post', return_value=smart_response):
+            result = vg.smart_search("critérios")
+            assert result.confianca == "ALTO"
+
+    def test_raciocinio_present(self, vg, smart_response):
+        with patch.object(vg._http, 'post', return_value=smart_response):
+            result = vg.smart_search("critérios")
+            assert len(result.raciocinio) > 0
+            assert "critérios" in result.raciocinio.lower()
+
+    def test_tentativas_present(self, vg, smart_response):
+        with patch.object(vg._http, 'post', return_value=smart_response):
+            result = vg.smart_search("critérios")
+            assert result.tentativas in (1, 2)
+
+    def test_normas_presentes(self, vg, smart_response):
+        with patch.object(vg._http, 'post', return_value=smart_response):
+            result = vg.smart_search("critérios")
+            assert len(result.normas_presentes) > 0
+            assert result.quantidade_normas > 0
+            assert result.quantidade_normas == len(result.normas_presentes)
+
+    def test_relacoes_count(self, vg, smart_response):
+        with patch.object(vg._http, 'post', return_value=smart_response):
+            result = vg.smart_search("critérios")
+            assert result.relacoes_count >= 0
+
+    # ── Campos de identificação nos hits ──
+
+    def test_hit_node_id_present(self, vg, smart_response):
+        with patch.object(vg._http, 'post', return_value=smart_response):
+            result = vg.smart_search("critérios")
+            for hit in result.hits:
+                assert hit.node_id is not None
+                assert hit.document_id is not None
+
+    def test_hit_origin_type_present(self, vg, smart_response):
+        with patch.object(vg._http, 'post', return_value=smart_response):
+            result = vg.smart_search("critérios")
+            for hit in result.hits:
+                assert hit.origin_type is not None
+
+    def test_no_chunk_id_field(self, vg, smart_response):
+        """chunk_id removido do smart-search — usa node_id."""
+        with patch.object(vg._http, 'post', return_value=smart_response):
+            result = vg.smart_search("critérios")
+            for hit in result.hits:
+                assert hit.chunk_id is None  # não mais retornado pelo backend
+
 
 class TestSmartSearchErrors:
     """Testes de tratamento de erros."""
