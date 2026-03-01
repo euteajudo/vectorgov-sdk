@@ -223,8 +223,6 @@ class VectorGov:
         result_class: Optional[type] = None,
     ) -> SearchResult:
         """Converte resposta da API em SearchResult (ou subclasse via result_class)."""
-        from vectorgov.models import ExpandedChunk, CitationExpansionStats
-
         hits = []
         for item in response.get("hits", []):
             metadata = Metadata(
@@ -276,33 +274,9 @@ class VectorGov:
             )
             hits.append(hit)
 
-        # Parse expanded_chunks se presente
-        expanded_chunks = []
-        for ec in response.get("expanded_chunks", []):
-            expanded_chunks.append(ExpandedChunk(
-                chunk_id=ec.get("chunk_id", ""),
-                node_id=ec.get("node_id", ""),
-                text=ec.get("text", ""),
-                document_id=ec.get("document_id", ""),
-                span_id=ec.get("span_id", ""),
-                device_type=ec.get("device_type", "article"),
-                source_chunk_id=ec.get("source_chunk_id", ""),
-                source_citation_raw=ec.get("source_citation_raw", ""),
-            ))
-
-        # Parse expansion_stats se presente
-        expansion_stats = None
-        if "expansion_stats" in response and response["expansion_stats"]:
-            es = response["expansion_stats"]
-            expansion_stats = CitationExpansionStats(
-                expanded_chunks_count=es.get("expanded_chunks_count", 0),
-                citations_scanned_count=es.get("citations_scanned_count", 0),
-                citations_resolved_count=es.get("citations_resolved_count", 0),
-                expansion_time_ms=es.get("expansion_time_ms", 0.0),
-                skipped_self_references=es.get("skipped_self_references", 0),
-                skipped_duplicates=es.get("skipped_duplicates", 0),
-                skipped_token_budget=es.get("skipped_token_budget", 0),
-            )
+        # expanded_chunks e expansion_stats: raw dicts da API
+        expanded_chunks = response.get("expanded_chunks", [])
+        expansion_stats = response.get("expansion_stats") or None
 
         cls = result_class or SearchResult
 

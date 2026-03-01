@@ -343,21 +343,21 @@ def build_markdown(result: SearchResult) -> str:
     if result.expanded_chunks:
         parts.append("## Trechos Citados (expansão por citação)\n")
         for j, ec in enumerate(result.expanded_chunks, 1):
-            source_info = ec.source_chunk_id or "(origem não informada)"
-            parts.append(f"### [XC-{j}] {ec.document_id}, {ec.span_id}\n")
+            source_info = ec.get("source_chunk_id") or "(origem não informada)"
+            parts.append(f"### [XC-{j}] {ec.get('document_id', '')}, {ec.get('span_id', '')}\n")
             parts.append(f"- **Citado por:** {source_info}\n")
-            if ec.source_citation_raw:
-                parts.append(f"- **Citação original:** {ec.source_citation_raw}\n")
-            parts.append(f"\n{ec.text}\n")
+            if ec.get("source_citation_raw"):
+                parts.append(f"- **Citação original:** {ec['source_citation_raw']}\n")
+            parts.append(f"\n{ec.get('text', '')}\n")
 
     # Stats
     if result.expansion_stats:
         s = result.expansion_stats
         parts.append(
-            f"\n---\n_Expansão: {s.expanded_chunks_count} expandidos, "
-            f"{s.citations_scanned_count} encontradas, "
-            f"{s.citations_resolved_count} resolvidas, "
-            f"{s.expansion_time_ms:.0f}ms_\n"
+            f"\n---\n_Expansão: {s.get('expanded_chunks_count', 0)} expandidos, "
+            f"{s.get('citations_scanned_count', 0)} encontradas, "
+            f"{s.get('citations_resolved_count', 0)} resolvidas, "
+            f"{s.get('expansion_time_ms', 0):.0f}ms_\n"
         )
 
     return "\n".join(parts)
@@ -631,11 +631,11 @@ def _build_contexto_normativo_element(result: SearchResult, root: ET.Element) ->
 
     for ec in result.expanded_chunks:
         disp = ET.SubElement(ctx, "dispositivo_relacionado")
-        disp.set("id", ec.span_id or "")
-        disp.set("lei", ec.document_id or "")
-        disp.set("relacao", ec.relacao)
-        disp.set("hop", str(ec.hop))
-        disp.text = ec.text or ""
+        disp.set("id", ec.get("span_id") or "")
+        disp.set("lei", ec.get("document_id") or "")
+        disp.set("relacao", ec.get("relacao") or "")
+        disp.set("hop", str(ec.get("hop", 0)))
+        disp.text = ec.get("text") or ""
 
 
 def _build_notas_especialista_element(result: SearchResult, root: ET.Element) -> None:
@@ -794,10 +794,10 @@ def _build_metadados_element(result: SearchResult, root: ET.Element) -> None:
     if result.expansion_stats:
         es = result.expansion_stats
         exp = ET.SubElement(meta, "expansao")
-        ET.SubElement(exp, "expandidos").text = str(es.expanded_chunks_count)
-        ET.SubElement(exp, "citacoes_encontradas").text = str(es.citations_scanned_count)
-        ET.SubElement(exp, "citacoes_resolvidas").text = str(es.citations_resolved_count)
-        ET.SubElement(exp, "tempo_ms").text = f"{es.expansion_time_ms:.0f}"
+        ET.SubElement(exp, "expandidos").text = str(es.get("expanded_chunks_count", 0))
+        ET.SubElement(exp, "citacoes_encontradas").text = str(es.get("citations_scanned_count", 0))
+        ET.SubElement(exp, "citacoes_resolvidas").text = str(es.get("citations_resolved_count", 0))
+        ET.SubElement(exp, "tempo_ms").text = f"{es.get('expansion_time_ms', 0):.0f}"
 
 
 # =============================================================================
@@ -909,7 +909,7 @@ def _collect_ids(
 
     Args:
         hits: Lista de Hit (ou qualquer objeto com .chunk_id).
-        expanded: Lista de ExpandedChunk/GraphNode (ou qualquer objeto com .span_id e .chunk_id).
+        expanded: Lista de dicts/GraphNode (ou qualquer objeto com .span_id e .chunk_id).
         with_evidence: Se True, retorna tupla (ids, evidence_map). Se False, retorna só ids.
 
     Returns:
@@ -927,10 +927,12 @@ def _collect_ids(
                 evidence_map[span_id] = f"/api/v1/evidence/{quote(hit.chunk_id, safe='')}"
 
     for ec in (expanded or []):
-        if ec.span_id and ec.span_id not in authorized_ids:
-            authorized_ids.append(ec.span_id)
-            if with_evidence and ec.chunk_id:
-                evidence_map[ec.span_id] = f"/api/v1/evidence/{quote(ec.chunk_id, safe='')}"
+        ec_span = ec.get("span_id") if isinstance(ec, dict) else getattr(ec, "span_id", None)
+        ec_chunk = ec.get("chunk_id") if isinstance(ec, dict) else getattr(ec, "chunk_id", None)
+        if ec_span and ec_span not in authorized_ids:
+            authorized_ids.append(ec_span)
+            if with_evidence and ec_chunk:
+                evidence_map[ec_span] = f"/api/v1/evidence/{quote(ec_chunk, safe='')}"
 
     if with_evidence:
         return authorized_ids, evidence_map

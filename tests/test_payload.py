@@ -11,8 +11,6 @@ from vectorgov.models import (
     BaseResult,
     Hit,
     Metadata,
-    ExpandedChunk,
-    CitationExpansionStats,
 )
 
 
@@ -102,26 +100,31 @@ def _make_result(
     )
 
 
-def _make_expanded_chunk() -> ExpandedChunk:
-    return ExpandedChunk(
-        chunk_id="LEI-14133-2021#ART-018",
-        node_id="leis:LEI-14133-2021#ART-018",
-        text="Art. 18. A fase preparatória do processo...",
-        document_id="LEI-14133-2021",
-        span_id="ART-018",
-        device_type="article",
-        source_chunk_id="LEI-14133-2021#ART-033",
-        source_citation_raw="art. 18 da Lei 14.133",
-    )
+def _make_expanded_chunk() -> dict:
+    return {
+        "chunk_id": "LEI-14133-2021#ART-018",
+        "node_id": "leis:LEI-14133-2021#ART-018",
+        "text": "Art. 18. A fase preparatória do processo...",
+        "document_id": "LEI-14133-2021",
+        "span_id": "ART-018",
+        "device_type": "article",
+        "source_chunk_id": "LEI-14133-2021#ART-033",
+        "source_citation_raw": "art. 18 da Lei 14.133",
+        "hop": 1,
+        "relacao": "citacao",
+        "frequency": 0,
+        "paths": [],
+        "origin_type": "self",
+    }
 
 
-def _make_expansion_stats() -> CitationExpansionStats:
-    return CitationExpansionStats(
-        expanded_chunks_count=1,
-        citations_scanned_count=3,
-        citations_resolved_count=2,
-        expansion_time_ms=45.0,
-    )
+def _make_expansion_stats() -> dict:
+    return {
+        "expanded_chunks_count": 1,
+        "citations_scanned_count": 3,
+        "citations_resolved_count": 2,
+        "expansion_time_ms": 45.0,
+    }
 
 
 # =============================================================================
@@ -276,10 +279,10 @@ class TestToXml:
         assert "fase preparatória" in disp_rel.text
 
     def test_contexto_normativo_custom_hop_and_relacao(self):
-        """Seção 3: hop e relacao vêm do ExpandedChunk."""
+        """Seção 3: hop e relacao vêm do expanded chunk dict."""
         ec = _make_expanded_chunk()
-        ec.hop = 2
-        ec.relacao = "regulamenta"
+        ec["hop"] = 2
+        ec["relacao"] = "regulamenta"
         r = _make_result(expanded=[ec])
         xml = r.to_xml("data")
         root = ET.fromstring(xml)
@@ -2034,14 +2037,14 @@ class TestNewSearchFields:
         assert hit.curation_boost_applied is None
 
     def test_expanded_chunk_frequency_paths(self):
-        """Novos campos do ExpandedChunk têm defaults corretos."""
+        """Expanded chunk dict tem campos acessíveis via .get()."""
         ec = _make_expanded_chunk()
-        assert ec.frequency == 0
-        assert ec.paths == []
-        assert ec.origin_type == "self"
+        assert ec.get("frequency", 0) == 0
+        assert ec.get("paths", []) == []
+        assert ec.get("origin_type", "self") == "self"
 
     def test_expanded_chunk_with_values(self):
-        """ExpandedChunk aceita novos valores."""
+        """HybridResult graph_nodes (Hit) aceita novos valores."""
         ec = _make_hybrid_expanded(frequency=10, paths=[["A", "B"]], origin_type="cruzada")
         assert ec.frequency == 10
         assert ec.paths == [["A", "B"]]
@@ -2610,20 +2613,20 @@ class TestFixtureSearch:
         assert h.evidence_url is not None
 
     def test_fixture_search_expanded_chunks(self, search_result):
-        """Chunks expandidos são parseados corretamente."""
+        """Chunks expandidos são parseados como dicts."""
         assert len(search_result.expanded_chunks) == 1
         ec = search_result.expanded_chunks[0]
-        assert ec.span_id == "ART-018"
-        assert ec.document_id == "LEI-14133-2021"
-        assert ec.source_chunk_id == "LEI-14133-2021#ART-023"
+        assert ec["span_id"] == "ART-018"
+        assert ec["document_id"] == "LEI-14133-2021"
+        assert ec["source_chunk_id"] == "LEI-14133-2021#ART-023"
 
     def test_fixture_search_expansion_stats(self, search_result):
-        """Estatísticas de expansão são parseadas."""
+        """Estatísticas de expansão são parseadas como dict."""
         stats = search_result.expansion_stats
         assert stats is not None
-        assert stats.expanded_chunks_count == 1
-        assert stats.citations_scanned_count == 4
-        assert stats.skipped_self_references == 1
+        assert stats["expanded_chunks_count"] == 1
+        assert stats["citations_scanned_count"] == 4
+        assert stats["skipped_self_references"] == 1
 
     def test_fixture_search_to_xml_roundtrip(self, search_result):
         """JSON → parser → to_xml produz XML válido com dados corretos."""

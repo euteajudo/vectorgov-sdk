@@ -240,106 +240,11 @@ class Hit:
 
 
 # =============================================================================
-# CITATION EXPANSION MODELS
+# CITATION EXPANSION (deprecated — backend usa R1 enable_reference_expansion)
 # =============================================================================
-
-
-@dataclass
-class ExpandedChunk:
-    """Deprecated: será removido em v1.0. Use Hit com campos de grafo.
-
-    Chunk obtido via expansão de citações normativas.
-
-    Quando um chunk referencia outro documento/artigo (ex: "conforme art. 18 da Lei 14.133"),
-    o sistema pode expandir automaticamente trazendo o conteúdo referenciado.
-    """
-
-    chunk_id: str
-    """ID do chunk expandido (ex: 'LEI-14133-2021#ART-018')"""
-
-    node_id: str
-    """Node ID canônico no formato leis:{document_id}#{span_id}"""
-
-    text: str
-    """Texto do chunk expandido"""
-
-    document_id: str
-    """ID do documento fonte"""
-
-    span_id: str
-    """ID do dispositivo (ex: 'ART-018', 'PAR-005-1')"""
-
-    device_type: str = "article"
-    """Tipo do dispositivo (article, paragraph, inciso, alinea)"""
-
-    source_chunk_id: str = ""
-    """ID do chunk que citou este (origem da referência)"""
-
-    source_citation_raw: str = ""
-    """Texto original da citação (ex: 'art. 18 da Lei nº 14.133')"""
-
-    hop: int = 1
-    """Distância no grafo em relação ao seed (1 = citação direta, 2 = 2 saltos)"""
-
-    relacao: str = "citacao"
-    """Tipo de relacionamento (citacao, regulamenta, referencia, etc.)"""
-
-    frequency: int = 0
-    """Frequência de citação no grafo (quantas vezes citado)."""
-
-    paths: list = field(default_factory=list)
-    """Caminhos no grafo (listas de node_ids)."""
-
-    origin_type: str = "self"
-    """Proveniência: 'self' ou tipo de referência cruzada."""
-
-    def __repr__(self) -> str:
-        text_preview = self.text[:50] + "..." if len(self.text) > 50 else self.text
-        return f"ExpandedChunk(node_id='{self.node_id}', text='{text_preview}')"
-
-
-@dataclass(slots=True)
-class CitationExpansionStats:
-    """Estatísticas de expansão de citações.
-
-    Fornece métricas sobre quantas citações foram encontradas, resolvidas
-    e expandidas durante a busca.
-
-    Example:
-        >>> result = vg.search("ETP", expand_citations=True)
-        >>> stats = result.expansion_stats
-        >>> print(f"Encontradas: {stats.citations_scanned_count}")
-        >>> print(f"Resolvidas: {stats.citations_resolved_count}")
-        >>> print(f"Expandidas: {stats.expanded_chunks_count}")
-    """
-
-    expanded_chunks_count: int
-    """Número de chunks expandidos com sucesso"""
-
-    citations_scanned_count: int
-    """Total de citações encontradas nos hits originais"""
-
-    citations_resolved_count: int
-    """Citações que foram resolvidas para node_ids válidos"""
-
-    expansion_time_ms: float
-    """Tempo de expansão em milissegundos"""
-
-    skipped_self_references: int = 0
-    """Citações ignoradas por serem auto-referências"""
-
-    skipped_duplicates: int = 0
-    """Citações ignoradas por serem duplicadas"""
-
-    skipped_token_budget: int = 0
-    """Citações ignoradas por exceder budget de tokens"""
-
-    def __repr__(self) -> str:
-        return (
-            f"CitationExpansionStats(expanded={self.expanded_chunks_count}, "
-            f"scanned={self.citations_scanned_count}, "
-            f"resolved={self.citations_resolved_count})"
-        )
+# ExpandedChunk e CitationExpansionStats removidos em v0.15.0.
+# O campo expanded_chunks em SearchResult agora é list[dict] (raw da API).
+# A feature real de expansão é automática no pipeline Fênix (Stage 5.5).
 
 
 @dataclass  # type: ignore[misc]
@@ -399,15 +304,11 @@ class BaseResult(ABC):
 class SearchResult(BaseResult):
     """Resultado completo de uma busca.
 
-    Quando `expand_citations=True` é passado na busca, o resultado
-    incluirá chunks expandidos e estatísticas de expansão.
-
     Example:
-        >>> result = vg.search("ETP", expand_citations=True)
+        >>> result = vg.search("O que é ETP?")
         >>> print(f"Hits: {len(result.hits)}")
-        >>> print(f"Expanded: {len(result.expanded_chunks)}")
-        >>> if result.expansion_stats:
-        ...     print(f"Citações encontradas: {result.expansion_stats.citations_scanned_count}")
+        >>> for hit in result:
+        ...     print(f"{hit.source}: {hit.text[:100]}...")
     """
 
     hits: list[Hit] = field(default_factory=list)
@@ -416,11 +317,11 @@ class SearchResult(BaseResult):
     mode: str = ""
     """Modo de busca utilizado"""
 
-    expanded_chunks: list[ExpandedChunk] = field(default_factory=list)
-    """Chunks expandidos via citações (requer expand_citations=True)"""
+    expanded_chunks: list[dict] = field(default_factory=list)
+    """Chunks expandidos via R1 (reference expansion). Dicts raw da API."""
 
-    expansion_stats: Optional[CitationExpansionStats] = None
-    """Estatísticas de expansão de citações (requer expand_citations=True)"""
+    expansion_stats: Optional[dict] = None
+    """Estatísticas de expansão (dict raw da API)."""
 
     @property
     def endpoint_type(self) -> str:
@@ -506,11 +407,11 @@ class SearchResult(BaseResult):
             total_chars += len(separator) + 1
 
             for j, ec in enumerate(self.expanded_chunks, 1):
-                # Informações de rastreabilidade
-                source_chunk = ec.source_chunk_id or "(origem não informada)"
-                citation_raw = ec.source_citation_raw or "(citação não informada)"
-                node_id = ec.node_id or "(node_id não informado)"
-                device_type = ec.device_type or "unknown"
+                # Informações de rastreabilidade (ec é dict raw da API)
+                source_chunk = ec.get("source_chunk_id") or "(origem não informada)"
+                citation_raw = ec.get("source_citation_raw") or "(citação não informada)"
+                node_id = ec.get("node_id") or "(node_id não informado)"
+                device_type = ec.get("device_type") or "unknown"
 
                 # Monta bloco estruturado
                 entry_lines = [
@@ -518,8 +419,8 @@ class SearchResult(BaseResult):
                     f"  CITADO POR: {source_chunk}",
                     f"  CITAÇÃO ORIGINAL: {citation_raw}",
                     f"  ALVO (node_id): {node_id}",
-                    f"  FONTE: {ec.document_id}, {ec.span_id} ({device_type})",
-                    f"{ec.text}",
+                    f"  FONTE: {ec.get('document_id', '')}, {ec.get('span_id', '')} ({device_type})",
+                    f"{ec.get('text', '')}",
                     "",  # linha em branco entre chunks
                 ]
                 entry = "\n".join(entry_lines)
@@ -534,10 +435,10 @@ class SearchResult(BaseResult):
             if include_stats and self.expansion_stats:
                 stats = self.expansion_stats
                 stats_line = (
-                    f"\n[Expansão: encontradas={stats.citations_scanned_count}, "
-                    f"resolvidas={stats.citations_resolved_count}, "
-                    f"expandidas={stats.expanded_chunks_count}, "
-                    f"tempo={stats.expansion_time_ms:.0f}ms]"
+                    f"\n[Expansão: encontradas={stats.get('citations_scanned_count', 0)}, "
+                    f"resolvidas={stats.get('citations_resolved_count', 0)}, "
+                    f"expandidas={stats.get('expanded_chunks_count', 0)}, "
+                    f"tempo={stats.get('expansion_time_ms', 0):.0f}ms]"
                 )
                 if not max_chars or total_chars + len(stats_line) <= max_chars:
                     parts.append(stats_line)
@@ -670,32 +571,12 @@ Resposta:"""
             "mode": self.mode,
         }
 
-        # Adiciona campos de expansão se presentes
+        # Adiciona campos de expansão se presentes (já são dicts raw)
         if self.expanded_chunks:
-            result["expanded_chunks"] = [
-                {
-                    "chunk_id": ec.chunk_id,
-                    "node_id": ec.node_id,
-                    "text": ec.text,
-                    "document_id": ec.document_id,
-                    "span_id": ec.span_id,
-                    "device_type": ec.device_type,
-                    "source_chunk_id": ec.source_chunk_id,
-                    "source_citation_raw": ec.source_citation_raw,
-                }
-                for ec in self.expanded_chunks
-            ]
+            result["expanded_chunks"] = list(self.expanded_chunks)
 
         if self.expansion_stats:
-            result["expansion_stats"] = {
-                "expanded_chunks_count": self.expansion_stats.expanded_chunks_count,
-                "citations_scanned_count": self.expansion_stats.citations_scanned_count,
-                "citations_resolved_count": self.expansion_stats.citations_resolved_count,
-                "expansion_time_ms": self.expansion_stats.expansion_time_ms,
-                "skipped_self_references": self.expansion_stats.skipped_self_references,
-                "skipped_duplicates": self.expansion_stats.skipped_duplicates,
-                "skipped_token_budget": self.expansion_stats.skipped_token_budget,
-            }
+            result["expansion_stats"] = dict(self.expansion_stats)
 
         return result
 
