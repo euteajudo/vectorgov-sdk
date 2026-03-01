@@ -44,6 +44,7 @@ Com MCP (Claude Desktop, Cursor, etc.):
 """
 
 from vectorgov.client import VectorGov
+from vectorgov._async import AsyncVectorGov
 from vectorgov.models import (
     BaseResult,
     SearchResult,
@@ -91,8 +92,9 @@ from vectorgov.formatters import (
 
 __version__ = "0.15.0"
 __all__ = [
-    # Cliente principal
+    # Clientes
     "VectorGov",
+    "AsyncVectorGov",
     # Modelos
     "BaseResult",
     "SearchResult",

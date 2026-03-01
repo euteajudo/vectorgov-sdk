@@ -1091,7 +1091,7 @@ class LookupResolved:
         )
 
 
-@dataclass
+@dataclass(slots=True)
 class LookupCandidate:
     """Candidato para referência ambígua."""
 
@@ -1288,7 +1288,7 @@ class LookupResult(BaseResult):
 # =============================================================================
 
 
-@dataclass
+@dataclass(slots=True)
 class DocumentSummary:
     """Resumo de um documento na base de conhecimento."""
 
@@ -1333,7 +1333,7 @@ class DocumentSummary:
         return f"Document({self.tipo_documento} {self.numero}/{self.ano}, {status})"
 
 
-@dataclass
+@dataclass(slots=True)
 class DocumentsResponse:
     """Resposta da listagem de documentos."""
 
@@ -1350,7 +1350,7 @@ class DocumentsResponse:
     """Total de páginas"""
 
 
-@dataclass
+@dataclass(slots=True)
 class UploadResponse:
     """Resposta do upload de documento."""
 
@@ -1367,15 +1367,17 @@ class UploadResponse:
     """ID da task de ingestão"""
 
 
-@dataclass
+@dataclass(slots=True)
 class IngestStatus:
     """Status da ingestão de um documento."""
 
     task_id: str
     """ID da task"""
 
-    status: str
-    """Status atual (ex: pending, processing, completed, failed, queued, cancelled)"""
+    status: Literal[
+        "pending", "processing", "completed", "failed", "queued", "cancelled",
+    ]
+    """Status atual"""
 
     progress: int
     """Progresso (0-100)"""
@@ -1390,15 +1392,17 @@ class IngestStatus:
     """Número de chunks criados"""
 
 
-@dataclass
+@dataclass(slots=True)
 class EnrichStatus:
     """Status do enriquecimento de um documento."""
 
     task_id: str
     """ID da task"""
 
-    status: str
-    """Status atual (ex: pending, processing, completed, error, not_found, unknown)"""
+    status: Literal[
+        "pending", "processing", "completed", "error", "not_found", "unknown",
+    ]
+    """Status atual"""
 
     progress: float
     """Progresso (0.0 a 1.0)"""
@@ -1416,7 +1420,7 @@ class EnrichStatus:
     """Lista de erros encontrados"""
 
 
-@dataclass
+@dataclass(slots=True)
 class DeleteResponse:
     """Resposta da exclusão de documento."""
 
@@ -1427,7 +1431,7 @@ class DeleteResponse:
     """Mensagem de status"""
 
 
-@dataclass
+@dataclass(slots=True)
 class StoreResponseResult:
     """Resultado do armazenamento de resposta de LLM externo.
 
@@ -1450,7 +1454,7 @@ class StoreResponseResult:
 # =============================================================================
 
 
-@dataclass
+@dataclass(slots=True)
 class AuditLog:
     """Registro de evento de auditoria.
 
@@ -1499,7 +1503,7 @@ class AuditLog:
         return f"AuditLog({self.event_type}, severity={self.severity}, {self.created_at})"
 
 
-@dataclass
+@dataclass(slots=True)
 class AuditLogsResponse:
     """Resposta da listagem de logs de auditoria."""
 
@@ -1519,7 +1523,7 @@ class AuditLogsResponse:
     """Limite por página"""
 
 
-@dataclass
+@dataclass(slots=True)
 class AuditStats:
     """Estatísticas agregadas de auditoria.
 
