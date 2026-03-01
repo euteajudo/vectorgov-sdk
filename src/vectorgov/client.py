@@ -623,7 +623,7 @@ class VectorGov:
         if trace_id:
             request_data["trace_id"] = trace_id
 
-        response = self._http.post("/sdk/lookup", data=request_data)
+        response = self._http.post("/retrieve/lookup", data=request_data)
 
         # Batch response: status="batch" com "results" list
         if response.get("status") == "batch" and "results" in response:
@@ -652,8 +652,12 @@ class VectorGov:
         from vectorgov.models import LookupCandidate
 
         # Parse match → Hit
+        # A API retorna campos do match aninhados ("match": {...}) OU flat no root
         match = None
         match_data = response.get("match")
+        if not match_data and response.get("node_id") and response.get("status") == "found":
+            # Campos flat no root do response (formato /retrieve/lookup)
+            match_data = response
         if match_data:
             match = Hit(
                 node_id=match_data.get("node_id", ""),
