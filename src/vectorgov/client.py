@@ -3,6 +3,7 @@ Cliente principal do VectorGov SDK.
 """
 
 import os
+import re
 from typing import Optional, Union
 
 import json
@@ -11,6 +12,29 @@ from vectorgov.config import SDKConfig, SearchMode, MODE_CONFIG, SYSTEM_PROMPTS
 from vectorgov.models import SearchResult, SmartSearchResult, Hit, Metadata, TokenStats, HybridResult, LookupResult
 from vectorgov.exceptions import ValidationError, AuthError
 from vectorgov.integrations import tools as tool_utils
+
+_SAFE_PATH_RE = re.compile(r"^[\w\-.:]+$")
+MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
+
+
+class _SecretStr:
+    """Wrapper para proteger API key em memória (repr/str não vaza)."""
+    __slots__ = ("_value",)
+
+    def __init__(self, v: str):
+        self._value = v
+
+    def get(self) -> str:
+        return self._value
+
+    def __repr__(self):
+        return "***"
+
+    def __str__(self):
+        return "***"
+
+    def __len__(self):
+        return len(self._value)
 
 
 class VectorGov:
@@ -54,18 +78,20 @@ class VectorGov:
             AuthError: Se a API key não for fornecida
         """
         # Obtém API key do ambiente se não fornecida
-        self._api_key = api_key or os.environ.get("VECTORGOV_API_KEY")
-        if not self._api_key:
+        raw_key = api_key or os.environ.get("VECTORGOV_API_KEY")
+        if not raw_key:
             raise AuthError(
                 "API key não fornecida. Passe api_key no construtor ou "
                 "defina a variável de ambiente VECTORGOV_API_KEY"
             )
 
         # Valida formato da API key
-        if not self._api_key.startswith("vg_"):
+        if not raw_key.startswith("vg_"):
             raise AuthError(
                 "Formato de API key inválido. A key deve começar com 'vg_'"
             )
+
+        self._api_key = _SecretStr(raw_key)
 
         # Configurações
         self._config = SDKConfig(
@@ -78,7 +104,7 @@ class VectorGov:
         # Cliente HTTP
         self._http = HTTPClient(
             base_url=self._config.base_url,
-            api_key=self._api_key,
+            api_key=self._api_key.get(),
             timeout=self._config.timeout,
             max_retries=self._config.max_retries,
             retry_delay=self._config.retry_delay,
@@ -91,8 +117,8 @@ class VectorGov:
         mode: Optional[Union[SearchMode, str]] = None,
         filters: Optional[dict] = None,
         use_cache: Optional[bool] = None,
-        expand_citations: bool = False,
-        citation_expansion_top_n: int = 3,
+        document_id_filter: Optional[str] = None,
+        trace_id: Optional[str] = None,
     ) -> SearchResult:
         """Busca informações na base de conhecimento.
 
@@ -109,16 +135,12 @@ class VectorGov:
                 Se True, sua pergunta/resposta pode ser vista por outros clientes
                 e você pode receber respostas de perguntas de outros clientes.
                 Habilite apenas se aceitar o trade-off privacidade vs latência.
-            expand_citations: Se True, expande citações normativas encontradas nos
-                resultados (ex: "art. 18 da Lei 14.133"). Chunks citados são
-                automaticamente recuperados e adicionados ao contexto.
-                Default: False
-            citation_expansion_top_n: Número máximo de citações a expandir por chunk.
-                Default: 3
+            document_id_filter: Filtra resultados por document_id específico.
+                Ex: "LEI-14133-2021"
+            trace_id: ID de rastreamento para correlação de logs.
 
         Returns:
-            SearchResult com os documentos encontrados. Se expand_citations=True,
-            inclui `expanded_chunks` e `expansion_stats`.
+            SearchResult com os documentos encontrados.
 
         Raises:
             ValidationError: Se os parâmetros forem inválidos
@@ -132,26 +154,16 @@ class VectorGov:
             >>> # Busca com cache (aceita compartilhamento)
             >>> results = vg.search("O que é ETP?", use_cache=True)
             >>>
-            >>> # Busca com expansão de citações
-            >>> results = vg.search("O que é ETP?", expand_citations=True)
-            >>> print(f"Chunks expandidos: {len(results.expanded_chunks)}")
+            >>> # Busca filtrada por documento
+            >>> results = vg.search("Art. 75", document_id_filter="LEI-14133-2021")
             >>>
             >>> for hit in results:
             ...     print(f"{hit.source}: {hit.text[:100]}...")
         """
-        # Validações
-        if not query or not query.strip():
-            raise ValidationError("Query não pode ser vazia", field="query")
-
-        query = query.strip()
-        if len(query) < 3:
-            raise ValidationError("Query deve ter pelo menos 3 caracteres", field="query")
-
-        if len(query) > 1000:
-            raise ValidationError("Query deve ter no máximo 1000 caracteres", field="query")
+        query = self._validate_query(query)
 
         # Valores padrão
-        top_k = top_k or self._config.default_top_k
+        top_k = top_k if top_k is not None else self._config.default_top_k
         if top_k < 1 or top_k > 50:
             raise ValidationError("top_k deve estar entre 1 e 50", field="top_k")
 
@@ -181,8 +193,6 @@ class VectorGov:
             "use_reranker": mode_config["use_reranker"],
             "use_cache": cache_enabled,
             "mode": mode.value,
-            "expand_citations": expand_citations,
-            "citation_expansion_top_n": citation_expansion_top_n,
         }
 
         # Adiciona filtros se fornecidos
@@ -193,6 +203,11 @@ class VectorGov:
                 request_data["ano"] = filters["ano"]
             if "orgao" in filters:
                 request_data["orgao"] = filters["orgao"]
+
+        if document_id_filter:
+            request_data["document_id_filter"] = document_id_filter
+        if trace_id:
+            request_data["trace_id"] = trace_id
 
         # Faz requisição
         response = self._http.post("/sdk/search", data=request_data)
@@ -321,8 +336,9 @@ class VectorGov:
         self,
         query: str,
         use_cache: bool = False,
+        trace_id: Optional[str] = None,
     ) -> SmartSearchResult:
-        """Busca com curadoria inteligente — endpoint premium turnkey.
+        """Busca premium turnkey — pipeline MOC v4 decide tudo.
 
         O pipeline VectorGov analisa a query, busca os dispositivos mais
         relevantes, filtra por qualidade, e entrega um pacote completo:
@@ -339,6 +355,7 @@ class VectorGov:
             query: Texto da consulta (3-1000 caracteres).
             use_cache: Se True, reutiliza resultado cacheado para mesma query.
                 Default False — cada execução produz curadoria independente.
+            trace_id: ID de rastreamento para correlação de logs.
 
         Returns:
             SmartSearchResult (herda SearchResult). Mesma interface:
@@ -376,25 +393,15 @@ class VectorGov:
             ... except TierError:
             ...     results = vg.search("query", mode="precise")
         """
-        # ── Validação ──
-        if not query or not query.strip():
-            raise ValidationError("Query não pode ser vazia", field="query")
-
-        query = query.strip()
-        if len(query) < 3:
-            raise ValidationError(
-                "Query deve ter pelo menos 3 caracteres", field="query"
-            )
-        if len(query) > 1000:
-            raise ValidationError(
-                "Query deve ter no máximo 1000 caracteres", field="query"
-            )
+        query = self._validate_query(query)
 
         # ── Request (só query + use_cache, nada mais) ──
         request_data = {
             "query": query,
             "use_cache": use_cache,
         }
+        if trace_id:
+            request_data["trace_id"] = trace_id
 
         # ── HTTP com timeout estendido (120s) ──
         response = self._http.post(
@@ -414,8 +421,11 @@ class VectorGov:
         query: str,
         top_k: Optional[int] = None,
         collections: Optional[list[str]] = None,
-        hops: int = 2,
+        hops: int = 1,
+        graph_expansion: str = "bidirectional",
+        token_budget: Optional[int] = None,
         use_cache: Optional[bool] = None,
+        trace_id: Optional[str] = None,
     ) -> HybridResult:
         """Busca híbrida combinando Milvus (semântica) + Neo4j (grafo).
 
@@ -426,8 +436,14 @@ class VectorGov:
             query: Texto da consulta
             top_k: Quantidade de resultados diretos (1-20). Default: 8
             collections: Collections a buscar. Default: ["leis_v4"]
-            hops: Máximo de saltos no grafo (1-2). Default: 2
+            hops: Máximo de saltos no grafo (1-2). Default: 1
+            graph_expansion: Direção da expansão no grafo.
+                "bidirectional" (padrão) ou "forward".
+                Para busca sem grafo, use search().
+            token_budget: Limite de tokens do contexto expandido.
+                Default: backend decide (3500).
             use_cache: Usar cache. Default: False
+            trace_id: ID de rastreamento para correlação de logs.
 
         Returns:
             HybridResult com evidências diretas e expansão via grafo
@@ -441,30 +457,34 @@ class VectorGov:
             >>> print(f"Grafo: {len(result.graph_expansion)}")
             >>> xml = result.to_xml("full")
         """
-        if not query or not query.strip():
-            raise ValidationError("Query não pode ser vazia", field="query")
+        query = self._validate_query(query)
 
-        query = query.strip()
-        if len(query) < 3:
-            raise ValidationError("Query deve ter pelo menos 3 caracteres", field="query")
-
-        if len(query) > 1000:
-            raise ValidationError("Query deve ter no máximo 1000 caracteres", field="query")
-
-        top_k = top_k or 8
+        top_k = top_k if top_k is not None else 8
         if top_k < 1 or top_k > 20:
             raise ValidationError("top_k deve estar entre 1 e 20", field="top_k")
 
         if hops not in (1, 2):
             raise ValidationError("hops deve ser 1 ou 2", field="hops")
 
+        if graph_expansion not in ("forward", "bidirectional"):
+            raise ValidationError(
+                "graph_expansion deve ser 'forward' ou 'bidirectional'. "
+                "Para busca sem grafo, use search().",
+                field="graph_expansion",
+            )
+
         request_data = {
             "query": query,
             "top_k": top_k,
             "collections": collections or ["leis_v4"],
             "hops": hops,
+            "graph_expansion": graph_expansion,
             "use_cache": use_cache if use_cache is not None else False,
         }
+        if token_budget is not None:
+            request_data["token_budget"] = token_budget
+        if trace_id:
+            request_data["trace_id"] = trace_id
 
         response = self._http.post("/sdk/hybrid", data=request_data)
         return self._parse_hybrid_response(query, response)
@@ -562,6 +582,7 @@ class VectorGov:
         collection: str = "leis_v4",
         include_parent: bool = True,
         include_siblings: bool = True,
+        trace_id: Optional[str] = None,
     ) -> LookupResult:
         """Busca um dispositivo normativo específico por referência textual.
 
@@ -574,6 +595,7 @@ class VectorGov:
             collection: Collection a buscar. Default: "leis_v4"
             include_parent: Incluir chunk pai. Default: True
             include_siblings: Incluir irmãos. Default: True
+            trace_id: ID de rastreamento para correlação de logs.
 
         Returns:
             LookupResult com dispositivo encontrado e contexto hierárquico
@@ -597,6 +619,8 @@ class VectorGov:
             "include_parent": include_parent,
             "include_siblings": include_siblings,
         }
+        if trace_id:
+            request_data["trace_id"] = trace_id
 
         response = self._http.post("/sdk/lookup", data=request_data)
         return self._parse_lookup_response(reference, response)
@@ -902,6 +926,34 @@ class VectorGov:
         """Lista os estilos de system prompt disponíveis."""
         return list(SYSTEM_PROMPTS.keys())
 
+    def close(self):
+        """Libera recursos (conexões HTTP persistentes)."""
+        if hasattr(self, "_http") and self._http:
+            self._http.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+    def _validate_query(self, query: str) -> str:
+        """Valida e normaliza query. Retorna query.strip()."""
+        if not query or not query.strip():
+            raise ValidationError("Query não pode ser vazia", field="query")
+        query = query.strip()
+        if len(query) < 3:
+            raise ValidationError("Query deve ter pelo menos 3 caracteres", field="query")
+        if len(query) > 1000:
+            raise ValidationError("Query deve ter no máximo 1000 caracteres", field="query")
+        return query
+
+    def _validate_path_param(self, value: str, name: str) -> str:
+        """Valida path param contra injeção de path traversal."""
+        if not value or not _SAFE_PATH_RE.match(value):
+            raise ValidationError(f"{name} contém caracteres inválidos", field=name)
+        return value
+
     def __repr__(self) -> str:
         return f"VectorGov(base_url='{self._config.base_url}')"
 
@@ -1096,6 +1148,13 @@ class VectorGov:
 
         if not file_path.lower().endswith(".pdf"):
             raise ValidationError("Apenas arquivos PDF sao aceitos", field="file_path")
+
+        size = _os.path.getsize(file_path)
+        if size > MAX_UPLOAD_SIZE:
+            raise ValidationError(
+                f"Arquivo ({size // 1024 // 1024}MB) excede limite de 50MB",
+                field="file_path",
+            )
 
         valid_types = ["LEI", "DECRETO", "IN", "PORTARIA", "RESOLUCAO"]
         tipo_documento = tipo_documento.upper()

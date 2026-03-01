@@ -38,6 +38,53 @@ if TYPE_CHECKING:
 
 
 # =============================================================================
+# CACHE DE XML BASE (árvores estáticas)
+# =============================================================================
+
+_XML_CACHE: dict[str, str] = {}
+
+
+def _get_xml_base(level: str) -> str:
+    """Retorna XML base (parte estática) cacheado por nível.
+
+    A parte estática (instruções, anti-alucinação, formato, etc.) é idêntica
+    entre chamadas. Cachear evita reconstruir a árvore ElementTree toda vez.
+    """
+    if level not in _XML_CACHE:
+        _XML_CACHE[level] = _build_xml_base(level)
+    return _XML_CACHE[level]
+
+
+def _build_xml_base(level: str) -> str:
+    """Constrói a parte estática do XML para um nível de instrução."""
+    root = ET.Element("_base")
+    if level == "instructions":
+        instrucoes = ET.SubElement(root, "instrucoes")
+        # Lazy import evita circular
+        for regra_text in _INSTRUCOES_REGRAS:
+            ET.SubElement(instrucoes, "regra").text = regra_text
+    elif level == "full":
+        ic = ET.SubElement(root, "instrucoes_completas")
+        ET.SubElement(ic, "papel").text = _PAPEL_TEXT
+        aa = ET.SubElement(ic, "anti_alucinacao")
+        for rule in _ANTI_ALUCINACAO_REGRAS:
+            r = ET.SubElement(aa, "regra")
+            r.set("prioridade", rule["prioridade"])
+            r.text = rule["texto"]
+        fc = ET.SubElement(ic, "formato_citacao")
+        for text in _FORMATO_CITACAO_REGRAS:
+            ET.SubElement(fc, "regra").text = text
+        er = ET.SubElement(ic, "estrutura_resposta")
+        for text in _ESTRUTURA_RESPOSTA_REGRAS:
+            ET.SubElement(er, "regra").text = text
+        mgd = ET.SubElement(ic, "modo_geracao_documento")
+        mgd.set("condition", "quando o usuário pedir geração de documento")
+        for text in _MODO_GERACAO_DOC_REGRAS:
+            ET.SubElement(mgd, "regra").text = text
+    return _element_to_string(root)
+
+
+# =============================================================================
 # ESCAPE XML
 # =============================================================================
 
@@ -850,35 +897,52 @@ def _extract_normative_trail(result: SearchResult) -> list[str]:
     return trail
 
 
-def _collect_authorized_ids(result: SearchResult) -> tuple[list[str], dict[str, str]]:
-    """Coleta IDs autorizados e mapa de evidências dos hits e expanded_chunks.
+def _collect_ids(
+    hits: list,
+    expanded: Optional[list] = None,
+    *,
+    with_evidence: bool = False,
+) -> tuple[list[str], dict[str, str]] | list[str]:
+    """Coleta IDs autorizados (e opcionalmente mapa de evidências) de hits + expanded.
 
-    Usada por:
-    - ``_build_contrato_resposta()`` para gerar whitelist dinâmica
-    - ``build_response_schema()`` para restringir enums do schema
+    Função unificada que substitui as 3 variantes anteriores.
+
+    Args:
+        hits: Lista de Hit (ou qualquer objeto com .chunk_id).
+        expanded: Lista de ExpandedChunk/GraphNode (ou qualquer objeto com .span_id e .chunk_id).
+        with_evidence: Se True, retorna tupla (ids, evidence_map). Se False, retorna só ids.
 
     Returns:
-        Tupla (authorized_ids, evidence_map):
-        - authorized_ids: lista deduplicada de span_ids
-        - evidence_map: dict span_id → evidence_url relativa
+        Se with_evidence=True: Tupla (authorized_ids, evidence_map).
+        Se with_evidence=False: Lista authorized_ids.
     """
     authorized_ids: list[str] = []
     evidence_map: dict[str, str] = {}
 
-    for hit in result.hits:
+    for hit in hits:
         span_id = _extract_span_id(hit.chunk_id)
         if span_id and span_id not in authorized_ids:
             authorized_ids.append(span_id)
-            if hit.chunk_id:
+            if with_evidence and hit.chunk_id:
                 evidence_map[span_id] = f"/api/v1/evidence/{quote(hit.chunk_id, safe='')}"
 
-    for ec in result.expanded_chunks:
+    for ec in (expanded or []):
         if ec.span_id and ec.span_id not in authorized_ids:
             authorized_ids.append(ec.span_id)
-            if ec.chunk_id:
+            if with_evidence and ec.chunk_id:
                 evidence_map[ec.span_id] = f"/api/v1/evidence/{quote(ec.chunk_id, safe='')}"
 
-    return authorized_ids, evidence_map
+    if with_evidence:
+        return authorized_ids, evidence_map
+    return authorized_ids
+
+
+def _collect_authorized_ids(result: SearchResult) -> tuple[list[str], dict[str, str]]:
+    """Coleta IDs autorizados e mapa de evidências de um SearchResult.
+
+    Wrapper de compatibilidade sobre ``_collect_ids()``.
+    """
+    return _collect_ids(result.hits, result.expanded_chunks, with_evidence=True)  # type: ignore[return-value]
 
 
 def _get_hits(result) -> list:
@@ -1216,48 +1280,16 @@ def _collect_authorized_ids_from_hits(
     hits: list,
     expanded: Optional[list] = None,
 ) -> list[str]:
-    """Coleta IDs autorizados de uma lista genérica de hits + expanded chunks."""
-    authorized_ids: list[str] = []
-    for hit in hits:
-        span_id = _extract_span_id(hit.chunk_id)
-        if span_id and span_id not in authorized_ids:
-            authorized_ids.append(span_id)
-
-    for ec in (expanded or []):
-        if ec.span_id and ec.span_id not in authorized_ids:
-            authorized_ids.append(ec.span_id)
-
-    return authorized_ids
+    """Wrapper de compatibilidade sobre ``_collect_ids()``."""
+    return _collect_ids(hits, expanded, with_evidence=False)  # type: ignore[return-value]
 
 
 def _collect_authorized_ids_from_hits_with_evidence(
     hits: list,
     expanded: Optional[list] = None,
 ) -> tuple[list[str], dict[str, str]]:
-    """Coleta IDs autorizados e mapa de evidências de hits + expanded chunks.
-
-    Similar a ``_collect_authorized_ids`` do search, mas para listas genéricas.
-
-    Returns:
-        Tupla (authorized_ids, evidence_map).
-    """
-    authorized_ids: list[str] = []
-    evidence_map: dict[str, str] = {}
-
-    for hit in hits:
-        span_id = _extract_span_id(hit.chunk_id)
-        if span_id and span_id not in authorized_ids:
-            authorized_ids.append(span_id)
-            if hit.chunk_id:
-                evidence_map[span_id] = f"/api/v1/evidence/{quote(hit.chunk_id, safe='')}"
-
-    for ec in (expanded or []):
-        if ec.span_id and ec.span_id not in authorized_ids:
-            authorized_ids.append(ec.span_id)
-            if ec.chunk_id:
-                evidence_map[ec.span_id] = f"/api/v1/evidence/{quote(ec.chunk_id, safe='')}"
-
-    return authorized_ids, evidence_map
+    """Wrapper de compatibilidade sobre ``_collect_ids()``."""
+    return _collect_ids(hits, expanded, with_evidence=True)  # type: ignore[return-value]
 
 
 def _build_schema_dict(authorized_ids: list[str]) -> dict:

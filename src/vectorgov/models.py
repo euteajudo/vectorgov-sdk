@@ -2,8 +2,10 @@
 Modelos de dados do VectorGov SDK.
 """
 
+import warnings
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
+from functools import cached_property
 from typing import Optional, Iterator, Any, Literal
 from datetime import datetime
 
@@ -13,7 +15,7 @@ from datetime import datetime
 # =============================================================================
 
 
-@dataclass
+@dataclass(slots=True)
 class TokenStats:
     """Estatísticas de tokens retornadas pela API VectorGov.
 
@@ -63,7 +65,7 @@ class TokenStats:
 # =============================================================================
 
 
-@dataclass
+@dataclass(slots=True)
 class Metadata:
     """Metadados de um documento encontrado."""
 
@@ -105,7 +107,7 @@ class Metadata:
         return ", ".join(parts)
 
 
-@dataclass
+@dataclass(slots=True)
 class Hit:
     """Um resultado individual da busca."""
 
@@ -244,16 +246,12 @@ class Hit:
 
 @dataclass
 class ExpandedChunk:
-    """Chunk obtido via expansão de citações normativas.
+    """Deprecated: será removido em v1.0. Use Hit com campos de grafo.
+
+    Chunk obtido via expansão de citações normativas.
 
     Quando um chunk referencia outro documento/artigo (ex: "conforme art. 18 da Lei 14.133"),
     o sistema pode expandir automaticamente trazendo o conteúdo referenciado.
-
-    Example:
-        >>> result = vg.search("ETP", expand_citations=True)
-        >>> for expanded in result.expanded_chunks:
-        ...     print(f"Citado por: {expanded.source_chunk_id}")
-        ...     print(f"Texto: {expanded.text[:100]}...")
     """
 
     chunk_id: str
@@ -300,7 +298,7 @@ class ExpandedChunk:
         return f"ExpandedChunk(node_id='{self.node_id}', text='{text_preview}')"
 
 
-@dataclass
+@dataclass(slots=True)
 class CitationExpansionStats:
     """Estatísticas de expansão de citações.
 
@@ -389,8 +387,12 @@ class BaseResult(ABC):
         ...
 
     def to_dict(self) -> dict:
-        """Serialização base — subclasses podem sobrescrever."""
-        return {"endpoint_type": self.endpoint_type, "query": self.query}
+        """Serialização base — subclasses podem sobrescrever.
+
+        Filtra campos internos (prefixo '_') automaticamente.
+        """
+        d = asdict(self)
+        return {k: v for k, v in d.items() if not k.startswith("_")}
 
 
 @dataclass
@@ -792,7 +794,7 @@ Resposta:"""
     # Properties de acesso granular — novos em v0.14.0
     # =================================================================
 
-    @property
+    @cached_property
     def confidence(self) -> float:
         """Score de confiança do resultado (0.0 a 1.0).
 
@@ -802,7 +804,7 @@ Resposta:"""
         from vectorgov.payload import _calculate_confidence
         return _calculate_confidence(self)
 
-    @property
+    @cached_property
     def normative_trail(self) -> list[str]:
         """Lista deduplicada de fontes normativas dos resultados.
 
@@ -1144,6 +1146,13 @@ class LookupMatch:
     origin_type: Optional[str] = None
     evidence_url: Optional[str] = None
 
+    def __post_init__(self):
+        warnings.warn(
+            f"{type(self).__name__} será removido em v1.0. Use Hit.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
 
 @dataclass
 class LookupParent:
@@ -1153,6 +1162,13 @@ class LookupParent:
     span_id: str = ""
     text: str = ""
     device_type: str = ""
+
+    def __post_init__(self):
+        warnings.warn(
+            f"{type(self).__name__} será removido em v1.0. Use Hit.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
 
 @dataclass
@@ -1164,6 +1180,13 @@ class LookupSibling:
     device_type: str = ""
     text: str = ""
     is_current: bool = False
+
+    def __post_init__(self):
+        warnings.warn(
+            f"{type(self).__name__} será removido em v1.0. Use Hit.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
 
 @dataclass
@@ -1178,6 +1201,13 @@ class LookupResolved:
     document_alias: Optional[str] = None
     resolved_document_id: Optional[str] = None
     resolved_span_id: Optional[str] = None
+
+    def __post_init__(self):
+        warnings.warn(
+            f"{type(self).__name__} será removido em v1.0. Use Hit.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
 
 @dataclass
@@ -1463,8 +1493,8 @@ class IngestStatus:
     task_id: str
     """ID da task"""
 
-    status: Literal["pending", "processing", "completed", "failed"]
-    """Status atual"""
+    status: str
+    """Status atual (ex: pending, processing, completed, failed, queued, cancelled)"""
 
     progress: int
     """Progresso (0-100)"""
@@ -1486,8 +1516,8 @@ class EnrichStatus:
     task_id: str
     """ID da task"""
 
-    status: Literal["pending", "processing", "completed", "error", "not_found", "unknown"]
-    """Status atual"""
+    status: str
+    """Status atual (ex: pending, processing, completed, error, not_found, unknown)"""
 
     progress: float
     """Progresso (0.0 a 1.0)"""
