@@ -5,7 +5,7 @@ SDK Python para acessar bases de conhecimento jurídico VectorGov.
 Acesse informações de leis, decretos e instruções normativas brasileiras com 3 linhas de código.
 
 [![PyPI version](https://badge.fury.io/py/vectorgov.svg)](https://badge.fury.io/py/vectorgov)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
@@ -46,7 +46,7 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
   - [Smart Search](#smart-search-busca-inteligente)
   - [Busca Hibrida (Grafo)](#busca-hibrida-milvus--grafo)
   - [Lookup de Dispositivo](#lookup-de-dispositivo)
-  - [Citation Expansion](#citation-expansion-expansão-de-citações)
+  - [Citation Expansion](#citation-expansion-expansão-por-citação)
   - [Filtros](#filtros)
   - [Formatação de Resultados](#formatação-de-resultados)
   - [System Prompts](#system-prompts-customizados)
@@ -56,7 +56,6 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
   - [Permissoes](#permissões)
   - [Listar e Consultar](#listar-e-consultar-documentos)
   - [Upload e Ingestao (Admin)](#upload-e-ingestão-admin)
-  - [Enriquecimento (Admin)](#enriquecimento-admin)
   - [Exclusao (Admin)](#exclusão-admin)
 - **Documentação para LLMs**
   - [llms.txt](#llmstxt)
@@ -81,7 +80,7 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
 
 ## Requisitos
 
-- Python **>= 3.9**
+- Python **>= 3.10**
 
 ```bash
 pip install vectorgov
@@ -114,18 +113,56 @@ Algumas integrações requerem dependências adicionais. Instale conforme sua ne
 ```python
 from vectorgov import VectorGov
 
-# Conectar à API
 vg = VectorGov(api_key="vg_sua_chave_aqui")
 
-# Buscar informações
+# Buscar legislação
 results = vg.search("Quando o ETP pode ser dispensado?")
 
-# Ver resultados
 for hit in results:
-    print(f"{hit.source}: {hit.text}")
+    print(f"[{hit.score:.0%}] {hit.source}")
+    print(f"  {hit.text[:200]}...")
+    print()
 ```
 
-> **Nota:** O SDK retorna o **texto completo** de cada chunk em `hit.text`. Não há limite de caracteres - você recebe todo o conteúdo do artigo/parágrafo/inciso recuperado.
+Saída:
+```
+[92%] Lei 14.133/2021, Art. 72
+  Art. 72. O estudo técnico preliminar será dispensado nos seguintes casos: I - nas
+  contratações diretas enquadradas nas hipóteses dos incisos I e II do art. 75...
+
+[87%] Decreto 10.947/2022, Art. 6
+  Art. 6º O ETP poderá ser dispensado mediante justificativa do agente de contratação,
+  quando se tratar de contratações de baixa complexidade...
+```
+
+### O que vem em cada resultado
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `hit.text` | `str` | Texto completo do artigo/parágrafo/inciso |
+| `hit.score` | `float` | Relevância (0 a 1) |
+| `hit.source` | `str` | Referência legível (ex: `"Lei 14.133/2021, Art. 72"`) |
+| `hit.metadata` | `Metadata` | Tipo, número, ano, artigo, dispositivo |
+| `hit.page_number` | `int\|None` | Página no PDF original |
+| `hit.evidence_url` | `str\|None` | Link direto para evidência verificável |
+
+### Passando para seu LLM (3 linhas)
+
+```python
+from openai import OpenAI
+
+query = "Quando o ETP pode ser dispensado?"
+results = vg.search(query)
+
+# to_messages() formata contexto + query prontos para o LLM
+response = OpenAI().chat.completions.create(
+    model="gpt-4o-mini",
+    messages=results.to_messages(query),
+)
+print(response.choices[0].message.content)
+```
+
+> Funciona com qualquer LLM: `to_messages()` retorna `list[dict]` compatível com OpenAI, Anthropic, Gemini, Ollama e outros.
 
 ---
 
@@ -960,7 +997,7 @@ result = vg.smart_search("criterios de julgamento", use_cache=True)
 | `query` | str | - | Pergunta (3 a 1000 caracteres) |
 | `use_cache` | bool | `False` | Usar cache semantico |
 
-> **Importante:** `smart_search()` nao aceita `top_k`, `mode`, `expand_citations` ou qualquer outro parametro de controle. O pipeline MOC v4 toma todas as decisoes automaticamente. Enviar campos extras resulta em erro 422.
+> **Importante:** `smart_search()` nao aceita `top_k`, `mode`, `filters` ou qualquer outro parametro de controle. O pipeline MOC v4 toma todas as decisoes automaticamente. Enviar campos extras resulta em erro 422.
 
 **Resposta:**
 
@@ -1065,100 +1102,67 @@ elif result.status == "ambiguous":
 
 **Status possiveis:** `found`, `not_found`, `ambiguous`, `parse_failed`
 
-## Citation Expansion (Expansão de Citações)
+## Citation Expansion (Expansão por Citação)
 
-A Citation Expansion permite que o SDK busque automaticamente os chunks referenciados por citações normativas nos resultados da busca. Quando um artigo menciona outro dispositivo legal (ex: "conforme art. 18 da Lei 14.133"), o SDK pode recuperar esse chunk adicional.
+Quando um artigo menciona outro dispositivo legal (ex: "conforme art. 18 da Lei 14.133"), o backend automaticamente busca e inclui esse chunk referenciado nos resultados. Isso acontece de forma transparente — não é preciso ativar nada.
 
-### Como Usar
+### Como Acessar
 
 ```python
-# Busca com expansão de citações habilitada
-results = vg.search(
-    "O que é ETP?",
-    expand_citations=True,        # Habilita expansão
-    citation_expansion_top_n=3    # Expande citações dos top N resultados
-)
+results = vg.search("O que é ETP?")
 
-# Acessar chunks expandidos
-for chunk in results.expanded_chunks:
-    print(f"Citação: {chunk.source_citation_raw}")
-    print(f"Texto: {chunk.text[:100]}...")
-    print(f"Fonte: {chunk.document_id}#{chunk.span_id}")
+# Chunks expandidos (dicts vindos da API)
+for ec in results.expanded_chunks:
+    print(f"Citação: {ec.get('source_citation_raw', '?')}")
+    print(f"Texto: {ec.get('text', '')[:100]}...")
+    print(f"Fonte: {ec.get('document_id')}#{ec.get('span_id')}")
     print()
 
 # Estatísticas de expansão
 if results.expansion_stats:
     stats = results.expansion_stats
-    print(f"Citações encontradas: {stats.citations_found}")
-    print(f"Chunks adicionados: {stats.chunks_added}")
-    print(f"Tempo de expansão: {stats.expansion_time_ms}ms")
+    print(f"Encontradas: {stats.get('citations_found', 0)}")
+    print(f"Expandidas: {stats.get('expanded_chunks_count', 0)}")
+    print(f"Tempo: {stats.get('expansion_time_ms', 0):.0f}ms")
 ```
 
-### Parâmetros
-
-| Parâmetro | Tipo | Default | Descrição |
-|-----------|------|---------|-----------|
-| `expand_citations` | bool | `False` | Habilita expansão de citações |
-| `citation_expansion_top_n` | int | `3` | Quantos dos top resultados terão citações expandidas |
-
-### Estrutura do ExpandedChunk
-
-> **Nota (v0.15.0):** `ExpandedChunk` e `CitationExpansionStats` estao deprecados e serao removidos em v1.0. A partir de v0.15.0 sao retornados como `dict`. As classes foram mantidas com `DeprecationWarning` para compatibilidade.
+### Campos do Chunk Expandido (`dict`)
 
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
-| `chunk_id` | str | ID completo do chunk (ex: `LEI-14133-2021#ART-018`) |
-| `node_id` | str | ID canônico no formato `leis:{doc}#{span}` |
 | `text` | str | Texto completo do chunk expandido |
 | `document_id` | str | ID do documento (ex: `LEI-14133-2021`) |
 | `span_id` | str | ID do dispositivo (ex: `ART-018`) |
-| `device_type` | str | Tipo: `article`, `paragraph`, `inciso`, `alinea` |
+| `node_id` | str | ID canônico `leis:{doc}#{span}` |
+| `device_type` | str | `article`, `paragraph`, `inciso`, `alinea` |
 | `source_chunk_id` | str | ID do chunk que continha a citação |
-| `source_citation_raw` | str | Texto original da citação (ex: `art. 18 da Lei 14.133`) |
+| `source_citation_raw` | str | Texto original (ex: `art. 18 da Lei 14.133`) |
 
-### Estatísticas de Expansão (CitationExpansionStats)
+### Contexto Estruturado para LLM
 
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| `citations_found` | int | Total de citações detectadas |
-| `citations_resolved` | int | Citações que encontraram chunk correspondente |
-| `citations_not_found` | int | Citações sem chunk correspondente |
-| `chunks_added` | int | Chunks adicionados via expansão |
-| `expansion_time_ms` | float | Tempo de processamento da expansão |
-
-### Quando Usar
-
-- **Análises jurídicas**: Quando precisa do contexto completo das referências normativas
-- **Construção de cadeia de citações**: Para entender como artigos se relacionam
-- **Respostas mais completas**: Inclui automaticamente dispositivos referenciados
-
-### Exemplo Completo
+`to_context()` já inclui os chunks expandidos numa seção separada:
 
 ```python
-from vectorgov import VectorGov
+context = results.to_context()
+# === EVIDÊNCIA DIRETA (resultados da busca) ===
+# [1] Lei 14.133/2021, Art. 72
+# Art. 72. O estudo técnico preliminar será dispensado...
+#
+# === TRECHOS CITADOS (expansão por citação) ===
+# [XC-1] TRECHO CITADO (expansão por citação)
+#   CITADO POR: IN-65-2021#ART-005
+#   CITAÇÃO ORIGINAL: art. 18 da Lei 14.133
+#   ...
 
-vg = VectorGov(api_key="vg_xxx")
-
-# Busca com expansão
-results = vg.search(
-    "Quando o ETP pode ser dispensado?",
-    mode="precise",
-    expand_citations=True,
-    citation_expansion_top_n=5
-)
-
-# Usa todos os chunks (originais + expandidos) para contexto
-all_chunks = list(results) + [
-    {"text": ec.text, "source": f"{ec.document_id}, {ec.span_id}"}
-    for ec in results.expanded_chunks
-]
-
-# Estatísticas
-if results.expansion_stats:
-    print(f"Resultados originais: {results.total}")
-    print(f"Chunks via citação: {results.expansion_stats.chunks_added}")
-    print(f"Total de contexto: {results.total + results.expansion_stats.chunks_added} chunks")
+# Para excluir chunks expandidos do contexto:
+context = results.to_context(include_expanded=False)
 ```
+
+### Quando é Útil
+
+- **Análises jurídicas**: contexto completo das referências normativas
+- **Cadeia de citações**: entender como artigos se relacionam
+- **Respostas mais completas**: dispositivos referenciados aparecem automaticamente
 
 ## Filtros
 
@@ -1438,10 +1442,14 @@ results.mode         # Modo utilizado
 
 # Iterar resultados
 for hit in results:
-    hit.text         # Texto do chunk
-    hit.score        # Relevância (0-1)
-    hit.source       # Fonte formatada
-    hit.metadata     # Metadados completos
+    hit.text              # Texto do chunk
+    hit.score             # Relevância (0-1)
+    hit.source            # Fonte formatada ("Lei 14.133/2021, Art. 33")
+    hit.metadata          # Metadados (tipo, numero, ano, artigo, dispositivo)
+    hit.page_number       # Página no PDF original (int ou None)
+    hit.evidence_url      # Link para evidência verificável (str ou None)
+    hit.nota_especialista # Nota do especialista jurídico (str ou None)
+    hit.chunk_id          # ID interno (para debugging)
 ```
 
 ## Tratamento de Erros
@@ -1567,7 +1575,7 @@ Seguindo o padrão [llmstxt.org](https://llmstxt.org/), disponibilizamos documen
 Este arquivo contém:
 - Visão geral do SDK e API
 - Exemplos de código prontos para uso
-- Documentação de todos os métodos (`search`, `ask`, `feedback`, `store_response`)
+- Documentação de todos os métodos (`search`, `hybrid`, `lookup`, `feedback`, `store_response`)
 - Integrações com OpenAI, Gemini e Claude
 - Modos de busca e parâmetros disponíveis
 - Tratamento de erros
@@ -1656,9 +1664,9 @@ O SDK permite gerenciar documentos na base de conhecimento. Algumas operações 
 |----------|-----------|--------|
 | Listar documentos | Todos | `list_documents()` |
 | Ver detalhes | Todos | `get_document(id)` |
-| **Upload de PDF** | 🔜 Em breve | - |
-| **Iniciar enriquecimento** | 🔜 Em breve | - |
-| **Excluir documento** | 🔜 Em breve | - |
+| Upload de PDF | Admin | `upload_pdf()` |
+| Acompanhar ingestão | Admin | `get_ingest_status()` |
+| Excluir documento | Admin | `delete_document()` |
 
 ## Listar e Consultar Documentos
 
@@ -1687,9 +1695,39 @@ print(f"Documento: {doc.titulo}")
 print(f"Status: {'Enriquecido' if doc.is_enriched else 'Pendente'}")
 ```
 
-## Upload, Enriquecimento e Exclusão
+## Upload e Ingestão (Admin)
 
-🔜 **Em breve**: Funcionalidades de upload de documentos, enriquecimento automático e exclusão estarão disponíveis em versões futuras da SDK pública.
+```python
+# Upload de PDF (máx 50 MB)
+uploaded = vg.upload_pdf(
+    file_path="lei_14133.pdf",
+    tipo_documento="LEI",   # LEI, DECRETO, IN, PORTARIA, RESOLUCAO
+    numero="14133",
+    ano=2021,
+)
+print(f"Task: {uploaded.task_id}")
+
+# Acompanhar progresso da ingestão
+import time
+while True:
+    status = vg.get_ingest_status(uploaded.task_id)
+    print(f"[{status.progress:.0%}] {status.status} - {status.message}")
+    if status.status in ("completed", "failed"):
+        break
+    time.sleep(3)
+
+print(f"Chunks criados: {status.chunks_created}")
+```
+
+## Exclusão (Admin)
+
+```python
+result = vg.delete_document("LEI-14133-2021")
+print(result.message)  # "Documento removido com sucesso"
+```
+
+> **Nota:** `start_enrichment()` e `get_enrichment_status()` foram **descontinuados** em 31/01/2026.
+> O sistema agora usa ingestão determinística (SpanParser + ArticleOrchestrator).
 
 ## Modelos de Resposta
 
@@ -1962,10 +2000,11 @@ vg = VectorGov(api_key="vg_sua_chave")
 results = vg.search("O que é ETP?")
 
 for hit in results:
-    print(hit.text)
+    print(f"[{hit.score:.0%}] {hit.source}")
+    print(f"  {hit.text[:200]}...")
 ```
 
-✅ **Isso já funciona!** Você recebe os chunks mais relevantes da legislação brasileira.
+✅ **Isso já funciona!** Você recebe os chunks mais relevantes da legislação brasileira, com score de relevância e referência da fonte.
 
 ---
 
@@ -2342,6 +2381,9 @@ if __name__ == "__main__":
 | Necessidade | Feature | Exemplo |
 |-------------|---------|---------|
 | Buscar legislação | `search()` | `vg.search("query")` |
+| Busca + grafo de citações | `hybrid()` | `vg.hybrid("query", hops=2)` |
+| Busca sem configuração | `smart_search()` | `vg.smart_search("query")` |
+| Buscar artigo específico | `lookup()` | `vg.lookup("Art. 75 da Lei 14.133")` |
 | Usar com LLM | `to_messages()` | `results.to_messages(query)` |
 | Melhorar resultados | `feedback()` | `vg.feedback(query_id, like=True)` |
 | Busca específica | `filters` | `filters={"tipo": "lei"}` |
