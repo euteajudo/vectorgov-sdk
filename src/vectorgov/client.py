@@ -751,6 +751,263 @@ class VectorGov:
             _raw_response=response,
         )
 
+    # =========================================================================
+    # Filesystem, Grep, Merged, Read Canonical
+    # =========================================================================
+
+    def grep(
+        self,
+        query: str,
+        document_id: Optional[str] = None,
+        max_results: int = 20,
+        context_lines: int = 3,
+    ) -> "GrepResult":
+        """Busca textual exata nos documentos via ripgrep.
+
+        Encontra trechos que contem exatamente o texto buscado.
+        Ideal para localizar dispositivos por palavras-chave especificas.
+
+        Args:
+            query: Texto exato a buscar (min 1 char)
+            document_id: Filtrar por documento (ex: "LEI-14133-2021")
+            max_results: Maximo de resultados (1-50). Default: 20
+            context_lines: Linhas de contexto ao redor do match (0-10). Default: 3
+
+        Returns:
+            GrepResult com matches encontrados
+
+        Example:
+            >>> result = vg.grep("dispensa de licitacao")
+            >>> for m in result:
+            ...     print(f"{m.span_id}: {m.matched_line}")
+            >>>
+            >>> # Filtrar por documento
+            >>> result = vg.grep("art. 75", document_id="LEI-14133-2021")
+        """
+        from vectorgov.models import GrepMatch, GrepResult
+
+        if not query or not query.strip():
+            raise ValidationError("query nao pode ser vazia", field="query")
+
+        data: dict = {"query": query.strip(), "max_results": max_results, "context_lines": context_lines}
+        if document_id:
+            data["document_id"] = document_id
+
+        response = self._http.post("/filesystem/grep", data=data)
+
+        matches = [
+            GrepMatch(
+                node_id=m.get("node_id", ""),
+                document_id=m.get("document_id", ""),
+                span_id=m.get("span_id", ""),
+                text=m.get("text", ""),
+                matched_line=m.get("matched_line", ""),
+                line_number=m.get("line_number", 0),
+                score=m.get("score", 1.0),
+                match_reason=m.get("match_reason"),
+            )
+            for m in response.get("matches", [])
+        ]
+
+        return GrepResult(
+            matches=matches,
+            total=response.get("total", len(matches)),
+            query=query,
+            latency_ms=response.get("latency_ms", 0),
+            files_searched=response.get("files_searched", 0),
+            _raw_response=response,
+        )
+
+    def filesystem_search(
+        self,
+        query: str,
+        document_id: Optional[str] = None,
+        mode: str = "auto",
+        top_k: int = 10,
+        include_text: bool = True,
+    ) -> "FilesystemResult":
+        """Busca no indice curado (PostgreSQL + ripgrep).
+
+        Combina indice deterministico com grep para busca precisa.
+        Modo "auto" detecta se a query e referencia legal (grep) ou
+        semantica (index).
+
+        Args:
+            query: Texto da busca
+            document_id: Filtrar por documento
+            mode: "auto" (detecta), "index", "grep", "both". Default: "auto"
+            top_k: Maximo de resultados (1-50). Default: 10
+            include_text: Incluir texto completo. Default: True
+
+        Returns:
+            FilesystemResult com resultados
+
+        Example:
+            >>> result = vg.filesystem_search("art. 75 da Lei 14.133")
+            >>> for hit in result:
+            ...     print(f"[{hit.source}] {hit.breadcrumb}")
+        """
+        from vectorgov.models import FilesystemHit, FilesystemResult
+
+        if not query or not query.strip():
+            raise ValidationError("query nao pode ser vazia", field="query")
+
+        if mode not in ("auto", "index", "grep", "both"):
+            raise ValidationError("mode deve ser: auto, index, grep, both", field="mode")
+
+        data: dict = {"query": query.strip(), "mode": mode, "top_k": top_k, "include_text": include_text}
+        if document_id:
+            data["document_id"] = document_id
+
+        response = self._http.post("/filesystem/search", data=data)
+
+        results = [
+            FilesystemHit(
+                node_id=r.get("node_id", ""),
+                document_id=r.get("document_id", ""),
+                span_id=r.get("span_id", ""),
+                text=r.get("text"),
+                score=r.get("score", 0.0),
+                source=r.get("source", ""),
+                breadcrumb=r.get("breadcrumb"),
+                match_reason=r.get("match_reason"),
+            )
+            for r in response.get("results", [])
+        ]
+
+        return FilesystemResult(
+            results=results,
+            total=response.get("total", len(results)),
+            query=query,
+            mode_used=response.get("mode_used", mode),
+            latency_ms=response.get("latency_ms", 0),
+            documents_searched=response.get("documents_searched", 0),
+            _raw_response=response,
+        )
+
+    def merged(
+        self,
+        query: str,
+        document_id: Optional[str] = None,
+        top_k: int = 10,
+        token_budget: int = 6000,
+        enable_hybrid: bool = True,
+        enable_filesystem: bool = True,
+    ) -> "MergedResult":
+        """Busca dual-path: hibrida (Milvus+Neo4j) + filesystem combinadas.
+
+        Executa ambas buscas em paralelo, unifica resultados, deduplica
+        e rankeia via Reciprocal Rank Fusion (RRF). Hits presentes em
+        ambas fontes recebem boost.
+
+        Args:
+            query: Texto da consulta (2-1000 chars)
+            document_id: Filtrar por documento
+            top_k: Maximo de resultados (1-30). Default: 10
+            token_budget: Limite de tokens (0-20000). Default: 6000
+            enable_hybrid: Ativar busca hibrida. Default: True
+            enable_filesystem: Ativar busca filesystem. Default: True
+
+        Returns:
+            MergedResult com resultados unificados
+
+        Example:
+            >>> result = vg.merged("prazo para impugnacao do edital")
+            >>> for hit in result:
+            ...     print(f"[{','.join(hit.sources)}] {hit.breadcrumb}: {hit.score:.2f}")
+            >>> print(f"Mutual: {result.mutual_count} hits em ambas fontes")
+        """
+        from vectorgov.models import MergedHit, MergedResult
+
+        query = self._validate_query(query)
+
+        data: dict = {
+            "query": query,
+            "top_k": top_k,
+            "token_budget": token_budget,
+            "enable_hybrid": enable_hybrid,
+            "enable_filesystem": enable_filesystem,
+        }
+        if document_id:
+            data["document_id"] = document_id
+
+        response = self._http.post("/search/merged", data=data)
+
+        results = [
+            MergedHit(
+                node_id=r.get("node_id", ""),
+                document_id=r.get("document_id", ""),
+                span_id=r.get("span_id", ""),
+                text=r.get("text", ""),
+                score=r.get("score", 0.0),
+                breadcrumb=r.get("breadcrumb"),
+                sources=r.get("sources", []),
+                hybrid_score=r.get("hybrid_score"),
+                filesystem_score=r.get("filesystem_score"),
+                text_source=r.get("text_source", "milvus"),
+                has_specialist_note=r.get("has_specialist_note", False),
+                has_jurisprudence=r.get("has_jurisprudence", False),
+                token_count=r.get("token_count", 0),
+            )
+            for r in response.get("results", [])
+        ]
+
+        return MergedResult(
+            results=results,
+            total=response.get("total", len(results)),
+            query=query,
+            token_total=response.get("token_total", 0),
+            token_budget=response.get("token_budget", token_budget),
+            hybrid_count=response.get("hybrid_count", 0),
+            filesystem_count=response.get("filesystem_count", 0),
+            mutual_count=response.get("mutual_count", 0),
+            latency_ms=response.get("latency_ms", 0),
+            _raw_response=response,
+        )
+
+    def read_canonical(
+        self,
+        document_id: str,
+        span_id: Optional[str] = None,
+    ) -> "CanonicalResult":
+        """Le o texto canonical completo de um documento ou dispositivo.
+
+        Args:
+            document_id: ID do documento (ex: "LEI-14133-2021")
+            span_id: Se fornecido, retorna so o dispositivo (ex: "ART-075")
+
+        Returns:
+            CanonicalResult com texto, contagem de tokens e metadados
+
+        Example:
+            >>> # Documento inteiro
+            >>> doc = vg.read_canonical("LEI-14133-2021")
+            >>> print(f"{doc.document_id}: {doc.token_count} tokens")
+            >>>
+            >>> # Dispositivo especifico
+            >>> art = vg.read_canonical("LEI-14133-2021", span_id="ART-075")
+            >>> print(art.text)
+        """
+        from vectorgov.models import CanonicalResult
+
+        document_id = self._validate_path_param(document_id, "document_id")
+
+        params = {}
+        if span_id:
+            params["span_id"] = span_id
+
+        response = self._http.get(f"/filesystem/read/{document_id}", params=params)
+
+        return CanonicalResult(
+            document_id=response.get("document_id", document_id),
+            text=response.get("text", ""),
+            token_count=response.get("token_count", 0),
+            char_count=response.get("char_count", 0),
+            span_id=response.get("span_id"),
+            breadcrumb=response.get("breadcrumb"),
+            source=response.get("source", "canonical"),
+        )
+
     def feedback(self, query_id: str, like: bool) -> bool:
         """Envia feedback sobre um resultado de busca.
 

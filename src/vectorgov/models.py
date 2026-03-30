@@ -1600,3 +1600,203 @@ class AuditStats:
 
     def __repr__(self) -> str:
         return f"AuditStats(total={self.total_events}, blocked={self.blocked_count}, period={self.period_days}d)"
+
+
+# =========================================================================
+# Filesystem / Grep / Merged Results
+# =========================================================================
+
+
+@dataclass(slots=True)
+class GrepMatch:
+    """Um match de busca textual exata (ripgrep)."""
+
+    node_id: str
+    """ID do chunk (ex: leis:LEI-14133-2021#ART-075)"""
+
+    document_id: str
+    """ID do documento"""
+
+    span_id: str
+    """ID do span"""
+
+    text: str
+    """Texto completo do dispositivo"""
+
+    matched_line: str
+    """Linha que fez match"""
+
+    line_number: int
+    """Numero da linha no canonical"""
+
+    score: float
+    """Score (1.0 para grep exato)"""
+
+    match_reason: Optional[str] = None
+    """Razao do match"""
+
+
+@dataclass(slots=True)
+class GrepResult:
+    """Resultado de busca textual exata via ripgrep.
+
+    Exemplo:
+        >>> result = vg.grep("dispensa de licitacao")
+        >>> for m in result.matches:
+        ...     print(f"{m.document_id}#{m.span_id}: {m.matched_line}")
+    """
+
+    matches: list[GrepMatch]
+    """Lista de matches encontrados"""
+
+    total: int
+    """Total de matches"""
+
+    query: str
+    """Query original"""
+
+    latency_ms: float
+    """Latencia em ms"""
+
+    files_searched: int
+    """Numero de arquivos pesquisados"""
+
+    _raw_response: dict = field(default_factory=dict, repr=False)
+
+    def __iter__(self):
+        return iter(self.matches)
+
+    def __len__(self):
+        return len(self.matches)
+
+    def __repr__(self) -> str:
+        return f"GrepResult(matches={self.total}, latency={self.latency_ms:.0f}ms)"
+
+
+@dataclass(slots=True)
+class FilesystemHit:
+    """Um resultado de busca no indice curado."""
+
+    node_id: str
+    document_id: str
+    span_id: str
+    text: Optional[str]
+    score: float
+    source: str
+    """Fonte: 'index' ou 'grep'"""
+
+    breadcrumb: Optional[str] = None
+    match_reason: Optional[str] = None
+
+
+@dataclass(slots=True)
+class FilesystemResult:
+    """Resultado de busca no filesystem (indice curado + grep).
+
+    Exemplo:
+        >>> result = vg.filesystem_search("art. 75 da Lei 14.133")
+        >>> for hit in result:
+        ...     print(f"[{hit.source}] {hit.breadcrumb}: {hit.text[:80]}")
+    """
+
+    results: list[FilesystemHit]
+    total: int
+    query: str
+    mode_used: str
+    """Modo executado: 'auto', 'index', 'grep', 'both'"""
+
+    latency_ms: float
+    documents_searched: int
+
+    _raw_response: dict = field(default_factory=dict, repr=False)
+
+    def __iter__(self):
+        return iter(self.results)
+
+    def __len__(self):
+        return len(self.results)
+
+    def __repr__(self) -> str:
+        return f"FilesystemResult(hits={self.total}, mode={self.mode_used}, latency={self.latency_ms:.0f}ms)"
+
+
+@dataclass(slots=True)
+class MergedHit:
+    """Um resultado da busca dual-path (hybrid + filesystem)."""
+
+    node_id: str
+    document_id: str
+    span_id: str
+    text: str
+    score: float
+    """Score RRF final"""
+
+    breadcrumb: Optional[str] = None
+    sources: list[str] = field(default_factory=list)
+    """Fontes: ['hybrid'], ['filesystem'], ou ['hybrid', 'filesystem']"""
+
+    hybrid_score: Optional[float] = None
+    filesystem_score: Optional[float] = None
+    text_source: str = "milvus"
+    """'milvus' ou 'canonical'"""
+
+    has_specialist_note: bool = False
+    has_jurisprudence: bool = False
+    token_count: int = 0
+
+
+@dataclass(slots=True)
+class MergedResult:
+    """Resultado da busca dual-path (hybrid + filesystem combinadas).
+
+    Exemplo:
+        >>> result = vg.merged("prazo para impugnacao do edital")
+        >>> for hit in result:
+        ...     print(f"[{','.join(hit.sources)}] {hit.breadcrumb}: score={hit.score:.2f}")
+    """
+
+    results: list[MergedHit]
+    total: int
+    query: str
+    token_total: int
+    token_budget: int
+    hybrid_count: int
+    filesystem_count: int
+    mutual_count: int
+    """Resultados presentes em ambas fontes"""
+
+    latency_ms: float
+
+    _raw_response: dict = field(default_factory=dict, repr=False)
+
+    def __iter__(self):
+        return iter(self.results)
+
+    def __len__(self):
+        return len(self.results)
+
+    def __repr__(self) -> str:
+        return f"MergedResult(hits={self.total}, hybrid={self.hybrid_count}, fs={self.filesystem_count}, mutual={self.mutual_count})"
+
+
+@dataclass(slots=True)
+class CanonicalResult:
+    """Resultado de leitura de canonical (texto completo de um documento/dispositivo).
+
+    Exemplo:
+        >>> result = vg.read_canonical("LEI-14133-2021", span_id="ART-075")
+        >>> print(f"{result.breadcrumb} ({result.token_count} tokens)")
+        >>> print(result.text)
+    """
+
+    document_id: str
+    text: str
+    token_count: int
+    char_count: int
+    span_id: Optional[str] = None
+    breadcrumb: Optional[str] = None
+    source: str = "canonical"
+
+    def __repr__(self) -> str:
+        label = f"{self.document_id}#{self.span_id}" if self.span_id else self.document_id
+        return f"CanonicalResult({label}, {self.token_count} tokens)"
