@@ -38,8 +38,7 @@ curl -X POST https://vectorgov.io/api/v1/sdk/search \
   -d '{
     "query": "Quando a licitacao pode ser dispensada?",
     "top_k": 5,
-    "mode": "balanced",
-    "use_cache": true
+    "mode": "balanced"
   }'
 ```
 
@@ -50,8 +49,14 @@ curl -X POST https://vectorgov.io/api/v1/sdk/search \
 | mode | string | Nao | "balanced" | "fast" (~2s), "balanced" (~5s), "precise" (~15s) |
 | tipo_documento | string | Nao | null | Filtro: "lei", "decreto", "in", "portaria" |
 | ano | int | Nao | null | Filtro por ano (1900-2100) |
-| use_cache | bool | Nao | true | Reutilizar cache semantico |
+| use_cache | bool | Nao | false | Cache semantico compartilhado (ver nota abaixo) |
 | scope | string | Nao | null | Escopo federativo |
+
+> **Cache e privacidade:** O cache e compartilhado entre todos os clientes.
+> Com `use_cache: true`, sua query/resposta pode ser reutilizada por outros usuarios
+> e voce pode receber respostas de queries de outros. Use `true` apenas para
+> queries genericas onde a troca privacidade/latencia e aceitavel.
+> Default: `false` (privacidade maxima).
 
 ### Response (200)
 
@@ -104,7 +109,7 @@ curl -X POST https://vectorgov.io/api/v1/sdk/smart-search \
 | Campo | Tipo | Obrigatorio | Default | Descricao |
 |-------|------|:-----------:|---------|-----------|
 | query | string | Sim | — | Consulta juridica (3-1000 chars) |
-| use_cache | bool | Nao | false | Reutilizar cache |
+| use_cache | bool | Nao | false | Cache compartilhado (ver nota de privacidade em /sdk/search) |
 
 ### Response (200)
 
