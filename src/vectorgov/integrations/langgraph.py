@@ -57,6 +57,12 @@ except ImportError:
     LANGGRAPH_AVAILABLE = False
     BaseTool = object
     Document = dict
+    BaseMessage = object
+    HumanMessage = object
+    AIMessage = object
+    tool = lambda *a, **kw: (lambda f: f)  # noqa: E731
+    Field = lambda **kw: kw.get("default")  # noqa: E731
+    PrivateAttr = lambda **kw: kw.get("default")  # noqa: E731
 
 
 def _check_langgraph():
@@ -104,8 +110,42 @@ class VectorGovState(TypedDict, total=False):
 # ============================================================================
 
 
+_VALID_METHODS = ("search", "hybrid", "merged", "grep")
+
+
+def _execute_method(client: Any, method: str, query: str, top_k: int) -> str:
+    """Executa o método de busca e formata resultado como string."""
+    if method == "hybrid":
+        result = client.hybrid(query=query, top_k=top_k)
+        hits = list(result.hits or []) + list(result.graph_nodes or [])
+    elif method == "merged":
+        result = client.merged(query=query, top_k=top_k)
+        hits = result.results
+    elif method == "grep":
+        result = client.grep(query=query, max_results=top_k)
+        hits = result.matches
+    else:
+        result = client.search(query=query)
+        hits = result.hits
+
+    if not hits:
+        return "Nenhum resultado encontrado na legislação brasileira."
+
+    total = getattr(result, "total", len(hits))
+    parts = [f"Encontrados {total} resultados:\n"]
+    for i, hit in enumerate(hits, 1):
+        source = getattr(hit, "source", "") or getattr(hit, "document_id", "")
+        text = getattr(hit, "text", "") or getattr(hit, "matched_line", "")
+        parts.append(f"[{i}] {source}")
+        parts.append(f"{text}")
+        parts.append("")
+
+    return "\n".join(parts)
+
+
 def create_vectorgov_tool(
     api_key: Optional[str] = None,
+    method: str = "search",
     top_k: int = 5,
     mode: str = "balanced",
     name: str = "search_legislation",
@@ -113,13 +153,13 @@ def create_vectorgov_tool(
 ) -> BaseTool:
     """Cria uma ferramenta VectorGov para uso em grafos LangGraph.
 
-    Esta ferramenta pode ser usada com create_react_agent ou em ToolNodes
-    customizados.
+    Suporta múltiplos métodos: search, hybrid, merged, grep.
 
     Args:
         api_key: Chave de API. Se não fornecida, usa VECTORGOV_API_KEY
+        method: Método de busca — "search" (default), "hybrid", "merged", "grep"
         top_k: Quantidade de resultados (1-50)
-        mode: Modo de busca (fast, balanced, precise)
+        mode: Modo de busca (fast, balanced, precise) — usado por search()
         name: Nome da ferramenta
         description: Descrição customizada
 
@@ -130,21 +170,17 @@ def create_vectorgov_tool(
         >>> from langgraph.prebuilt import create_react_agent
         >>> from langchain_openai import ChatOpenAI
         >>>
-        >>> tool = create_vectorgov_tool(api_key="vg_xxx")
+        >>> tool = create_vectorgov_tool(api_key="vg_xxx", method="hybrid")
         >>> agent = create_react_agent(ChatOpenAI(), tools=[tool])
         >>> result = agent.invoke({"messages": [("user", "O que é ETP?")]})
-
-    Exemplo com ToolNode:
-        >>> from langgraph.prebuilt import ToolNode
-        >>>
-        >>> tool = create_vectorgov_tool()
-        >>> tool_node = ToolNode(tools=[tool])
     """
     _check_langgraph()
 
+    if method not in _VALID_METHODS:
+        raise ValueError(f"method deve ser um de {_VALID_METHODS}")
+
     from vectorgov import VectorGov
 
-    # Inicializa cliente
     api_key = api_key or os.environ.get("VECTORGOV_API_KEY")
     client = VectorGov(api_key=api_key, default_top_k=top_k, default_mode=mode)
 
@@ -161,18 +197,7 @@ Input: pergunta ou termo de busca sobre legislação brasileira."""
     @tool(name, description=description or default_description)
     def search_legislation(query: str) -> str:
         """Busca em legislação brasileira."""
-        result = client.search(query=query)
-
-        if not result.hits:
-            return "Nenhum resultado encontrado na legislação brasileira."
-
-        parts = [f"Encontrados {result.total} resultados:\n"]
-        for i, hit in enumerate(result.hits, 1):
-            parts.append(f"[{i}] {hit.source}")
-            parts.append(f"{hit.text}")
-            parts.append("")
-
-        return "\n".join(parts)
+        return _execute_method(client, method, query, top_k)
 
     return search_legislation
 
@@ -184,6 +209,7 @@ Input: pergunta ou termo de busca sobre legislação brasileira."""
 
 def create_retrieval_node(
     api_key: Optional[str] = None,
+    method: str = "search",
     top_k: int = 5,
     mode: str = "balanced",
     query_key: str = "query",
@@ -192,13 +218,13 @@ def create_retrieval_node(
 ) -> Callable[[VectorGovState], dict]:
     """Cria um nó de retrieval para grafos LangGraph customizados.
 
-    O nó lê a query do estado, busca documentos relevantes e retorna
-    os documentos e contexto formatado.
+    Suporta múltiplos métodos: search, hybrid, merged, grep.
 
     Args:
         api_key: Chave de API
+        method: Método de busca — "search" (default), "hybrid", "merged", "grep"
         top_k: Quantidade de documentos
-        mode: Modo de busca
+        mode: Modo de busca (search only)
         query_key: Chave do estado com a query
         output_key: Chave para salvar documentos
         context_key: Chave para salvar contexto formatado
@@ -207,22 +233,17 @@ def create_retrieval_node(
         Função nó para usar em StateGraph
 
     Exemplo:
-        >>> from langgraph.graph import StateGraph, START, END
-        >>>
-        >>> retrieval_node = create_retrieval_node(api_key="vg_xxx")
-        >>>
+        >>> retrieval_node = create_retrieval_node(api_key="vg_xxx", method="hybrid")
         >>> builder = StateGraph(VectorGovState)
         >>> builder.add_node("retrieve", retrieval_node)
-        >>> builder.add_edge(START, "retrieve")
-        >>> builder.add_edge("retrieve", END)
-        >>> graph = builder.compile()
-        >>>
-        >>> result = graph.invoke({"query": "O que é ETP?"})
-        >>> print(result["context"])
     """
     _check_langgraph()
 
+    if method not in _VALID_METHODS:
+        raise ValueError(f"method deve ser um de {_VALID_METHODS}")
+
     from vectorgov import VectorGov
+    from vectorgov.integrations.langchain import _hits_to_documents
 
     api_key = api_key or os.environ.get("VECTORGOV_API_KEY")
     client = VectorGov(api_key=api_key, default_top_k=top_k, default_mode=mode)
@@ -232,7 +253,6 @@ def create_retrieval_node(
         query = state.get(query_key, "")
 
         if not query:
-            # Tenta extrair da última mensagem
             messages = state.get("messages", [])
             if messages:
                 last_msg = messages[-1]
@@ -249,27 +269,29 @@ def create_retrieval_node(
                 "sources": [],
             }
 
-        # Busca documentos
-        result = client.search(query=query)
+        # Busca usando o método configurado
+        if method == "hybrid":
+            result = client.hybrid(query=query, top_k=top_k)
+            hits = list(result.hits or []) + list(result.graph_nodes or [])
+            context = result.to_context() if hasattr(result, "to_context") else ""
+        elif method == "merged":
+            result = client.merged(query=query, top_k=top_k)
+            hits = result.results
+            context = "\n\n".join(getattr(h, "text", "") for h in hits)
+        elif method == "grep":
+            result = client.grep(query=query, max_results=top_k)
+            hits = result.matches
+            context = "\n\n".join(getattr(h, "text", "") for h in hits)
+        else:
+            result = client.search(query=query)
+            hits = result.hits
+            context = result.to_context()
 
-        # Converte para Documents
-        documents = []
-        sources = []
-        for hit in result.hits:
-            doc = Document(
-                page_content=hit.text,
-                metadata={
-                    "source": hit.source,
-                    "score": hit.score,
-                    "document_type": hit.metadata.document_type,
-                    "article": hit.metadata.article,
-                },
-            )
-            documents.append(doc)
-            sources.append(hit.source)
-
-        # Formata contexto
-        context = result.to_context()
+        documents = _hits_to_documents(hits)
+        sources = [
+            getattr(h, "source", "") or getattr(h, "document_id", "")
+            for h in hits
+        ]
 
         return {
             output_key: documents,
@@ -288,6 +310,7 @@ def create_retrieval_node(
 def create_legal_rag_graph(
     llm: Any,
     api_key: Optional[str] = None,
+    method: str = "search",
     top_k: int = 5,
     mode: str = "balanced",
     system_prompt: Optional[str] = None,
@@ -356,24 +379,38 @@ Resposta:"""
 
     prompt_template = system_prompt or default_prompt
 
-    # Nó de retrieval
+    # Nó de retrieval (usa o método configurado)
+    from vectorgov.integrations.langchain import _hits_to_documents
+
     def retrieve(state: RAGState) -> RAGState:
         query = state["query"]
-        result = client.search(query=query)
 
-        documents = []
-        sources = []
-        for hit in result.hits:
-            doc = Document(
-                page_content=hit.text,
-                metadata={"source": hit.source, "score": hit.score},
-            )
-            documents.append(doc)
-            sources.append(hit.source)
+        if method == "hybrid":
+            result = client.hybrid(query=query, top_k=top_k)
+            hits = list(result.hits or []) + list(result.graph_nodes or [])
+            context = result.to_context() if hasattr(result, "to_context") else ""
+        elif method == "merged":
+            result = client.merged(query=query, top_k=top_k)
+            hits = result.results
+            context = "\n\n".join(getattr(h, "text", "") for h in hits)
+        elif method == "grep":
+            result = client.grep(query=query, max_results=top_k)
+            hits = result.matches
+            context = "\n\n".join(getattr(h, "text", "") for h in hits)
+        else:
+            result = client.search(query=query)
+            hits = result.hits
+            context = result.to_context()
+
+        documents = _hits_to_documents(hits)
+        sources = [
+            getattr(h, "source", "") or getattr(h, "document_id", "")
+            for h in hits
+        ]
 
         return {
             "documents": documents,
-            "context": result.to_context(),
+            "context": context,
             "sources": sources,
         }
 
