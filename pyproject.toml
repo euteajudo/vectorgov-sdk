@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vectorgov"
-version = "0.15.2"
+version = "0.16.0"
 description = "SDK Python para acessar bases de conhecimento jurídico VectorGov"
 readme = "README.md"
 license = {text = "MIT"}

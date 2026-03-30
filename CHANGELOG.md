@@ -7,6 +7,63 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-03-30
+
+### Adicionado
+
+- **`grep()`** — Busca textual exata nos documentos via ripgrep:
+  - Encontra trechos contendo exatamente o texto buscado
+  - Filtro por `document_id`, controle de `max_results` e `context_lines`
+  - Retorna `GrepResult` com `GrepMatch` iteravel
+
+- **`filesystem_search()`** — Busca no indice curado (PostgreSQL + ripgrep):
+  - Modos: `auto` (detecta tipo da query), `index`, `grep`, `both`
+  - Retorna `FilesystemResult` com `FilesystemHit` incluindo breadcrumb e match_reason
+
+- **`merged()`** — Busca dual-path: hibrida + filesystem combinadas:
+  - Executa ambas buscas em paralelo com Reciprocal Rank Fusion (RRF)
+  - Hits presentes em ambas fontes recebem boost mutuo
+  - Controle de `token_budget` (0-20000) e toggle de fontes
+  - Retorna `MergedResult` com `MergedHit` incluindo `sources`, scores por fonte
+
+- **`read_canonical()`** — Leitura do texto canonical completo:
+  - Documento inteiro ou dispositivo especifico via `span_id`
+  - Retorna `CanonicalResult` com texto, contagem de tokens e metadados
+
+### Modelos novos
+
+- `GrepMatch`, `GrepResult` — Resultados da busca textual exata
+- `FilesystemHit`, `FilesystemResult` — Resultados do indice curado
+- `MergedHit`, `MergedResult` — Resultados unificados de busca dual-path
+- `CanonicalResult` — Texto canonical com contagem de tokens
+
+### Exemplos
+
+```python
+# Busca textual exata
+result = vg.grep("dispensa de licitacao")
+for m in result:
+    print(f"{m.span_id}: {m.matched_line}")
+
+# Busca no indice curado
+result = vg.filesystem_search("art. 75 da Lei 14.133")
+for hit in result:
+    print(f"[{hit.source}] {hit.breadcrumb}")
+
+# Busca dual-path (hibrida + filesystem)
+result = vg.merged("prazo para impugnacao do edital")
+for hit in result:
+    print(f"[{','.join(hit.sources)}] {hit.breadcrumb}: {hit.score:.2f}")
+print(f"Mutual: {result.mutual_count} hits em ambas fontes")
+
+# Texto canonical completo
+doc = vg.read_canonical("LEI-14133-2021")
+print(f"{doc.document_id}: {doc.token_count} tokens")
+
+art = vg.read_canonical("LEI-14133-2021", span_id="ART-075")
+print(art.text)
+```
+
 ## [0.15.2] - 2026-03-01
 
 ### Adicionado
