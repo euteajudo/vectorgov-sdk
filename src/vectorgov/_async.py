@@ -100,7 +100,7 @@ class AsyncVectorGov:
         use_cache: Optional[bool] = None,
         trace_id: Optional[str] = None,
     ) -> HybridResult:
-        """Busca híbrida assíncrona (Milvus + Neo4j)."""
+        """Busca híbrida assíncrona (semântica + grafo)."""
         return await asyncio.to_thread(
             self._sync.hybrid,
             query,
@@ -119,7 +119,7 @@ class AsyncVectorGov:
         use_cache: bool = False,
         trace_id: Optional[str] = None,
     ) -> SmartSearchResult:
-        """Smart search assíncrono (pipeline MOC v4 com Juiz)."""
+        """Smart search assíncrono (pipeline inteligente)."""
         return await asyncio.to_thread(
             self._sync.smart_search,
             query,

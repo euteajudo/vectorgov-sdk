@@ -44,7 +44,7 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
 - **Configuração**
   - [Modos de Busca](#modos-de-busca)
   - [Smart Search](#smart-search-busca-inteligente)
-  - [Busca Hibrida (Grafo)](#busca-hibrida-milvus--grafo)
+  - [Busca Hibrida (Grafo)](#busca-hibrida-semântica--grafo)
   - [Lookup de Dispositivo](#lookup-de-dispositivo)
   - [Citation Expansion](#citation-expansion-expansão-por-citação)
   - [Filtros](#filtros)
@@ -381,7 +381,7 @@ for chunk in rag.stream("O que é ETP?"):
 | **Anthropic Claude** | `client.messages.stream()` context manager |
 | **Ollama** | `rag.stream()` ou `stream=True` na API |
 | **LangChain** | `.stream()` em vez de `.invoke()` |
-| **vLLM/Local** | `stream=True` na API OpenAI-compatible |
+| **Servidor Local** | `stream=True` na API OpenAI-compatible |
 
 > **Importante:** O VectorGov retorna o contexto em ~1-2 segundos (sem streaming necessário). O streaming é útil apenas na etapa de **geração de resposta pelo LLM**, que pode levar 5-30 segundos dependendo do modelo.
 
@@ -980,7 +980,7 @@ results = vg.search("query", mode="fast", use_cache=True)
 
 ## Smart Search (Busca Inteligente)
 
-O `smart_search()` e um endpoint turnkey que executa o pipeline completo MOC v4 (Pensador, Motor, Juiz). O pipeline decide tudo: quantidade de chunks, estrategia de busca, expansao de citacoes. O cliente so faz a pergunta.
+O `smart_search()` e um endpoint turnkey que executa o pipeline completo de analise juridica. O pipeline decide tudo: quantidade de chunks, estrategia de busca, expansao de citacoes. O cliente so faz a pergunta.
 
 ```python
 # Uso basico - o pipeline decide tudo
@@ -997,7 +997,7 @@ result = vg.smart_search("criterios de julgamento", use_cache=True)
 | `query` | str | - | Pergunta (3 a 1000 caracteres) |
 | `use_cache` | bool | `False` | Usar cache semantico |
 
-> **Importante:** `smart_search()` nao aceita `top_k`, `mode`, `filters` ou qualquer outro parametro de controle. O pipeline MOC v4 toma todas as decisoes automaticamente. Enviar campos extras resulta em erro 422.
+> **Importante:** `smart_search()` nao aceita `top_k`, `mode`, `filters` ou qualquer outro parametro de controle. O pipeline toma todas as decisoes automaticamente. Enviar campos extras resulta em erro 422.
 
 **Resposta:**
 
@@ -1028,9 +1028,9 @@ except TierError:
     result = vg.search("query", mode="precise")
 ```
 
-## Busca Hibrida (Milvus + Grafo)
+## Busca Hibrida (Semântica + Grafo)
 
-O metodo `hybrid()` combina busca semantica (Milvus) com expansao via grafo de citacoes normativas (Neo4j). Retorna evidencias diretas e artigos citados.
+O metodo `hybrid()` combina busca semantica com expansao via grafo de citacoes normativas. Retorna evidencias diretas e artigos citados.
 
 ```python
 # Busca hibrida com expansao de grafo

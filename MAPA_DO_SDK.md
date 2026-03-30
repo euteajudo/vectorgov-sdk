@@ -49,7 +49,7 @@ O VectorGov SDK é uma biblioteca Python que permite integração simples e efic
 │   ┌─────────┐                    ┌─────────┐                ┌─────────────┐ │
 │   │ Pergunta│───────────────────▶│  Busca  │                │  OpenAI     │ │
 │   │         │                    │ Semântica│                │  Gemini     │ │
-│   └─────────┘                    │ (Milvus) │                │  Claude     │ │
+│   └─────────┘                    │          │                │  Claude     │ │
 │                                  └────┬─────┘                │  Llama      │ │
 │                                       │                      │  Qwen       │ │
 │                                       │ Contexto             │  Ollama     │ │
@@ -328,7 +328,7 @@ O `VectorGov` é a classe principal do SDK, responsável por todas as interaçõ
 │  │ - query: str          # Pergunta (3-1000 caracteres)               │   │
 │  │ - use_cache: bool     # Default False                              │   │
 │  │ - trace_id: str       # ID de rastreamento (opcional)              │   │
-│  │ Nota: pipeline MOC v4 decide tudo, sem top_k/mode/filters          │   │
+│  │ Nota: pipeline decide tudo, sem top_k/mode/filters                  │   │
 │  │                                                                     │   │
 │  │ hybrid(query, top_k, collections, hops, graph_expansion,           │   │
 │  │        token_budget, use_cache, trace_id)                          │   │

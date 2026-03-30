@@ -710,7 +710,7 @@ Resposta:"""
 
 @dataclass
 class SmartSearchResult(SearchResult):
-    """Resultado de smart search (pipeline MOC v4 completo).
+    """Resultado de smart search (pipeline inteligente completo).
 
     Herda todos os campos e métodos de SearchResult, e adiciona
     metadados do Juiz (confiança, raciocínio) e contexto normativo.
@@ -755,7 +755,7 @@ class SmartSearchResult(SearchResult):
 
 @dataclass
 class HybridResult(BaseResult):
-    """Resultado de busca híbrida (Milvus + Neo4j grafo).
+    """Resultado de busca híbrida (semântica + grafo de citações).
 
     Combina evidências diretas (busca semântica) com expansão
     via grafo de citações normativas.
@@ -768,13 +768,13 @@ class HybridResult(BaseResult):
     """
 
     hits: list[Hit] = field(default_factory=list)
-    """Evidências diretas da busca semântica (Milvus).
+    """Evidências diretas da busca semântica.
 
     Alias: ``direct_evidence`` (backward-compatible).
     """
 
     graph_nodes: list[Hit] = field(default_factory=list)
-    """Chunks expandidos via grafo de citações (Neo4j) — agora como Hit.
+    """Chunks expandidos via grafo de citações — agora como Hit.
 
     Alias: ``graph_expansion`` (backward-compatible).
     """

@@ -46,13 +46,13 @@ for r in results:
 
 ### Adicionado
 
-- **Smart Search (`smart_search()`)** — Pipeline MOC v4 completo com Juiz de confianca:
+- **Smart Search (`smart_search()`)** — Pipeline inteligente completo com analise de confianca:
   - Novo modelo `SmartSearchResult` (herda de `SearchResult`)
   - Campos extras: `confianca`, `raciocinio`, `tentativas`, `normas_presentes`
   - Cada hit inclui `nota_especialista`, `evidence_url`, `document_url`
   - Requer tier Premium (`TierError` se nao disponivel)
 
-- **Busca Hibrida (`hybrid()`)** — Milvus (semantica) + Neo4j (grafo de citacoes):
+- **Busca Hibrida (`hybrid()`)** — Semantica + grafo de citacoes normativas:
   - Novo modelo `HybridResult` (herda de `BaseResult`)
   - Campos: `hits` (evidencias diretas), `graph_nodes` (expansao via grafo), `stats`
   - Parametros: `top_k`, `hops` (1-2), `graph_expansion` (bidirectional/forward), `token_budget`
@@ -120,7 +120,7 @@ try:
 except TierError:
     result = vg.search("criterios de julgamento", mode="precise")
 
-# Busca Hibrida — Milvus + Neo4j
+# Busca Hibrida — Semantica + Grafo
 result = vg.hybrid("Dispensa de licitacao por baixo valor", hops=2)
 print(f"Evidencias diretas: {len(result.hits)}")
 print(f"Expansao via grafo: {len(result.graph_nodes)}")

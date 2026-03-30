@@ -320,7 +320,7 @@ class VectorGov:
         use_cache: bool = False,
         trace_id: Optional[str] = None,
     ) -> SmartSearchResult:
-        """Busca premium turnkey — pipeline MOC v4 decide tudo.
+        """Busca premium turnkey — pipeline inteligente decide tudo.
 
         O pipeline VectorGov analisa a query, busca os dispositivos mais
         relevantes, filtra por qualidade, e entrega um pacote completo:
@@ -409,7 +409,7 @@ class VectorGov:
         use_cache: Optional[bool] = None,
         trace_id: Optional[str] = None,
     ) -> HybridResult:
-        """Busca híbrida combinando Milvus (semântica) + Neo4j (grafo).
+        """Busca híbrida combinando semântica + grafo de citações.
 
         Retorna evidências diretas da busca vetorial e expansão via
         grafo de citações normativas.
@@ -1249,7 +1249,7 @@ class VectorGov:
 
         O sistema agora usa:
         - Ingestão determinística (SpanParser + ArticleOrchestrator)
-        - Retrieval determinístico (Milvus hybrid + Neo4j graph)
+        - Retrieval determinístico (busca híbrida + grafo de citações)
         - Evidências auditáveis (citation expansion)
         """
         import warnings
