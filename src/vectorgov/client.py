@@ -623,7 +623,7 @@ class VectorGov:
         if trace_id:
             request_data["trace_id"] = trace_id
 
-        response = self._http.post("/retrieve/lookup", data=request_data)
+        response = self._http.post("/sdk/lookup", data=request_data)
 
         # Batch response: status="batch" com "results" list
         if response.get("status") == "batch" and "results" in response:
@@ -1399,19 +1399,35 @@ class VectorGov:
 
         response = self._http.get("/sdk/documents", params={"page": page, "limit": limit})
 
-        documents = [
-            DocumentSummary(
-                document_id=doc["document_id"],
-                tipo_documento=doc["tipo_documento"],
-                numero=doc["numero"],
-                ano=doc["ano"],
-                titulo=doc.get("titulo"),
+        documents = []
+        for doc in response.get("documents", []):
+            doc_id = doc.get("document_id", "")
+            # Parse tipo_documento e numero do document_id (ex: "LEI-14133-2021")
+            parts = doc_id.split("-", 1) if doc_id else ["", ""]
+            tipo = doc.get("tipo_documento", parts[0] if parts else "")
+            # Tenta extrair numero e ano
+            numero = doc.get("numero", "")
+            ano = doc.get("ano", 0)
+            if not numero and len(parts) > 1:
+                rest = parts[1]  # "14133-2021"
+                rest_parts = rest.rsplit("-", 1)
+                numero = rest_parts[0] if rest_parts else ""
+                if not ano and len(rest_parts) > 1:
+                    try:
+                        ano = int(rest_parts[1])
+                    except (ValueError, IndexError):
+                        ano = 0
+
+            documents.append(DocumentSummary(
+                document_id=doc_id,
+                tipo_documento=tipo,
+                numero=numero,
+                ano=ano,
+                titulo=doc.get("nome_curto") or doc.get("titulo"),
                 descricao=doc.get("descricao"),
-                chunks_count=doc.get("chunks_count", 0),
+                chunks_count=doc.get("total_artigos") or doc.get("chunks_count", 0),
                 enriched_count=doc.get("enriched_count", 0),
-            )
-            for doc in response.get("documents", [])
-        ]
+            ))
 
         return DocumentsResponse(
             documents=documents,

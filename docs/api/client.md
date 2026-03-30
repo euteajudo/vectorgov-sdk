@@ -1,6 +1,6 @@
 # Cliente VectorGov — Referência Completa
 
-> Atualizado para v0.15.2 (Março 2026)
+> Atualizado para v0.16.0 (Março 2026)
 
 A classe `VectorGov` é o ponto de entrada principal do SDK.
 
@@ -128,6 +128,101 @@ result = vg.lookup(["Art. 75 da Lei 14.133/2021", "Art. 6 da IN 65/2021"])
 
 **Retorna:** [`LookupResult`](models.md#lookupresult) com `status`, `matches`, `evidence`
 **Exceções:** `ValidationError`, `AuthError`
+
+---
+
+## Busca Textual e Filesystem
+
+### `grep()`
+
+Busca textual exata nos documentos via ripgrep. Encontra trechos contendo exatamente o texto buscado.
+
+```python
+result = vg.grep("dispensa de licitacao", max_results=5)
+for m in result:
+    print(f"{m.span_id}: {m.matched_line}")
+
+# Filtrar por documento
+result = vg.grep("art. 75", document_id="LEI-14133-2021")
+```
+
+| Parâmetro | Tipo | Padrão | Descrição |
+|-----------|------|--------|-----------|
+| `query` | `str` | — | Texto exato a buscar (obrigatório) |
+| `document_id` | `str` | `None` | Filtrar por documento |
+| `max_results` | `int` | `20` | Máximo de resultados (1-50) |
+| `context_lines` | `int` | `3` | Linhas de contexto ao redor do match (0-10) |
+
+**Retorna:** `GrepResult`
+
+---
+
+### `filesystem_search()`
+
+Busca no índice curado (PostgreSQL + ripgrep). O modo `auto` detecta automaticamente se a query é uma referência legal (usa grep) ou semântica (usa index).
+
+```python
+result = vg.filesystem_search("art. 75 da Lei 14.133", mode="auto")
+for hit in result:
+    print(f"[{hit.source}] {hit.breadcrumb}")
+```
+
+| Parâmetro | Tipo | Padrão | Descrição |
+|-----------|------|--------|-----------|
+| `query` | `str` | — | Texto da busca (obrigatório) |
+| `document_id` | `str` | `None` | Filtrar por documento |
+| `mode` | `str` | `"auto"` | `auto`, `index`, `grep`, `both` |
+| `top_k` | `int` | `10` | Máximo de resultados (1-50) |
+| `include_text` | `bool` | `True` | Incluir texto completo |
+
+**Retorna:** `FilesystemResult`
+
+---
+
+### `merged()`
+
+Busca dual-path: combina busca híbrida (Milvus + Neo4j) com filesystem (PostgreSQL + ripgrep). Executa ambas em paralelo, unifica e rankeia via Reciprocal Rank Fusion (RRF). Hits presentes em ambas fontes recebem boost.
+
+```python
+result = vg.merged("prazo para impugnacao do edital", top_k=5)
+for hit in result:
+    print(f"[{','.join(hit.sources)}] {hit.breadcrumb}: {hit.score:.2f}")
+print(f"Mutual: {result.mutual_count} hits em ambas fontes")
+```
+
+| Parâmetro | Tipo | Padrão | Descrição |
+|-----------|------|--------|-----------|
+| `query` | `str` | — | Texto da consulta (obrigatório, 2-1000 chars) |
+| `document_id` | `str` | `None` | Filtrar por documento |
+| `top_k` | `int` | `10` | Máximo de resultados (1-30) |
+| `token_budget` | `int` | `6000` | Limite de tokens (0-20000) |
+| `enable_hybrid` | `bool` | `True` | Ativar busca híbrida |
+| `enable_filesystem` | `bool` | `True` | Ativar busca filesystem |
+
+**Retorna:** `MergedResult`
+
+---
+
+### `read_canonical()`
+
+Lê o texto canônico completo de um documento ou dispositivo específico.
+
+```python
+# Documento inteiro
+doc = vg.read_canonical("LEI-14133-2021")
+print(f"{doc.document_id}: {doc.token_count} tokens")
+
+# Dispositivo específico
+art = vg.read_canonical("LEI-14133-2021", span_id="ART-075")
+print(art.text)
+```
+
+| Parâmetro | Tipo | Padrão | Descrição |
+|-----------|------|--------|-----------|
+| `document_id` | `str` | — | ID do documento (obrigatório) |
+| `span_id` | `str` | `None` | Dispositivo específico (ex: `"ART-075"`) |
+
+**Retorna:** `CanonicalResult`
 
 ---
 

@@ -1,6 +1,6 @@
 # 🗺️ MAPA DO SDK VECTORGOV
 
-> **Versão**: 0.15.0
+> **Versão**: 0.16.0
 > **Data**: Marco 2026
 > **Objetivo**: Documentação completa da arquitetura e funcionamento do SDK Python VectorGov
 
@@ -133,22 +133,27 @@ vectorgov-sdk/
 │   │
 │   ├── client.py                # Cliente principal (597 linhas)
 │   │   └── class VectorGov:
-│   │       ├── search()         # Busca semântica
-│   │       ├── feedback()       # Envio de feedback
-│   │       ├── store_response() # Salva resposta de LLM externo
-│   │       ├── to_openai_tool() # Function calling OpenAI
+│   │       ├── search()              # Busca semântica
+│   │       ├── smart_search()       # Busca inteligente (v0.15.0)
+│   │       ├── hybrid()             # Semântica + grafo (v0.15.0)
+│   │       ├── lookup()             # Referência normativa (v0.15.0)
+│   │       ├── grep()               # Busca textual exata (v0.16.0)
+│   │       ├── filesystem_search()  # Índice curado (v0.16.0)
+│   │       ├── merged()             # Dual-path RRF (v0.16.0)
+│   │       ├── read_canonical()     # Texto canônico (v0.16.0)
+│   │       ├── feedback()           # Envio de feedback
+│   │       ├── store_response()     # Salva resposta de LLM externo
+│   │       ├── to_openai_tool()     # Function calling OpenAI
 │   │       ├── to_anthropic_tool()
 │   │       ├── to_google_tool()
 │   │       ├── execute_tool_call()
-│   │       ├── list_documents() # Gestão de documentos
+│   │       ├── list_documents()     # Gestão de documentos
 │   │       ├── get_document()
-│   │       ├── upload_pdf()      # 🔜 Em breve
-│   │       ├── start_enrichment()# 🔜 Em breve
-│   │       ├── delete_document() # 🔜 Em breve
-│   │       ├── get_audit_logs()    # Logs de auditoria
-│   │       ├── get_audit_stats()   # Estatísticas de auditoria
-│   │       ├── get_health()        # Status do SDK e guardrails
-│   │       └── estimate_tokens()   # Estimativa de tokens (v0.13.0)
+│   │       ├── upload_pdf()         # Upload de PDF
+│   │       ├── get_audit_logs()     # Logs de auditoria
+│   │       ├── get_audit_stats()    # Estatísticas de auditoria
+│   │       ├── get_health()         # Status do SDK e guardrails
+│   │       └── estimate_tokens()    # Estimativa de tokens (v0.13.0)
 │   │
 │   ├── _http.py                 # Cliente HTTP interno (265 linhas)
 │   │   └── class HTTPClient:
@@ -159,12 +164,21 @@ vectorgov-sdk/
 │   │       ├── stream()         # Streaming SSE
 │   │       └── post_multipart() # Upload de arquivos
 │   │
-│   ├── models.py                # Modelos de dados (480+ linhas)
+│   ├── models.py                # Modelos de dados (1800+ linhas)
 │   │   ├── class Metadata       # Metadados do documento
 │   │   ├── class Hit            # Resultado individual
-│   │   ├── class ExpandedChunk  # Chunk via expansão de citação (v0.14.0)
-│   │   ├── class CitationExpansionStats # Estatísticas de expansão (v0.14.0)
-│   │   ├── class SearchResult   # Resultado completo (c/ expansão v0.14.0)
+│   │   ├── class BaseResult     # ABC para todos os resultados (v0.15.0)
+│   │   ├── class SearchResult   # Resultado de search()
+│   │   ├── class SmartSearchResult # Resultado de smart_search() (v0.15.0)
+│   │   ├── class HybridResult   # Resultado de hybrid() (v0.15.0)
+│   │   ├── class LookupResult   # Resultado de lookup() (v0.15.0)
+│   │   ├── class GrepMatch      # Match individual de grep() (v0.16.0)
+│   │   ├── class GrepResult     # Resultado de grep() (v0.16.0)
+│   │   ├── class FilesystemHit  # Hit de filesystem_search() (v0.16.0)
+│   │   ├── class FilesystemResult # Resultado de filesystem_search() (v0.16.0)
+│   │   ├── class MergedHit      # Hit de merged() (v0.16.0)
+│   │   ├── class MergedResult   # Resultado de merged() (v0.16.0)
+│   │   ├── class CanonicalResult # Resultado de read_canonical() (v0.16.0)
 │   │   │   ├── to_context()     # Converte para string
 │   │   │   ├── to_messages()    # Formato chat
 │   │   │   └── to_prompt()      # Formato prompt único

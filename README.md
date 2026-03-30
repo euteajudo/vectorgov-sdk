@@ -46,6 +46,7 @@ Acesse informações de leis, decretos e instruções normativas brasileiras com
   - [Smart Search](#smart-search-busca-inteligente)
   - [Busca Hibrida (Grafo)](#busca-hibrida-semântica--grafo)
   - [Lookup de Dispositivo](#lookup-de-dispositivo)
+  - [Busca Textual e Filesystem](#busca-textual-e-filesystem)
   - [Citation Expansion](#citation-expansion-expansão-por-citação)
   - [Filtros](#filtros)
   - [Formatação de Resultados](#formatação-de-resultados)
@@ -1101,6 +1102,51 @@ elif result.status == "ambiguous":
 | `include_siblings` | bool | `True` | Incluir irmaos |
 
 **Status possiveis:** `found`, `not_found`, `ambiguous`, `parse_failed`
+
+## Busca Textual e Filesystem
+
+Novos na v0.16.0 — 4 metodos complementares para busca deterministiica e leitura de textos canonicos.
+
+### `grep()` — Busca textual exata
+
+```python
+result = vg.grep("dispensa de licitacao", max_results=5)
+for m in result:
+    print(f"{m.span_id}: {m.matched_line}")
+
+# Filtrar por documento
+result = vg.grep("art. 75", document_id="LEI-14133-2021")
+```
+
+### `filesystem_search()` — Indice curado
+
+```python
+# Modo auto detecta tipo da query
+result = vg.filesystem_search("art. 75 da Lei 14.133")
+for hit in result:
+    print(f"[{hit.source}] {hit.breadcrumb}")
+```
+
+### `merged()` — Dual-path (hibrida + filesystem)
+
+```python
+result = vg.merged("prazo para impugnacao do edital", top_k=5)
+for hit in result:
+    print(f"[{','.join(hit.sources)}] {hit.breadcrumb}: {hit.score:.2f}")
+print(f"Mutual: {result.mutual_count} hits em ambas fontes")
+```
+
+### `read_canonical()` — Texto canonico completo
+
+```python
+# Documento inteiro
+doc = vg.read_canonical("LEI-14133-2021")
+print(f"{doc.token_count} tokens")
+
+# Dispositivo especifico
+art = vg.read_canonical("LEI-14133-2021", span_id="ART-075")
+print(art.text)
+```
 
 ## Citation Expansion (Expansão por Citação)
 

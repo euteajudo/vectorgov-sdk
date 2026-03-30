@@ -85,16 +85,31 @@ print(results.to_context())
     )
     ```
 
-## Modos de Busca
+## Metodos de Busca
 
-| Modo | Latência | Uso |
-|------|----------|-----|
-| `fast` | ~2s | Chatbots |
-| `balanced` | ~5s | Uso geral |
-| `precise` | ~15s | Análises |
+| Metodo | Latencia | Melhor para |
+|--------|----------|-------------|
+| `search()` | 2-7s | Buscas semanticas simples |
+| `smart_search()` | 5-18s | Analise juridica completa (Premium) |
+| `hybrid()` | 3-10s | Normas relacionadas, cadeia regulatoria |
+| `lookup()` | < 1s | Referencia exata ("Art. 75 da Lei X") |
+| `grep()` | < 1s | Busca textual exata, palavras-chave |
+| `filesystem_search()` | < 1s | Indice curado, referencias legais |
+| `merged()` | 2-5s | Busca dual-path (semantica + filesystem) |
+| `read_canonical()` | < 1s | Texto canonico completo |
 
 ```python
-results = vg.search("query", mode="precise")
+# Busca semantica
+results = vg.search("O que e ETP?", mode="precise")
+
+# Busca textual exata
+matches = vg.grep("dispensa de licitacao")
+
+# Busca dual-path (maxima cobertura)
+results = vg.merged("prazo para impugnacao do edital")
+
+# Texto canonico completo
+doc = vg.read_canonical("LEI-14133-2021", span_id="ART-075")
 ```
 
 ## System Prompts

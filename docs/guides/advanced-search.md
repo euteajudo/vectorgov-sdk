@@ -1,6 +1,6 @@
 # Guia de Busca Avançada
 
-O SDK oferece 4 métodos de busca, cada um otimizado para um cenário diferente.
+O SDK oferece 8 métodos de busca, cada um otimizado para um cenário diferente.
 
 ## Comparação Rápida
 
@@ -10,6 +10,10 @@ O SDK oferece 4 métodos de busca, cada um otimizado para um cenário diferente.
 | `smart_search()` | 5-18s | Alto (Premium) | Perguntas complexas, análise jurídica |
 | `hybrid()` | 3-10s | Médio | Normas relacionadas, cadeia regulatória |
 | `lookup()` | < 1s | Baixo | Referência exata ("Art. 75 da Lei X") |
+| `grep()` | < 1s | Baixo | Busca textual exata, palavras-chave |
+| `filesystem_search()` | < 1s | Baixo | Busca no índice curado, referências legais |
+| `merged()` | 2-5s | Médio | Busca completa dual-path (semântica + filesystem) |
+| `read_canonical()` | < 1s | Mínimo | Leitura de texto canônico completo |
 
 ## Quando usar cada método
 
@@ -25,8 +29,20 @@ Pergunta do usuário
   ├─ Precisa de normas relacionadas/cadeia regulatória?
   │  └─ SIM → hybrid()
   │
-  └─ Busca simples por tema
-     └─ search()
+  ├─ Busca simples por tema
+  │  └─ search()
+  │
+  ├─ Precisa encontrar texto exato/palavra-chave?
+  │  └─ SIM → grep()
+  │
+  ├─ Quer buscar no índice curado (determinístico)?
+  │  └─ SIM → filesystem_search()
+  │
+  ├─ Quer combinar semântica + filesystem (máxima cobertura)?
+  │  └─ SIM → merged()
+  │
+  └─ Precisa ler o texto completo de um dispositivo?
+     └─ read_canonical()
 ```
 
 ## 1. `search()` — Busca Semântica
@@ -132,6 +148,69 @@ for match in result.matches:
 
 **Formatos aceitos:** "Art. 75 da Lei 14.133/2021", "Art. 3 da IN 58/2022", "§ 2º do Art. 75 da Lei 14.133/2021".
 
+---
+
+## 5. `grep()` — Busca Textual Exata
+
+Busca textual exata via ripgrep. Ideal para encontrar palavras-chave ou trechos específicos.
+
+```python
+# Busca simples
+result = vg.grep("dispensa de licitacao")
+for m in result:
+    print(f"{m.span_id}: {m.matched_line}")
+
+# Filtrar por documento
+result = vg.grep("art. 75", document_id="LEI-14133-2021", max_results=5)
+```
+
+---
+
+## 6. `filesystem_search()` — Índice Curado
+
+Busca no índice PostgreSQL + ripgrep. O modo `auto` detecta se a query é referência legal ou texto livre.
+
+```python
+# Auto-detecta tipo de query
+result = vg.filesystem_search("art. 75 da Lei 14.133")
+for hit in result:
+    print(f"[{hit.source}] {hit.breadcrumb}")
+
+# Forçar modo grep
+result = vg.filesystem_search("dispensa", mode="grep", top_k=5)
+```
+
+---
+
+## 7. `merged()` — Busca Dual-Path
+
+Combina busca híbrida (Milvus + Neo4j) com filesystem (PostgreSQL + ripgrep) em paralelo. Usa Reciprocal Rank Fusion (RRF) para unificar rankings.
+
+```python
+result = vg.merged("prazo para impugnacao do edital", top_k=10)
+for hit in result:
+    print(f"[{','.join(hit.sources)}] {hit.breadcrumb}: {hit.score:.2f}")
+print(f"Em ambas fontes: {result.mutual_count}")
+```
+
+---
+
+## 8. `read_canonical()` — Texto Canônico
+
+Lê o texto completo de um documento ou dispositivo específico. Sem busca — acesso direto.
+
+```python
+# Documento inteiro
+doc = vg.read_canonical("LEI-14133-2021")
+print(f"{doc.token_count} tokens")
+
+# Dispositivo específico
+art = vg.read_canonical("LEI-14133-2021", span_id="ART-075")
+print(art.text)
+```
+
+---
+
 ## Formatação para LLMs
 
 Todos os métodos retornam objetos com métodos de formatação:
@@ -166,5 +245,9 @@ result.to_markdown()
 | `hybrid()` | 1-2 | 0 | 2 |
 | `lookup()` | 1 | 0 | 1 |
 | `lookup([...])` (lote) | 1 | 0 | 1 |
+| `grep()` | 1 | 0 | 1 |
+| `filesystem_search()` | 1 | 0 | 1 |
+| `merged()` | 2-3 | 0 | 2 |
+| `read_canonical()` | 1 | 0 | 1 |
 
 > **Nota:** Valores de créditos são aproximados e dependem do plano contratado.

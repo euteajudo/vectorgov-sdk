@@ -1,6 +1,6 @@
 # Modelos e Exceções — Referência Completa
 
-> Atualizado para v0.15.2 (Março 2026)
+> Atualizado para v0.16.0 (Março 2026)
 
 ## Resultados de Busca
 
@@ -109,6 +109,142 @@ print(match.text[:100])
 | `status` | `str` | `found`, `not_found`, `ambiguous`, `parse_failed` |
 | `matches` | `list[LookupMatch]` | Dispositivos encontrados |
 | + campos de `BaseResult` | | |
+
+---
+
+### `GrepMatch`
+
+Um match individual retornado por `vg.grep()`.
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `node_id` | `str` | ID do chunk no Milvus |
+| `document_id` | `str` | ID do documento |
+| `span_id` | `str` | ID do span (ex: `ART-075`) |
+| `text` | `str` | Texto completo do trecho |
+| `matched_line` | `str` | Linha exata do match |
+| `line_number` | `int` | Número da linha no canonical |
+| `score` | `float` | Score de relevância (1.0 para exact match) |
+| `match_reason` | `str\|None` | Razão do match |
+
+---
+
+### `GrepResult`
+
+Retornado por `vg.grep()`. Iterável (`for m in result`).
+
+```python
+result = vg.grep("dispensa de licitacao")
+print(f"{result.total} matches em {result.files_searched} arquivos")
+for m in result:
+    print(m.matched_line)
+```
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `matches` | `list[GrepMatch]` | Lista de matches |
+| `total` | `int` | Total de matches |
+| `query` | `str` | Query original |
+| `latency_ms` | `float` | Tempo de resposta |
+| `files_searched` | `int` | Arquivos pesquisados |
+
+---
+
+### `FilesystemHit`
+
+Um resultado individual de `vg.filesystem_search()`.
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `node_id` | `str` | ID do chunk |
+| `document_id` | `str` | ID do documento |
+| `span_id` | `str` | ID do span |
+| `text` | `str\|None` | Texto completo (se `include_text=True`) |
+| `score` | `float` | Score de relevância |
+| `source` | `str` | Fonte: `"index"` ou `"grep"` |
+| `breadcrumb` | `str\|None` | Caminho hierárquico (ex: `Lei 14.133 > Art. 75`) |
+| `match_reason` | `str\|None` | Razão do match |
+
+---
+
+### `FilesystemResult`
+
+Retornado por `vg.filesystem_search()`. Iterável (`for hit in result`).
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `results` | `list[FilesystemHit]` | Lista de resultados |
+| `total` | `int` | Total de resultados |
+| `query` | `str` | Query original |
+| `mode_used` | `str` | Modo efetivamente usado (`auto`, `index`, `grep`, `both`) |
+| `latency_ms` | `float` | Tempo de resposta |
+| `documents_searched` | `int` | Documentos pesquisados |
+
+---
+
+### `MergedHit`
+
+Um resultado individual de `vg.merged()`.
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `node_id` | `str` | ID do chunk |
+| `document_id` | `str` | ID do documento |
+| `span_id` | `str` | ID do span |
+| `text` | `str` | Texto do trecho |
+| `score` | `float` | Score RRF combinado |
+| `breadcrumb` | `str\|None` | Caminho hierárquico |
+| `sources` | `list[str]` | Fontes: `["hybrid"]`, `["filesystem"]`, ou `["hybrid", "filesystem"]` |
+| `hybrid_score` | `float\|None` | Score da busca híbrida |
+| `filesystem_score` | `float\|None` | Score da busca filesystem |
+| `text_source` | `str` | Fonte do texto: `"milvus"` ou `"filesystem"` |
+| `has_specialist_note` | `bool` | Tem nota de especialista |
+| `has_jurisprudence` | `bool` | Tem jurisprudência vinculada |
+| `token_count` | `int` | Contagem de tokens |
+
+---
+
+### `MergedResult`
+
+Retornado por `vg.merged()`. Iterável (`for hit in result`).
+
+```python
+result = vg.merged("prazo para impugnacao")
+print(f"{result.total} resultados, {result.mutual_count} em ambas fontes")
+```
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `results` | `list[MergedHit]` | Lista de resultados |
+| `total` | `int` | Total de resultados |
+| `query` | `str` | Query original |
+| `token_total` | `int` | Total de tokens consumidos |
+| `token_budget` | `int` | Budget de tokens configurado |
+| `hybrid_count` | `int` | Resultados da busca híbrida |
+| `filesystem_count` | `int` | Resultados do filesystem |
+| `mutual_count` | `int` | Resultados presentes em ambas fontes |
+| `latency_ms` | `float` | Tempo de resposta |
+
+---
+
+### `CanonicalResult`
+
+Retornado por `vg.read_canonical()`.
+
+```python
+doc = vg.read_canonical("LEI-14133-2021")
+print(f"{doc.token_count} tokens, {doc.char_count} chars")
+```
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `document_id` | `str` | ID do documento |
+| `text` | `str` | Texto canônico completo |
+| `token_count` | `int` | Contagem de tokens |
+| `char_count` | `int` | Contagem de caracteres |
+| `span_id` | `str\|None` | Span específico (se solicitado) |
+| `breadcrumb` | `str\|None` | Caminho hierárquico |
+| `source` | `str` | Fonte do texto (`"canonical"`) |
 
 ---
 

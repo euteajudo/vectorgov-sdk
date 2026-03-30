@@ -1,6 +1,6 @@
 # VectorGov SDK - Referência Completa para Desenvolvedores e LLMs
 
-> **Versão:** 0.6.0 | **Python:** 3.9+ | **Licença:** MIT
+> **Versão:** 0.16.0 | **Python:** 3.10+ | **Licença:** MIT
 
 Esta documentação é uma referência completa e autocontida do VectorGov SDK, projetada para ser compartilhada com LLMs (ChatGPT, Claude, Gemini, etc.) para auxiliar no desenvolvimento de aplicações que utilizam busca semântica em legislação brasileira.
 
@@ -178,6 +178,86 @@ results = vg.search(
 | `tipo` | `str` | `lei`, `decreto`, `in`, `portaria`, `resolucao` | `{"tipo": "lei"}` |
 | `ano` | `int` | Ano do documento | `{"ano": 2021}` |
 | `orgao` | `str` | Órgão emissor | `{"orgao": "seges"}` |
+
+### Método smart_search() (v0.15.0)
+
+Busca inteligente com análise de confiança e raciocínio jurídico.
+
+```python
+result = vg.smart_search("Quais os critérios de julgamento na licitação?")
+print(result.confianca)    # "alta", "media", "baixa"
+print(result.raciocinio)   # Análise jurídica
+for hit in result:
+    print(hit.nota_especialista)
+```
+
+### Método hybrid() (v0.15.0)
+
+Busca híbrida combinando semântica (Milvus) + grafo de citações (Neo4j).
+
+```python
+result = vg.hybrid("critérios de julgamento", top_k=5, hops=1)
+for hit in result.hits:
+    print(hit.text[:100])
+for node in result.graph_nodes:
+    print(f"[grafo] {node.span_id}")
+```
+
+### Método lookup() (v0.15.0)
+
+Resolve referências normativas para o dispositivo exato.
+
+```python
+result = vg.lookup("Art. 75 da Lei 14.133")
+print(result.status)        # "found"
+print(result.stitched_text) # Caput + filhos
+
+# Batch (até 20 referências)
+results = vg.lookup(["Art. 75 da Lei 14.133", "Art. 3 da IN 65"])
+for r in results:
+    print(r.reference, r.status)
+```
+
+### Método grep() (v0.16.0)
+
+Busca textual exata nos documentos via ripgrep.
+
+```python
+result = vg.grep("dispensa de licitacao", max_results=5)
+for m in result:
+    print(f"{m.span_id}: {m.matched_line}")
+```
+
+### Método filesystem_search() (v0.16.0)
+
+Busca no índice curado (PostgreSQL + ripgrep). Modo `auto` detecta tipo da query.
+
+```python
+result = vg.filesystem_search("art. 75 da Lei 14.133")
+for hit in result:
+    print(f"[{hit.source}] {hit.breadcrumb}")
+```
+
+### Método merged() (v0.16.0)
+
+Busca dual-path: híbrida + filesystem combinadas com RRF.
+
+```python
+result = vg.merged("prazo para impugnação do edital", top_k=5)
+for hit in result:
+    print(f"[{','.join(hit.sources)}] {hit.score:.2f}")
+print(f"Mutual: {result.mutual_count}")
+```
+
+### Método read_canonical() (v0.16.0)
+
+Lê texto canônico completo de um documento ou dispositivo.
+
+```python
+doc = vg.read_canonical("LEI-14133-2021")
+art = vg.read_canonical("LEI-14133-2021", span_id="ART-075")
+print(art.text)
+```
 
 ### Método feedback()
 
