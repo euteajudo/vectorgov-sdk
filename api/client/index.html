@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://docs.vectorgov.io/api/client/">
       
       
-        <link rel="prev" href="../../guides/observability-audit/">
+        <link rel="prev" href="../../guides/error-handling/">
       
       
         <link rel="next" href="../models/">
@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cliente-vectorgov" class="md-skip">
+        <a href="#cliente-vectorgov-referencia-completa" class="md-skip">
           Pular para conteúdo
         </a>
       
@@ -519,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/error-handling.md" class="md-nav__link">
+      <a href="../../guides/error-handling/" class="md-nav__link">
         
   
   
@@ -676,35 +676,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Inicialização">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#parametros" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Parâmetros
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
-  <a href="#metodos" class="md-nav__link">
+  <a href="#busca" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Métodos
+        Busca
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Métodos">
+    <nav class="md-nav" aria-label="Busca">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -716,14 +699,13 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="search()">
-      <ul class="md-nav__list">
+</li>
         
           <li class="md-nav__item">
-  <a href="#parametros_1" class="md-nav__link">
+  <a href="#smart_search-v0150-premium" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Parâmetros
+        smart_search() v0.15.0 · Premium
       
     </span>
   </a>
@@ -731,10 +713,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#filtros-disponiveis" class="md-nav__link">
+  <a href="#hybrid-v0150" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Filtros Disponíveis
+        hybrid() v0.15.0
       
     </span>
   </a>
@@ -742,104 +724,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#retorno" class="md-nav__link">
+  <a href="#lookup-v0150" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Retorno
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#feedback" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        feedback()
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="feedback()">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#parametros_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Parâmetros
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#retorno_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Retorno
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#get_system_prompt" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        get_system_prompt()
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="get_system_prompt()">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#parametros_3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Parâmetros
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#estilos-disponiveis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Estilos Disponíveis
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#available_prompts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        available_prompts
+        lookup() v0.15.0
       
     </span>
   </a>
@@ -852,10 +740,332 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#exemplo-completo" class="md-nav__link">
+  <a href="#documentos" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Exemplo Completo
+        Documentos
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Documentos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#list_documents-v0110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        list_documents() v0.11.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_document-v0110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_document() v0.11.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upload_pdf-v0110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        upload_pdf() v0.11.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_ingest_status-v0110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_ingest_status() v0.11.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete_document-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        delete_document() v0.12.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tokens-e-feedback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tokens e Feedback
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tokens e Feedback">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#estimate_tokens-v0130" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        estimate_tokens() v0.13.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#feedback-v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        feedback() v0.10.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#store_response-v0140" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        store_response() v0.14.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#function-calling-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function Calling / Tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Function Calling / Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#to_openai_tool-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_openai_tool() v0.12.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to_anthropic_tool-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_anthropic_tool() v0.12.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to_google_tool-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_google_tool() v0.12.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#execute_tool_call-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        execute_tool_call() v0.12.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-prompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Prompts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="System Prompts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_system_prompt-v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_system_prompt() v0.10.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available_prompts-v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        available_prompts v0.10.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#auditoria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Auditoria
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Auditoria">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_audit_logs-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_audit_logs() v0.12.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_audit_stats-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_audit_stats() v0.12.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_audit_event_types-v0130" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_audit_event_types() v0.13.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enriquecimento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enriquecimento
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Enriquecimento">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start_enrichment-v0140" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        start_enrichment() v0.14.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_enrichment_status-v0140" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_enrichment_status() v0.14.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cliente-assincrono-v0140" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cliente Assíncrono v0.14.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context Manager
       
     </span>
   </a>
@@ -1051,35 +1261,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Inicialização">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#parametros" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Parâmetros
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
-  <a href="#metodos" class="md-nav__link">
+  <a href="#busca" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Métodos
+        Busca
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Métodos">
+    <nav class="md-nav" aria-label="Busca">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1091,14 +1284,13 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="search()">
-      <ul class="md-nav__list">
+</li>
         
           <li class="md-nav__item">
-  <a href="#parametros_1" class="md-nav__link">
+  <a href="#smart_search-v0150-premium" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Parâmetros
+        smart_search() v0.15.0 · Premium
       
     </span>
   </a>
@@ -1106,10 +1298,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#filtros-disponiveis" class="md-nav__link">
+  <a href="#hybrid-v0150" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Filtros Disponíveis
+        hybrid() v0.15.0
       
     </span>
   </a>
@@ -1117,104 +1309,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#retorno" class="md-nav__link">
+  <a href="#lookup-v0150" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Retorno
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#feedback" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        feedback()
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="feedback()">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#parametros_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Parâmetros
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#retorno_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Retorno
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#get_system_prompt" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        get_system_prompt()
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="get_system_prompt()">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#parametros_3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Parâmetros
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#estilos-disponiveis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Estilos Disponíveis
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#available_prompts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        available_prompts
+        lookup() v0.15.0
       
     </span>
   </a>
@@ -1227,10 +1325,332 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#exemplo-completo" class="md-nav__link">
+  <a href="#documentos" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Exemplo Completo
+        Documentos
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Documentos">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#list_documents-v0110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        list_documents() v0.11.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_document-v0110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_document() v0.11.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upload_pdf-v0110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        upload_pdf() v0.11.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_ingest_status-v0110" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_ingest_status() v0.11.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete_document-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        delete_document() v0.12.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tokens-e-feedback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tokens e Feedback
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tokens e Feedback">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#estimate_tokens-v0130" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        estimate_tokens() v0.13.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#feedback-v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        feedback() v0.10.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#store_response-v0140" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        store_response() v0.14.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#function-calling-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function Calling / Tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Function Calling / Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#to_openai_tool-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_openai_tool() v0.12.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to_anthropic_tool-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_anthropic_tool() v0.12.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to_google_tool-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_google_tool() v0.12.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#execute_tool_call-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        execute_tool_call() v0.12.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-prompts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Prompts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="System Prompts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_system_prompt-v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_system_prompt() v0.10.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available_prompts-v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        available_prompts v0.10.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#auditoria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Auditoria
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Auditoria">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_audit_logs-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_audit_logs() v0.12.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_audit_stats-v0120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_audit_stats() v0.12.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_audit_event_types-v0130" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_audit_event_types() v0.13.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enriquecimento" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enriquecimento
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Enriquecimento">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start_enrichment-v0140" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        start_enrichment() v0.14.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_enrichment_status-v0140" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_enrichment_status() v0.14.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cliente-assincrono-v0140" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cliente Assíncrono v0.14.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context Manager
       
     </span>
   </a>
@@ -1257,24 +1677,22 @@
   
 
 
-<h1 id="cliente-vectorgov">Cliente VectorGov<a class="headerlink" href="#cliente-vectorgov" title="Permanent link">&para;</a></h1>
-<p>A classe principal para interagir com a API VectorGov.</p>
+<h1 id="cliente-vectorgov-referencia-completa">Cliente VectorGov — Referência Completa<a class="headerlink" href="#cliente-vectorgov-referencia-completa" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>Atualizado para v0.15.2 (Março 2026)</p>
+</blockquote>
+<p>A classe <code>VectorGov</code> é o ponto de entrada principal do SDK.</p>
 <h2 id="inicializacao">Inicialização<a class="headerlink" href="#inicializacao" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">vectorgov</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorGov</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Básico</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">vg</span> <span class="o">=</span> <span class="n">VectorGov</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;vg_xxx&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># Com configurações</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">vg</span> <span class="o">=</span> <span class="n">VectorGov</span><span class="p">(</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;vg_xxx&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://vectorgov.io/api/v1&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">default_top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">default_mode</span><span class="o">=</span><span class="s2">&quot;balanced&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">vg</span> <span class="o">=</span> <span class="n">VectorGov</span><span class="p">(</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;vg_xxx&quot;</span><span class="p">,</span>          <span class="c1"># ou VECTORGOV_API_KEY env var</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://vectorgov.io/api/v1&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">default_top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">default_mode</span><span class="o">=</span><span class="s2">&quot;balanced&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span>
 </code></pre></div>
-<h3 id="parametros">Parâmetros<a class="headerlink" href="#parametros" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -1289,7 +1707,7 @@
 <td><code>api_key</code></td>
 <td><code>str</code></td>
 <td><code>None</code></td>
-<td>Chave de API. Usa <code>VECTORGOV_API_KEY</code> se não informada</td>
+<td>Chave de API. Usa env <code>VECTORGOV_API_KEY</code> se omitida</td>
 </tr>
 <tr>
 <td><code>base_url</code></td>
@@ -1307,27 +1725,22 @@
 <td><code>default_top_k</code></td>
 <td><code>int</code></td>
 <td><code>5</code></td>
-<td>Quantidade padrão de resultados</td>
+<td>Resultados padrão por busca</td>
 </tr>
 <tr>
 <td><code>default_mode</code></td>
-<td><code>str</code></td>
+<td><code>str\|SearchMode</code></td>
 <td><code>"balanced"</code></td>
 <td>Modo de busca padrão</td>
 </tr>
 </tbody>
 </table>
-<h2 id="metodos">Métodos<a class="headerlink" href="#metodos" title="Permanent link">&para;</a></h2>
-<h3 id="search">search()<a class="headerlink" href="#search" title="Permanent link">&para;</a></h3>
-<p>Busca informações na base de conhecimento.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">query</span><span class="o">=</span><span class="s2">&quot;O que é ETP?&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;balanced&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tipo&quot;</span><span class="p">:</span> <span class="s2">&quot;lei&quot;</span><span class="p">,</span> <span class="s2">&quot;ano&quot;</span><span class="p">:</span> <span class="mi">2021</span><span class="p">},</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">)</span>
+<hr />
+<h2 id="busca">Busca<a class="headerlink" href="#busca" title="Permanent link">&para;</a></h2>
+<h3 id="search"><code>search()</code><a class="headerlink" href="#search" title="Permanent link">&para;</a></h3>
+<p>Busca semântica na base de conhecimento. 3 modos: <code>fast</code> (~2s), <code>balanced</code> (~5s), <code>precise</code> (~7s).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;O que é ETP?&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;precise&quot;</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </code></pre></div>
-<h4 id="parametros_1">Parâmetros<a class="headerlink" href="#parametros_1" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -1341,95 +1754,56 @@
 <tr>
 <td><code>query</code></td>
 <td><code>str</code></td>
-<td>-</td>
+<td>—</td>
 <td>Texto da consulta (obrigatório)</td>
 </tr>
 <tr>
 <td><code>top_k</code></td>
 <td><code>int</code></td>
 <td><code>5</code></td>
-<td>Quantidade de resultados (1-20)</td>
+<td>Quantidade de resultados (1-50)</td>
 </tr>
 <tr>
 <td><code>mode</code></td>
-<td><code>str</code></td>
+<td><code>str\|SearchMode</code></td>
 <td><code>"balanced"</code></td>
-<td>Modo: <code>fast</code>, <code>balanced</code>, <code>precise</code></td>
+<td><code>fast</code>, <code>balanced</code>, <code>precise</code></td>
 </tr>
 <tr>
 <td><code>filters</code></td>
 <td><code>dict</code></td>
 <td><code>None</code></td>
-<td>Filtros opcionais</td>
-</tr>
-</tbody>
-</table>
-<h4 id="filtros-disponiveis">Filtros Disponíveis<a class="headerlink" href="#filtros-disponiveis" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Filtro</th>
-<th>Tipo</th>
-<th>Exemplo</th>
-<th>Descrição</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>tipo</code></td>
-<td><code>str</code></td>
-<td><code>"lei"</code></td>
-<td>Tipo do documento</td>
+<td><code>{"tipo": "lei", "ano": 2021, "orgao": "seges"}</code></td>
 </tr>
 <tr>
-<td><code>ano</code></td>
-<td><code>int</code></td>
-<td><code>2021</code></td>
-<td>Ano do documento</td>
-</tr>
-<tr>
-<td><code>orgao</code></td>
-<td><code>str</code></td>
-<td><code>"seges"</code></td>
-<td>Órgão emissor</td>
-</tr>
-</tbody>
-</table>
-<h4 id="retorno">Retorno<a class="headerlink" href="#retorno" title="Permanent link">&para;</a></h4>
-<p>Retorna um objeto <code>SearchResult</code>.</p>
-<h3 id="feedback">feedback()<a class="headerlink" href="#feedback" title="Permanent link">&para;</a></h3>
-<p>Envia feedback sobre um resultado de busca.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">vg</span><span class="o">.</span><span class="n">feedback</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">query_id</span><span class="p">,</span> <span class="n">like</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
-<h4 id="parametros_2">Parâmetros<a class="headerlink" href="#parametros_2" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Parâmetro</th>
-<th>Tipo</th>
-<th>Descrição</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>query_id</code></td>
-<td><code>str</code></td>
-<td>ID da query (de <code>results.query_id</code>)</td>
-</tr>
-<tr>
-<td><code>like</code></td>
+<td><code>use_cache</code></td>
 <td><code>bool</code></td>
-<td><code>True</code> para positivo, <code>False</code> para negativo</td>
+<td><code>False</code></td>
+<td>Cache compartilhado (trade-off privacidade)</td>
+</tr>
+<tr>
+<td><code>document_id_filter</code></td>
+<td><code>str</code></td>
+<td><code>None</code></td>
+<td>Filtro por documento (ex: <code>"LEI-14133-2021"</code>)</td>
+</tr>
+<tr>
+<td><code>trace_id</code></td>
+<td><code>str</code></td>
+<td><code>None</code></td>
+<td>ID para correlação de logs</td>
 </tr>
 </tbody>
 </table>
-<h4 id="retorno_1">Retorno<a class="headerlink" href="#retorno_1" title="Permanent link">&para;</a></h4>
-<p><code>True</code> se o feedback foi registrado com sucesso.</p>
-<h3 id="get_system_prompt">get_system_prompt()<a class="headerlink" href="#get_system_prompt" title="Permanent link">&para;</a></h3>
-<p>Retorna um system prompt pré-definido.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">prompt</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">get_system_prompt</span><span class="p">(</span><span class="s2">&quot;detailed&quot;</span><span class="p">)</span>
+<p><strong>Retorna:</strong> <a href="../models/#searchresult"><code>SearchResult</code></a>
+<strong>Exceções:</strong> <code>ValidationError</code>, <code>AuthError</code>, <code>RateLimitError</code></p>
+<hr />
+<h3 id="smart_search-v0150-premium"><code>smart_search()</code> <sup>v0.15.0 · Premium</sup><a class="headerlink" href="#smart_search-v0150-premium" title="Permanent link">&para;</a></h3>
+<p>Busca completa com análise jurídica automática (pipeline de 3 estágios). O sistema decide a melhor estratégia automaticamente.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">smart_search</span><span class="p">(</span><span class="s2">&quot;Hipóteses de dispensa por valor&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">confianca</span><span class="p">)</span>   <span class="c1"># ALTO | MEDIO | BAIXO</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">raciocinio</span><span class="p">)</span>  <span class="c1"># Análise jurídica completa</span>
 </code></pre></div>
-<h4 id="parametros_3">Parâmetros<a class="headerlink" href="#parametros_3" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -1441,14 +1815,342 @@
 </thead>
 <tbody>
 <tr>
-<td><code>style</code></td>
+<td><code>query</code></td>
 <td><code>str</code></td>
-<td><code>"default"</code></td>
-<td>Estilo do prompt</td>
+<td>—</td>
+<td>Texto da consulta (3-1000 chars)</td>
+</tr>
+<tr>
+<td><code>use_cache</code></td>
+<td><code>bool</code></td>
+<td><code>False</code></td>
+<td>Reutilizar resultado cacheado</td>
+</tr>
+<tr>
+<td><code>trace_id</code></td>
+<td><code>str</code></td>
+<td><code>None</code></td>
+<td>ID para correlação</td>
 </tr>
 </tbody>
 </table>
-<h4 id="estilos-disponiveis">Estilos Disponíveis<a class="headerlink" href="#estilos-disponiveis" title="Permanent link">&para;</a></h4>
+<p><strong>Retorna:</strong> <a href="../models/#smartsearchresult"><code>SmartSearchResult</code></a> — herda <code>SearchResult</code> + campos <code>raciocinio</code>, <code>confianca</code>, <code>normas_presentes</code>, <code>tentativas</code>
+<strong>Exceções:</strong> <code>TierError</code> (plano insuficiente), <code>ValidationError</code>, <code>AuthError</code>, <code>RateLimitError</code>, <code>TimeoutError</code></p>
+<p><strong>Fallback:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">smart_search</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">except</span> <span class="n">TierError</span><span class="p">:</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;precise&quot;</span><span class="p">)</span>
+</code></pre></div></p>
+<hr />
+<h3 id="hybrid-v0150"><code>hybrid()</code> <sup>v0.15.0</sup><a class="headerlink" href="#hybrid-v0150" title="Permanent link">&para;</a></h3>
+<p>Busca híbrida: semântica + expansão por grafo normativo.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">hybrid</span><span class="p">(</span><span class="s2">&quot;critérios de julgamento&quot;</span><span class="p">,</span> <span class="n">hops</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">token_budget</span><span class="o">=</span><span class="mi">3000</span><span class="p">)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parâmetro</th>
+<th>Tipo</th>
+<th>Padrão</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>query</code></td>
+<td><code>str</code></td>
+<td>—</td>
+<td>Texto da consulta</td>
+</tr>
+<tr>
+<td><code>top_k</code></td>
+<td><code>int</code></td>
+<td><code>None</code></td>
+<td>Resultados da busca semântica</td>
+</tr>
+<tr>
+<td><code>collections</code></td>
+<td><code>list[str]</code></td>
+<td><code>None</code></td>
+<td>Collections a buscar</td>
+</tr>
+<tr>
+<td><code>hops</code></td>
+<td><code>int</code></td>
+<td><code>1</code></td>
+<td>Saltos no grafo (1 ou 2)</td>
+</tr>
+<tr>
+<td><code>graph_expansion</code></td>
+<td><code>str</code></td>
+<td><code>"bidirectional"</code></td>
+<td><code>"bidirectional"</code> ou <code>"forward"</code></td>
+</tr>
+<tr>
+<td><code>token_budget</code></td>
+<td><code>int</code></td>
+<td><code>None</code></td>
+<td>Limite de tokens no contexto</td>
+</tr>
+<tr>
+<td><code>use_cache</code></td>
+<td><code>bool</code></td>
+<td><code>None</code></td>
+<td>Usar cache</td>
+</tr>
+<tr>
+<td><code>trace_id</code></td>
+<td><code>str</code></td>
+<td><code>None</code></td>
+<td>ID para correlação</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Retorna:</strong> <a href="../models/#hybridresult"><code>HybridResult</code></a> com <code>direct_evidence</code>, <code>graph_expansion</code>, <code>stats</code>
+<strong>Exceções:</strong> <code>ValidationError</code>, <code>AuthError</code>, <code>RateLimitError</code></p>
+<hr />
+<h3 id="lookup-v0150"><code>lookup()</code> <sup>v0.15.0</sup><a class="headerlink" href="#lookup-v0150" title="Permanent link">&para;</a></h3>
+<p>Consulta direta por referência textual. Determinística, &lt; 1 segundo.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Único</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="s2">&quot;Art. 75 da Lei 14.133/2021&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Lote (até 20)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">lookup</span><span class="p">([</span><span class="s2">&quot;Art. 75 da Lei 14.133/2021&quot;</span><span class="p">,</span> <span class="s2">&quot;Art. 6 da IN 65/2021&quot;</span><span class="p">])</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parâmetro</th>
+<th>Tipo</th>
+<th>Padrão</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>reference</code></td>
+<td><code>str\|list[str]</code></td>
+<td>—</td>
+<td>Referência(s) legal(is)</td>
+</tr>
+<tr>
+<td><code>collection</code></td>
+<td><code>str</code></td>
+<td><code>"leis_v4"</code></td>
+<td>Collection de dados</td>
+</tr>
+<tr>
+<td><code>include_parent</code></td>
+<td><code>bool</code></td>
+<td><code>True</code></td>
+<td>Incluir artigo pai</td>
+</tr>
+<tr>
+<td><code>include_siblings</code></td>
+<td><code>bool</code></td>
+<td><code>True</code></td>
+<td>Incluir dispositivos irmãos</td>
+</tr>
+<tr>
+<td><code>trace_id</code></td>
+<td><code>str</code></td>
+<td><code>None</code></td>
+<td>ID para correlação</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Retorna:</strong> <a href="../models/#lookupresult"><code>LookupResult</code></a> com <code>status</code>, <code>matches</code>, <code>evidence</code>
+<strong>Exceções:</strong> <code>ValidationError</code>, <code>AuthError</code></p>
+<hr />
+<h2 id="documentos">Documentos<a class="headerlink" href="#documentos" title="Permanent link">&para;</a></h2>
+<h3 id="list_documents-v0110"><code>list_documents()</code> <sup>v0.11.0</sup><a class="headerlink" href="#list_documents-v0110" title="Permanent link">&para;</a></h3>
+<p>Lista documentos indexados.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">docs</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">list_documents</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">collection</span><span class="o">=</span><span class="s2">&quot;leis_v4&quot;</span><span class="p">)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parâmetro</th>
+<th>Tipo</th>
+<th>Padrão</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>page</code></td>
+<td><code>int</code></td>
+<td><code>1</code></td>
+<td>Página</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td><code>int</code></td>
+<td><code>20</code></td>
+<td>Itens por página</td>
+</tr>
+<tr>
+<td><code>collection</code></td>
+<td><code>str</code></td>
+<td><code>"leis_v4"</code></td>
+<td>Collection</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Retorna:</strong> <code>DocumentsResponse</code></p>
+<h3 id="get_document-v0110"><code>get_document()</code> <sup>v0.11.0</sup><a class="headerlink" href="#get_document-v0110" title="Permanent link">&para;</a></h3>
+<p>Detalhes de um documento.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">doc</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">get_document</span><span class="p">(</span><span class="s2">&quot;LEI-14133-2021&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Retorna:</strong> <code>DocumentSummary</code></p>
+<h3 id="upload_pdf-v0110"><code>upload_pdf()</code> <sup>v0.11.0</sup><a class="headerlink" href="#upload_pdf-v0110" title="Permanent link">&para;</a></h3>
+<p>Upload e processamento de PDF.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">upload_pdf</span><span class="p">(</span><span class="s2">&quot;lei.pdf&quot;</span><span class="p">,</span> <span class="n">tipo_documento</span><span class="o">=</span><span class="s2">&quot;LEI&quot;</span><span class="p">,</span> <span class="n">numero</span><span class="o">=</span><span class="s2">&quot;14133&quot;</span><span class="p">,</span> <span class="n">ano</span><span class="o">=</span><span class="mi">2021</span><span class="p">)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parâmetro</th>
+<th>Tipo</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>file_path</code></td>
+<td><code>str</code></td>
+<td>Caminho do PDF (máx 50MB)</td>
+</tr>
+<tr>
+<td><code>tipo_documento</code></td>
+<td><code>str</code></td>
+<td>LEI, DECRETO, IN, PORTARIA</td>
+</tr>
+<tr>
+<td><code>numero</code></td>
+<td><code>str</code></td>
+<td>Número do documento</td>
+</tr>
+<tr>
+<td><code>ano</code></td>
+<td><code>int</code></td>
+<td>Ano</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Retorna:</strong> <code>UploadResponse</code> com <code>task_id</code></p>
+<h3 id="get_ingest_status-v0110"><code>get_ingest_status()</code> <sup>v0.11.0</sup><a class="headerlink" href="#get_ingest_status-v0110" title="Permanent link">&para;</a></h3>
+<p>Verifica status do processamento async de PDF.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">status</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">get_ingest_status</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">progress</span><span class="p">)</span>  <span class="c1"># 0.0 a 1.0</span>
+</code></pre></div>
+<p><strong>Retorna:</strong> <code>IngestStatus</code> com <code>status</code>, <code>progress</code>, <code>current_phase</code></p>
+<h3 id="delete_document-v0120"><code>delete_document()</code> <sup>v0.12.0</sup><a class="headerlink" href="#delete_document-v0120" title="Permanent link">&para;</a></h3>
+<p>Remove documento e todos seus chunks.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">delete_document</span><span class="p">(</span><span class="s2">&quot;LEI-14133-2021&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Retorna:</strong> <code>DeleteResponse</code></p>
+<hr />
+<h2 id="tokens-e-feedback">Tokens e Feedback<a class="headerlink" href="#tokens-e-feedback" title="Permanent link">&para;</a></h2>
+<h3 id="estimate_tokens-v0130"><code>estimate_tokens()</code> <sup>v0.13.0</sup><a class="headerlink" href="#estimate_tokens-v0130" title="Permanent link">&para;</a></h3>
+<p>Estima tokens de um texto ou resultado de busca (tiktoken/cl100k_base no servidor).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">estimate_tokens</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">total_tokens</span><span class="si">}</span><span class="s2"> tokens&quot;</span><span class="p">)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parâmetro</th>
+<th>Tipo</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>content</code></td>
+<td><code>str\|SearchResult</code></td>
+<td>Texto ou resultado de busca</td>
+</tr>
+<tr>
+<td><code>query</code></td>
+<td><code>str</code></td>
+<td>Query (opcional, somada ao total)</td>
+</tr>
+<tr>
+<td><code>system_prompt</code></td>
+<td><code>str</code></td>
+<td>System prompt (opcional)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Retorna:</strong> <a href="../models/#tokenstats"><code>TokenStats</code></a></p>
+<h3 id="feedback-v0100"><code>feedback()</code> <sup>v0.10.0</sup><a class="headerlink" href="#feedback-v0100" title="Permanent link">&para;</a></h3>
+<p>Registra feedback (like/dislike) sobre resultado.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">vg</span><span class="o">.</span><span class="n">feedback</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">query_id</span><span class="p">,</span> <span class="n">like</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Retorna:</strong> <code>bool</code></p>
+<h3 id="store_response-v0140"><code>store_response()</code> <sup>v0.14.0</sup><a class="headerlink" href="#store_response-v0140" title="Permanent link">&para;</a></h3>
+<p>Armazena resposta gerada pelo seu LLM para analytics.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">vg</span><span class="o">.</span><span class="n">store_response</span><span class="p">(</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>    <span class="n">query_id</span><span class="o">=</span><span class="n">results</span><span class="o">.</span><span class="n">query_id</span><span class="p">,</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    <span class="n">response_text</span><span class="o">=</span><span class="s2">&quot;A resposta do meu LLM...&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="n">tokens_used</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="p">)</span>
+</code></pre></div>
+<p><strong>Retorna:</strong> <code>bool</code></p>
+<hr />
+<h2 id="function-calling-tools">Function Calling / Tools<a class="headerlink" href="#function-calling-tools" title="Permanent link">&para;</a></h2>
+<h3 id="to_openai_tool-v0120"><code>to_openai_tool()</code> <sup>v0.12.0</sup><a class="headerlink" href="#to_openai_tool-v0120" title="Permanent link">&para;</a></h3>
+<p>Gera definição de tool para OpenAI function calling.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">tools</span> <span class="o">=</span> <span class="p">[</span><span class="n">vg</span><span class="o">.</span><span class="n">to_openai_tool</span><span class="p">()]</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">response</span> <span class="o">=</span> <span class="n">openai</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span> <span class="n">tools</span><span class="o">=</span><span class="n">tools</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Retorna:</strong> <code>dict</code> compatível com OpenAI tools API</p>
+<h3 id="to_anthropic_tool-v0120"><code>to_anthropic_tool()</code> <sup>v0.12.0</sup><a class="headerlink" href="#to_anthropic_tool-v0120" title="Permanent link">&para;</a></h3>
+<p>Gera definição de tool para Claude/Anthropic.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">tools</span> <span class="o">=</span> <span class="p">[</span><span class="n">vg</span><span class="o">.</span><span class="n">to_anthropic_tool</span><span class="p">()]</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">response</span> <span class="o">=</span> <span class="n">anthropic</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;claude-sonnet-4-20250514&quot;</span><span class="p">,</span> <span class="n">tools</span><span class="o">=</span><span class="n">tools</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Retorna:</strong> <code>dict</code> compatível com Anthropic tools API</p>
+<h3 id="to_google_tool-v0120"><code>to_google_tool()</code> <sup>v0.12.0</sup><a class="headerlink" href="#to_google_tool-v0120" title="Permanent link">&para;</a></h3>
+<p>Gera definição de tool para Google Gemini.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">tools</span> <span class="o">=</span> <span class="p">[</span><span class="n">vg</span><span class="o">.</span><span class="n">to_google_tool</span><span class="p">()]</span>
+</code></pre></div>
+<p><strong>Retorna:</strong> <code>dict</code> compatível com Google Generative AI tools API</p>
+<h3 id="execute_tool_call-v0120"><code>execute_tool_call()</code> <sup>v0.12.0</sup><a class="headerlink" href="#execute_tool_call-v0120" title="Permanent link">&para;</a></h3>
+<p>Executa uma chamada de tool retornada pelo LLM.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">execute_tool_call</span><span class="p">(</span><span class="n">tool_name</span><span class="o">=</span><span class="s2">&quot;vectorgov_search&quot;</span><span class="p">,</span> <span class="n">arguments</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;ETP&quot;</span><span class="p">})</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parâmetro</th>
+<th>Tipo</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tool_name</code></td>
+<td><code>str</code></td>
+<td>Nome da tool chamada pelo LLM</td>
+</tr>
+<tr>
+<td><code>arguments</code></td>
+<td><code>dict</code></td>
+<td>Argumentos extraídos pelo LLM</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Retorna:</strong> <code>SearchResult</code></p>
+<hr />
+<h2 id="system-prompts">System Prompts<a class="headerlink" href="#system-prompts" title="Permanent link">&para;</a></h2>
+<h3 id="get_system_prompt-v0100"><code>get_system_prompt()</code> <sup>v0.10.0</sup><a class="headerlink" href="#get_system_prompt-v0100" title="Permanent link">&para;</a></h3>
+<p>Retorna system prompt pré-otimizado para RAG jurídico.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">prompt</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">get_system_prompt</span><span class="p">(</span><span class="s2">&quot;detailed&quot;</span><span class="p">)</span>
+</code></pre></div>
 <table>
 <thead>
 <tr>
@@ -1475,35 +2177,118 @@
 </tr>
 </tbody>
 </table>
-<h3 id="available_prompts">available_prompts<a class="headerlink" href="#available_prompts" title="Permanent link">&para;</a></h3>
-<p>Propriedade que lista os estilos de prompt disponíveis.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">print</span><span class="p">(</span><span class="n">vg</span><span class="o">.</span><span class="n">available_prompts</span><span class="p">)</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># [&#39;default&#39;, &#39;concise&#39;, &#39;detailed&#39;, &#39;chatbot&#39;]</span>
+<h3 id="available_prompts-v0100"><code>available_prompts</code> <sup>v0.10.0</sup><a class="headerlink" href="#available_prompts-v0100" title="Permanent link">&para;</a></h3>
+<p>Propriedade com estilos disponíveis.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nb">print</span><span class="p">(</span><span class="n">vg</span><span class="o">.</span><span class="n">available_prompts</span><span class="p">)</span>  <span class="c1"># [&#39;default&#39;, &#39;concise&#39;, &#39;detailed&#39;, &#39;chatbot&#39;]</span>
 </code></pre></div>
-<h2 id="exemplo-completo">Exemplo Completo<a class="headerlink" href="#exemplo-completo" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">vectorgov</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorGov</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Inicializar</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">vg</span> <span class="o">=</span> <span class="n">VectorGov</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;vg_xxx&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># Buscar</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">results</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="s2">&quot;Quando o ETP pode ser dispensado?&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;precise&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tipo&quot;</span><span class="p">:</span> <span class="s2">&quot;in&quot;</span><span class="p">},</span>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="p">)</span>
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="c1"># Usar resultados</span>
-<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">total</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Latência: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">latency_ms</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>
-<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
-<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">hit</span><span class="o">.</span><span class="n">source</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">hit</span><span class="o">.</span><span class="n">text</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>
-<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="c1"># Feedback</span>
-<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="n">vg</span><span class="o">.</span><span class="n">feedback</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">query_id</span><span class="p">,</span> <span class="n">like</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<hr />
+<h2 id="auditoria">Auditoria<a class="headerlink" href="#auditoria" title="Permanent link">&para;</a></h2>
+<h3 id="get_audit_logs-v0120"><code>get_audit_logs()</code> <sup>v0.12.0</sup><a class="headerlink" href="#get_audit_logs-v0120" title="Permanent link">&para;</a></h3>
+<p>Consulta logs de auditoria da API.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">logs</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">get_audit_logs</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">event_type</span><span class="o">=</span><span class="s2">&quot;search&quot;</span><span class="p">)</span>
 </code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Parâmetro</th>
+<th>Tipo</th>
+<th>Padrão</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>limit</code></td>
+<td><code>int</code></td>
+<td><code>50</code></td>
+<td>Máximo de registros</td>
+</tr>
+<tr>
+<td><code>offset</code></td>
+<td><code>int</code></td>
+<td><code>0</code></td>
+<td>Paginação</td>
+</tr>
+<tr>
+<td><code>event_type</code></td>
+<td><code>str</code></td>
+<td><code>None</code></td>
+<td>Filtro por tipo</td>
+</tr>
+<tr>
+<td><code>start_date</code></td>
+<td><code>str</code></td>
+<td><code>None</code></td>
+<td>Data início (ISO)</td>
+</tr>
+<tr>
+<td><code>end_date</code></td>
+<td><code>str</code></td>
+<td><code>None</code></td>
+<td>Data fim (ISO)</td>
+</tr>
+<tr>
+<td><code>api_key_id</code></td>
+<td><code>str</code></td>
+<td><code>None</code></td>
+<td>Filtro por API key</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Retorna:</strong> <code>AuditLogsResponse</code></p>
+<h3 id="get_audit_stats-v0120"><code>get_audit_stats()</code> <sup>v0.12.0</sup><a class="headerlink" href="#get_audit_stats-v0120" title="Permanent link">&para;</a></h3>
+<p>Estatísticas agregadas de uso.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">get_audit_stats</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">total_requests</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cache hit rate: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">cache_rate</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Retorna:</strong> <code>AuditStats</code></p>
+<h3 id="get_audit_event_types-v0130"><code>get_audit_event_types()</code> <sup>v0.13.0</sup><a class="headerlink" href="#get_audit_event_types-v0130" title="Permanent link">&para;</a></h3>
+<p>Lista tipos de evento disponíveis para filtro.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="n">types</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">get_audit_event_types</span><span class="p">()</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="c1"># [&#39;search&#39;, &#39;smart_search&#39;, &#39;hybrid&#39;, &#39;lookup&#39;, &#39;feedback&#39;, ...]</span>
+</code></pre></div>
+<p><strong>Retorna:</strong> <code>list[str]</code></p>
+<hr />
+<h2 id="enriquecimento">Enriquecimento<a class="headerlink" href="#enriquecimento" title="Permanent link">&para;</a></h2>
+<h3 id="start_enrichment-v0140"><code>start_enrichment()</code> <sup>v0.14.0</sup><a class="headerlink" href="#start_enrichment-v0140" title="Permanent link">&para;</a></h3>
+<p>Inicia enriquecimento de um documento (context, thesis, questions).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">start_enrichment</span><span class="p">(</span><span class="s2">&quot;LEI-14133-2021&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Retorna:</strong> <code>dict</code> com <code>task_id</code></p>
+<h3 id="get_enrichment_status-v0140"><code>get_enrichment_status()</code> <sup>v0.14.0</sup><a class="headerlink" href="#get_enrichment_status-v0140" title="Permanent link">&para;</a></h3>
+<p>Status do enriquecimento.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">status</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">get_enrichment_status</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Retorna:</strong> <code>EnrichStatus</code></p>
+<hr />
+<h2 id="cliente-assincrono-v0140">Cliente Assíncrono <sup>v0.14.0</sup><a class="headerlink" href="#cliente-assincrono-v0140" title="Permanent link">&para;</a></h2>
+<p>O <code>AsyncVectorGov</code> tem a mesma API do <code>VectorGov</code>, mas todos os métodos são <code>async</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">vectorgov</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncVectorGov</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="k">async</span> <span class="k">with</span> <span class="n">AsyncVectorGov</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;vg_xxx&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">vg</span><span class="p">:</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">vg</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;O que é ETP?&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">to_context</span><span class="p">())</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a>    <span class="c1"># Buscas paralelas</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>    <span class="n">r1</span><span class="p">,</span> <span class="n">r2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span>
+<a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a>        <span class="n">vg</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;ETP&quot;</span><span class="p">),</span>
+<a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a>        <span class="n">vg</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;dispensa de licitação&quot;</span><span class="p">),</span>
+<a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a>    <span class="p">)</span>
+</code></pre></div>
+<p>Todos os métodos documentados acima estão disponíveis como <code>await vg.metodo()</code>.</p>
+<hr />
+<h2 id="context-manager">Context Manager<a class="headerlink" href="#context-manager" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="c1"># Sync</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="k">with</span> <span class="n">VectorGov</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;vg_xxx&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">vg</span><span class="p">:</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="c1"># Async</span>
+<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a><span class="k">async</span> <span class="k">with</span> <span class="n">AsyncVectorGov</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;vg_xxx&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">vg</span><span class="p">:</span>
+<a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>    <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">vg</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>O <code>close()</code> é chamado automaticamente ao sair do bloco.</p>
 
 
 
