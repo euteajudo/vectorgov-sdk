@@ -1,6 +1,6 @@
 # VectorGov API — Endpoints Reference
 
-> Referencia completa de todos os endpoints publicos com exemplos de request/response.
+> Referencia completa de todos os endpoints publicos do SDK com exemplos de request/response.
 >
 > **Base URL:** `https://vectorgov.io/api/v1`
 > **Auth:** Header `Authorization: Bearer vg_xxx` (API Key)
@@ -11,11 +11,11 @@
 
 1. [POST /sdk/search](#1-post-sdksearch) — Busca semantica
 2. [POST /sdk/smart-search](#2-post-sdksmart-search) — Consulta inteligente MOC4
-3. [POST /sdk/feedback](#3-post-sdkfeedback) — Feedback like/dislike
-4. [POST /sdk/tokens](#4-post-sdktokens) — Estimativa de tokens
-5. [POST /retrieve/search](#5-post-retrievesearch) — Busca com reranking e expansao
-6. [POST /retrieve/lookup](#6-post-retrievelookup) — Consulta direta por referencia
-7. [POST /retrieve/hybrid](#7-post-retrievehybrid) — Busca hibrida com grafo
+3. [POST /sdk/hybrid](#3-post-sdkhybrid) — Busca hibrida com grafo (Pipeline Fenix)
+4. [POST /sdk/lookup](#4-post-sdklookup) — Consulta direta por referencia (single ou batch)
+5. [POST /sdk/feedback](#5-post-sdkfeedback) — Feedback like/dislike
+6. [POST /sdk/tokens](#6-post-sdktokens) — Estimativa de tokens
+7. [GET /sdk/documents](#7-get-sdkdocuments) — Listar documentos disponiveis
 8. [POST /filesystem/search](#8-post-filesystemsearch) — Busca no indice curado
 9. [POST /filesystem/grep](#9-post-filesystemgrep) — Busca textual exata
 10. [GET /filesystem/read/{document_id}](#10-get-filesystemreaddocument_id) — Leitura de canonical
@@ -28,6 +28,8 @@
 ## 1. POST /sdk/search
 
 Busca semantica com guardrails de seguranca (deteccao de PII, prompt injection, circuit breaker).
+
+**SDK:** `vg.search()`
 
 ### Request
 
@@ -94,6 +96,8 @@ curl -X POST https://vectorgov.io/api/v1/sdk/search \
 
 Pipeline completo MOC v4: Pensador (analisa query) -> Motor (coleta contexto) -> Juiz (avalia e aprova chunks). Latencia tipica: 5-18 segundos.
 
+**SDK:** `vg.smart_search()`
+
 ### Request
 
 ```bash
@@ -144,230 +148,20 @@ curl -X POST https://vectorgov.io/api/v1/sdk/smart-search \
 
 ---
 
-## 3. POST /sdk/feedback
+## 3. POST /sdk/hybrid
 
-Registra avaliacao do usuario sobre um resultado de busca.
+Busca hibrida com Pipeline Fenix completo: HyDE -> Seeds Milvus -> Parent-Child -> Graph Neo4j -> Merge -> Rerank + Guilhotina. Usa o mesmo motor do pipeline interno com guardrails SDK (PII, injection).
 
-### Request
-
-```bash
-curl -X POST https://vectorgov.io/api/v1/sdk/feedback \
-  -H "Authorization: Bearer vg_sua_chave" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query_id": "a1b2c3d4",
-    "is_like": true
-  }'
-```
-
-### Response (200)
-
-```json
-{
-  "success": true,
-  "message": "Feedback registrado",
-  "new_likes": 1,
-  "new_dislikes": 0
-}
-```
-
----
-
-## 4. POST /sdk/tokens
-
-Estima quantos tokens um contexto vai consumir no LLM. Usa encoding cl100k_base (compativel com GPT-4, Claude, Gemini).
+**SDK:** `vg.hybrid()`
 
 ### Request
 
 ```bash
-curl -X POST https://vectorgov.io/api/v1/sdk/tokens \
-  -H "Authorization: Bearer vg_sua_chave" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "context": "Art. 75. E dispensavel a licitacao para contratacao...",
-    "query": "Quando pode dispensar licitacao?",
-    "system_prompt": "Voce e um especialista em licitacoes."
-  }'
-```
-
-### Response (200)
-
-```json
-{
-  "success": true,
-  "context_tokens": 1500,
-  "system_tokens": 12,
-  "query_tokens": 8,
-  "total_tokens": 1520,
-  "char_count": 5800,
-  "encoding": "cl100k_base"
-}
-```
-
----
-
-## 5. POST /retrieve/search
-
-Busca semantica completa com reranking, parent-child expansion, query rewriting e dual lane.
-
-### Request
-
-```bash
-curl -X POST https://vectorgov.io/api/v1/retrieve/search \
+curl -X POST https://vectorgov.io/api/v1/sdk/hybrid \
   -H "Authorization: Bearer vg_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "criterios de julgamento em licitacao",
-    "top_k": 10,
-    "collection": "leis_v4",
-    "use_reranker": true,
-    "use_parent_child": true,
-    "include_evidence": true
-  }'
-```
-
-| Campo | Tipo | Default | Descricao |
-|-------|------|---------|-----------|
-| query | string | — | Consulta (3-1000 chars) |
-| top_k | int | 20 | Resultados (1-30) |
-| collection | string | "leis_v4" | Collection Milvus |
-| use_reranker | bool | true | Cross-encoder reranking |
-| use_hyde | bool | false | HyDE query expansion |
-| use_parent_child | bool | false | Expandir pai/filhos |
-| use_graph_retrieval | bool | false | Expandir via Neo4j |
-| include_evidence | bool | true | Incluir URLs de highlight |
-| dual_ingestion | bool | true | Dedup chunks @FULL |
-| query_rewrite | bool | true | Extrair referencia normativa |
-| dual_lane | bool | true | Query filtrada + livre em paralelo |
-| document_id_filter | string | null | Filtrar por documento |
-| scope | string | null | Escopo federativo |
-
-### Response (200)
-
-```json
-{
-  "success": true,
-  "query": "criterios de julgamento em licitacao",
-  "hits": [
-    {
-      "rank": 1,
-      "node_id": "leis:LEI-14133-2021#ART-033",
-      "document_id": "LEI-14133-2021",
-      "text": "Art. 33. O julgamento das propostas...",
-      "device_type": "article",
-      "breadcrumb": "Lei 14.133/2021 > Cap. V > Art. 33",
-      "score": 0.78,
-      "rerank_score": 0.94,
-      "final_score": 0.94,
-      "is_parent": false,
-      "is_graph_expanded": false,
-      "nota_especialista": null,
-      "evidence_url": "https://vectorgov.io/api/v1/evidence/highlight/...",
-      "evidence": {
-        "canonical_start": 12450,
-        "canonical_end": 13200,
-        "canonical_hash": "abc123...",
-        "page_number": 15
-      }
-    }
-  ],
-  "total_found": 10,
-  "search_time_ms": 245,
-  "rerank_time_ms": 1200,
-  "reranker_used": true,
-  "hyde_used": false,
-  "query_rewrite_active": true,
-  "query_rewrite_clean_query": "criterios de julgamento",
-  "dual_lane_active": true,
-  "timings": {
-    "stage1_hyde": 0,
-    "stage2_seeds": 245,
-    "stage3_parent_child": 120,
-    "stage5_rerank": 1200
-  }
-}
-```
-
----
-
-## 6. POST /retrieve/lookup
-
-Resolucao direta de referencia normativa. Aceita linguagem natural ("art. 75 da Lei 14.133") e retorna o dispositivo exato com pai, filhos e irmaos.
-
-### Request (single)
-
-```bash
-curl -X POST https://vectorgov.io/api/v1/retrieve/lookup \
-  -H "Authorization: Bearer vg_sua_chave" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "reference": "art. 75 da Lei 14.133/2021",
-    "include_siblings": true,
-    "include_parent": true
-  }'
-```
-
-### Request (batch)
-
-```bash
-curl -X POST https://vectorgov.io/api/v1/retrieve/lookup \
-  -H "Authorization: Bearer vg_sua_chave" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "references": [
-      "art. 75 da Lei 14.133",
-      "art. 3 da IN 65/2021",
-      "art. 18 do Decreto 10.947"
-    ]
-  }'
-```
-
-### Response (200 — single)
-
-```json
-{
-  "status": "found",
-  "reference": "art. 75 da Lei 14.133/2021",
-  "elapsed_ms": 45,
-  "resolved": {
-    "device_type": "article",
-    "article_number": "75",
-    "resolved_document_id": "LEI-14133-2021",
-    "resolved_span_id": "ART-075"
-  },
-  "node_id": "leis:LEI-14133-2021#ART-075",
-  "text": "Art. 75. E dispensavel a licitacao...",
-  "device_type": "article",
-  "breadcrumb": "Lei 14.133/2021 > Cap. VIII > Art. 75",
-  "parent": null,
-  "children": [
-    {
-      "node_id": "leis:LEI-14133-2021#INC-075-I",
-      "span_id": "INC-075-I",
-      "text": "I - para contratacao que envolva valores...",
-      "device_type": "inciso"
-    }
-  ],
-  "stitched_text": "Art. 75. E dispensavel a licitacao...\nI - para contratacao...\nII - para outros servicos...",
-  "siblings": [],
-  "evidence_url": "https://vectorgov.io/api/v1/evidence/highlight/..."
-}
-```
-
----
-
-## 7. POST /retrieve/hybrid
-
-Busca hibrida: Milvus (semantica) + Neo4j (grafo de citacoes). Retorna evidencia direta + expansao via grafo com token budget.
-
-### Request
-
-```bash
-curl -X POST https://vectorgov.io/api/v1/retrieve/hybrid \
-  -H "Authorization: Bearer vg_sua_chave" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "criterios de julgamento",
     "top_k": 10,
     "hops": 1,
     "token_budget": 3500,
@@ -375,15 +169,17 @@ curl -X POST https://vectorgov.io/api/v1/retrieve/hybrid \
   }'
 ```
 
-| Campo | Tipo | Default | Descricao |
-|-------|------|---------|-----------|
-| query | string | — | Consulta |
-| top_k | int | 20 | Seeds do Milvus (1-50) |
-| topK_graph | int | 15 | Nos expandidos (1-50) |
-| hops | int | 1 | Saltos no grafo (1-2) |
-| token_budget | int | 3500 | Limite de tokens (500-8000) |
-| graph_expansion | string | "bidirectional" | "forward", "bidirectional", "off" |
-| collections | list | ["leis_v4"] | Collections |
+| Campo | Tipo | Obrigatorio | Default | Descricao |
+|-------|------|:-----------:|---------|-----------|
+| query | string | Sim | — | Consulta (2-1000 chars) |
+| top_k | int | Nao | 10 | Seeds do Milvus (1-50) |
+| hops | int | Nao | 1 | Saltos no grafo Neo4j (1-2) |
+| token_budget | int | Nao | 3500 | Limite de tokens para contexto (500-8000) |
+| graph_expansion | string | Nao | "bidirectional" | "forward", "bidirectional" |
+| collections | list | Nao | ["leis_v4"] | Collections Milvus |
+| hyde | bool | Nao | false | HyDE query expansion |
+| use_cache | bool | Nao | false | Cache semantico |
+| scope | string | Nao | null | Escopo federativo |
 
 ### Response (200)
 
@@ -430,11 +226,249 @@ curl -X POST https://vectorgov.io/api/v1/retrieve/hybrid \
 }
 ```
 
+> **Diferenca entre `/sdk/search` e `/sdk/hybrid`:** O `/sdk/search` usa `HybridSearcher` simples (Milvus + reranker). O `/sdk/hybrid` usa o Pipeline Fenix completo com 6 stages: HyDE, parent-child expansion, graph expansion via Neo4j, merge com cap de 40 chunks, rerank com guilhotina adaptativa, e dual-lane. Para a maioria dos casos, `/sdk/hybrid` entrega resultados mais completos.
+
+---
+
+## 4. POST /sdk/lookup
+
+Resolucao direta de referencia normativa. Aceita linguagem natural ("art. 75 da Lei 14.133") e retorna o dispositivo exato com pai, filhos e irmaos.
+
+Suporta consulta unica (single) ou multipla (batch, max 20 referencias).
+
+**SDK:** `vg.lookup()`
+
+### Request (single)
+
+```bash
+curl -X POST https://vectorgov.io/api/v1/sdk/lookup \
+  -H "Authorization: Bearer vg_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reference": "art. 75 da Lei 14.133/2021",
+    "include_siblings": true,
+    "include_parent": true
+  }'
+```
+
+### Request (batch — ate 20 referencias)
+
+```bash
+curl -X POST https://vectorgov.io/api/v1/sdk/lookup \
+  -H "Authorization: Bearer vg_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "references": [
+      "art. 75 da Lei 14.133",
+      "art. 3 da IN 65/2021",
+      "art. 18 do Decreto 10.947"
+    ],
+    "include_parent": true
+  }'
+```
+
+| Campo | Tipo | Obrigatorio | Default | Descricao |
+|-------|------|:-----------:|---------|-----------|
+| reference | string | Sim* | — | Referencia unica (ex: "art. 75 da Lei 14.133") |
+| references | list[string] | Sim* | — | Lista de referencias (max 20) |
+| collection | string | Nao | "leis_v4" | Collection Milvus |
+| include_parent | bool | Nao | true | Incluir chunk pai |
+| include_siblings | bool | Nao | true | Incluir irmaos |
+
+> *Envie `reference` (single) OU `references` (batch), nunca ambos.
+
+### Response (200 — single)
+
+```json
+{
+  "status": "found",
+  "reference": "art. 75 da Lei 14.133/2021",
+  "elapsed_ms": 45,
+  "resolved": {
+    "device_type": "article",
+    "article_number": "75",
+    "resolved_document_id": "LEI-14133-2021",
+    "resolved_span_id": "ART-075"
+  },
+  "node_id": "leis:LEI-14133-2021#ART-075",
+  "text": "Art. 75. E dispensavel a licitacao...",
+  "device_type": "article",
+  "breadcrumb": "Lei 14.133/2021 > Cap. VIII > Art. 75",
+  "parent": null,
+  "children": [
+    {
+      "node_id": "leis:LEI-14133-2021#INC-075-I",
+      "span_id": "INC-075-I",
+      "text": "I - para contratacao que envolva valores...",
+      "device_type": "inciso"
+    }
+  ],
+  "stitched_text": "Art. 75. E dispensavel a licitacao...\nI - para contratacao...\nII - para outros servicos...",
+  "siblings": [],
+  "evidence_url": "https://vectorgov.io/api/v1/evidence/highlight/..."
+}
+```
+
+### Response (200 — batch)
+
+```json
+{
+  "status": "batch",
+  "elapsed_ms": 120,
+  "results": [
+    {
+      "status": "found",
+      "reference": "art. 75 da Lei 14.133",
+      "node_id": "leis:LEI-14133-2021#ART-075",
+      "text": "Art. 75. E dispensavel a licitacao...",
+      "children": [...]
+    },
+    {
+      "status": "found",
+      "reference": "art. 3 da IN 65/2021",
+      "node_id": "leis:IN-65-2021#ART-003",
+      "text": "Art. 3. Para fins do disposto...",
+      "children": [...]
+    },
+    {
+      "status": "not_found",
+      "reference": "art. 18 do Decreto 10.947",
+      "message": "Dispositivo nao encontrado"
+    }
+  ]
+}
+```
+
+### Uso no SDK Python
+
+```python
+# Single
+result = vg.lookup("Art. 75 da Lei 14.133")
+print(result.stitched_text)
+
+# Batch (ate 20 referencias)
+results = vg.lookup([
+    "Art. 75 da Lei 14.133",
+    "Art. 3 da IN 65/2021",
+    "Art. 18 do Decreto 10.947",
+])
+for r in results:
+    print(r.reference, r.status, len(r.children))
+```
+
+---
+
+## 5. POST /sdk/feedback
+
+Registra avaliacao do usuario sobre um resultado de busca.
+
+**SDK:** `vg.feedback()`
+
+### Request
+
+```bash
+curl -X POST https://vectorgov.io/api/v1/sdk/feedback \
+  -H "Authorization: Bearer vg_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query_id": "a1b2c3d4",
+    "is_like": true
+  }'
+```
+
+### Response (200)
+
+```json
+{
+  "success": true,
+  "message": "Feedback registrado",
+  "new_likes": 1,
+  "new_dislikes": 0
+}
+```
+
+---
+
+## 6. POST /sdk/tokens
+
+Estima quantos tokens um contexto vai consumir no LLM. Usa encoding cl100k_base (compativel com GPT-4, Claude, Gemini).
+
+**SDK:** `vg.estimate_tokens()`
+
+### Request
+
+```bash
+curl -X POST https://vectorgov.io/api/v1/sdk/tokens \
+  -H "Authorization: Bearer vg_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "context": "Art. 75. E dispensavel a licitacao para contratacao...",
+    "query": "Quando pode dispensar licitacao?",
+    "system_prompt": "Voce e um especialista em licitacoes."
+  }'
+```
+
+### Response (200)
+
+```json
+{
+  "success": true,
+  "context_tokens": 1500,
+  "system_tokens": 12,
+  "query_tokens": 8,
+  "total_tokens": 1520,
+  "char_count": 5800,
+  "encoding": "cl100k_base"
+}
+```
+
+---
+
+## 7. GET /sdk/documents
+
+Lista documentos disponiveis na base de conhecimento com paginacao.
+
+**SDK:** `vg.list_documents()`
+
+### Request
+
+```bash
+curl "https://vectorgov.io/api/v1/sdk/documents?page=1&limit=20" \
+  -H "Authorization: Bearer vg_sua_chave"
+```
+
+| Parametro | Tipo | Default | Descricao |
+|-----------|------|---------|-----------|
+| page | int | 1 | Pagina |
+| limit | int | 20 | Itens por pagina (max 100) |
+
+### Response (200)
+
+```json
+{
+  "documents": [
+    {
+      "document_id": "LEI-14133-2021",
+      "tipo_documento": "LEI",
+      "numero": "14133",
+      "ano": 2021,
+      "title": "Lei de Licitacoes e Contratos",
+      "chunks_count": 1177
+    }
+  ],
+  "total": 8,
+  "page": 1,
+  "pages": 1
+}
+```
+
 ---
 
 ## 8. POST /filesystem/search
 
 Busca no indice curado do PostgreSQL + ripgrep. Modo "auto" detecta se a query e uma referencia legal (usa grep) ou semantica (usa indice).
+
+**SDK:** `vg.filesystem_search()`
 
 ### Request
 
@@ -487,6 +521,8 @@ curl -X POST https://vectorgov.io/api/v1/filesystem/search \
 
 Busca textual exata via ripgrep nos canonical.md dos documentos indexados. Util para encontrar trechos especificos por palavras-chave.
 
+**SDK:** `vg.grep()`
+
 ### Request
 
 ```bash
@@ -538,6 +574,8 @@ curl -X POST https://vectorgov.io/api/v1/filesystem/grep \
 
 Le o canonical completo de um documento ou um trecho especifico.
 
+**SDK:** `vg.read_document()`
+
 ### Request (documento inteiro)
 
 ```bash
@@ -571,6 +609,8 @@ curl "https://vectorgov.io/api/v1/filesystem/read/LEI-14133-2021?span_id=ART-075
 ## 11. POST /search/merged
 
 Busca dual-path: combina hybrid (Milvus+Neo4j) com filesystem (PG index + ripgrep). Resultados unificados, deduplicados e ranqueados via RRF.
+
+**SDK:** `vg.merged()`
 
 ### Request
 
@@ -640,6 +680,8 @@ curl -X POST https://vectorgov.io/api/v1/search/merged \
 
 Lista logs de auditoria filtrados por tipo, severidade e periodo. Cada API Key so ve seus proprios logs (isolamento por key).
 
+**SDK:** `vg.audit_logs()`
+
 ### Request
 
 ```bash
@@ -685,6 +727,8 @@ curl "https://vectorgov.io/api/v1/sdk/audit/logs?severity=critical&days=7&limit=
 ## 13. GET /sdk/audit/stats
 
 Estatisticas agregadas de auditoria por periodo.
+
+**SDK:** `vg.audit_stats()`
 
 ### Request
 
@@ -777,10 +821,19 @@ from vectorgov import VectorGov
 
 vg = VectorGov(api_key="vg_sua_chave")
 
-# /sdk/search
+# /sdk/search — busca semantica simples
 results = vg.search("Quando dispensar licitacao?", top_k=5, mode="balanced")
 
-# /sdk/smart-search
+# /sdk/hybrid — busca com Pipeline Fenix completo (grafo + parent-child)
+results = vg.hybrid("criterios de julgamento", top_k=10, hops=1)
+
+# /sdk/lookup — consulta direta (single)
+result = vg.lookup("Art. 75 da Lei 14.133")
+
+# /sdk/lookup — consulta direta (batch, ate 20)
+results = vg.lookup(["Art. 75 da Lei 14.133", "Art. 3 da IN 65/2021"])
+
+# /sdk/smart-search — consulta inteligente com IA
 results = vg.smart_search("Quem pode ser agente de contratacao?")
 
 # /sdk/feedback
@@ -788,6 +841,18 @@ vg.feedback(query_id="a1b2c3d4", like=True)
 
 # /sdk/tokens
 stats = vg.estimate_tokens(results)
+
+# /sdk/documents — listar documentos
+docs = vg.list_documents()
+
+# /filesystem/search — busca no indice curado
+results = vg.filesystem_search("art. 75 da Lei 14.133")
+
+# /filesystem/grep — busca textual exata
+results = vg.grep("dispensa de licitacao")
+
+# /search/merged — busca dual-path
+results = vg.merged("prazo para impugnacao do edital")
 
 # Converter resultado para contexto LLM
 context = results.to_context()
