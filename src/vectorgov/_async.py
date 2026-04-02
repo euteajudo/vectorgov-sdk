@@ -93,7 +93,6 @@ class AsyncVectorGov:
         self,
         query: str,
         top_k: Optional[int] = None,
-        collections: Optional[list[str]] = None,
         hops: int = 1,
         graph_expansion: str = "bidirectional",
         token_budget: Optional[int] = None,
@@ -105,7 +104,6 @@ class AsyncVectorGov:
             self._sync.hybrid,
             query,
             top_k=top_k,
-            collections=collections,
             hops=hops,
             graph_expansion=graph_expansion,
             token_budget=token_budget,
@@ -130,7 +128,6 @@ class AsyncVectorGov:
     async def lookup(
         self,
         reference: Union[str, list[str]],
-        collection: str = "leis_v4",
         include_parent: bool = True,
         include_siblings: bool = True,
         trace_id: Optional[str] = None,
@@ -139,7 +136,6 @@ class AsyncVectorGov:
         return await asyncio.to_thread(
             self._sync.lookup,
             reference,
-            collection=collection,
             include_parent=include_parent,
             include_siblings=include_siblings,
             trace_id=trace_id,

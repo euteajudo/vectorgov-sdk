@@ -1059,7 +1059,6 @@ messages = result.to_messages("Dispensa de licitacao por baixo valor")
 | `hops` | int | 1 | Saltos no grafo (1-2) |
 | `graph_expansion` | str | `"bidirectional"` | Direcao da expansao |
 | `token_budget` | int | 3500 | Limite de tokens do contexto |
-| `collections` | list | `["leis_v4"]` | Collections a buscar |
 
 **Modelo retornado:** `HybridResult` (herda de `BaseResult`), com:
 - `hits` — Evidencias diretas (lista de `Hit`)
@@ -1097,7 +1096,6 @@ elif result.status == "ambiguous":
 | Parametro | Tipo | Default | Descricao |
 |-----------|------|---------|-----------|
 | `reference` | str | - | Referencia textual (ex: "Art. 33 da Lei 14.133") |
-| `collection` | str | `"leis_v4"` | Collection a buscar |
 | `include_parent` | bool | `True` | Incluir chunk pai |
 | `include_siblings` | bool | `True` | Incluir irmaos |
 

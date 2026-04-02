@@ -402,7 +402,6 @@ class VectorGov:
         self,
         query: str,
         top_k: Optional[int] = None,
-        collections: Optional[list[str]] = None,
         hops: int = 1,
         graph_expansion: str = "bidirectional",
         token_budget: Optional[int] = None,
@@ -417,7 +416,6 @@ class VectorGov:
         Args:
             query: Texto da consulta
             top_k: Quantidade de resultados diretos (1-20). Default: 8
-            collections: Collections a buscar. Default: ["leis_v4"]
             hops: Máximo de saltos no grafo (1-2). Default: 1
             graph_expansion: Direção da expansão no grafo.
                 "bidirectional" (padrão) ou "forward".
@@ -458,7 +456,7 @@ class VectorGov:
         request_data = {
             "query": query,
             "top_k": top_k,
-            "collections": collections or ["leis_v4"],
+            "collections": ["leis_v4"],
             "hops": hops,
             "graph_expansion": graph_expansion,
             "use_cache": use_cache if use_cache is not None else False,
@@ -561,7 +559,6 @@ class VectorGov:
     def lookup(
         self,
         reference: Union[str, list[str]],
-        collection: str = "leis_v4",
         include_parent: bool = True,
         include_siblings: bool = True,
         trace_id: Optional[str] = None,
@@ -576,7 +573,6 @@ class VectorGov:
 
         Args:
             reference: Referência textual ou lista de referências (max 20).
-            collection: Collection a buscar. Default: "leis_v4"
             include_parent: Incluir chunk pai. Default: True
             include_siblings: Incluir irmãos. Default: True
             trace_id: ID de rastreamento para correlação de logs.
@@ -605,7 +601,7 @@ class VectorGov:
                 raise ValidationError("Máximo de 20 referências por batch", field="references")
             request_data: dict = {
                 "references": reference,
-                "collection": collection,
+                "collection": "leis_v4",
                 "include_parent": include_parent,
                 "include_siblings": include_siblings,
             }
@@ -615,7 +611,7 @@ class VectorGov:
             reference = reference.strip()
             request_data = {
                 "reference": reference,
-                "collection": collection,
+                "collection": "leis_v4",
                 "include_parent": include_parent,
                 "include_siblings": include_siblings,
             }
