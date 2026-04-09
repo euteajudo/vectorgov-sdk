@@ -372,10 +372,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#modos-de-busca" class="md-nav__link">
+  <a href="#metodos-de-busca" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Modos de Busca
+        Metodos de Busca
       
     </span>
   </a>
@@ -989,10 +989,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#modos-de-busca" class="md-nav__link">
+  <a href="#metodos-de-busca" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Modos de Busca
+        Metodos de Busca
       
     </span>
   </a>
@@ -1138,34 +1138,69 @@
 </div>
 </div>
 </div>
-<h2 id="modos-de-busca">Modos de Busca<a class="headerlink" href="#modos-de-busca" title="Permanent link">&para;</a></h2>
+<h2 id="metodos-de-busca">Metodos de Busca<a class="headerlink" href="#metodos-de-busca" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Modo</th>
-<th>Latência</th>
-<th>Uso</th>
+<th>Metodo</th>
+<th>Latencia</th>
+<th>Melhor para</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>fast</code></td>
-<td>~2s</td>
-<td>Chatbots</td>
+<td><code>search()</code></td>
+<td>2-7s</td>
+<td>Buscas semanticas simples</td>
 </tr>
 <tr>
-<td><code>balanced</code></td>
-<td>~5s</td>
-<td>Uso geral</td>
+<td><code>smart_search()</code></td>
+<td>5-18s</td>
+<td>Analise juridica completa (Premium)</td>
 </tr>
 <tr>
-<td><code>precise</code></td>
-<td>~15s</td>
-<td>Análises</td>
+<td><code>hybrid()</code></td>
+<td>3-10s</td>
+<td>Normas relacionadas, cadeia regulatoria</td>
+</tr>
+<tr>
+<td><code>lookup()</code></td>
+<td>&lt; 1s</td>
+<td>Referencia exata ("Art. 75 da Lei X")</td>
+</tr>
+<tr>
+<td><code>grep()</code></td>
+<td>&lt; 1s</td>
+<td>Busca textual exata, palavras-chave</td>
+</tr>
+<tr>
+<td><code>filesystem_search()</code></td>
+<td>&lt; 1s</td>
+<td>Indice curado, referencias legais</td>
+</tr>
+<tr>
+<td><code>merged()</code></td>
+<td>2-5s</td>
+<td>Busca dual-path (semantica + filesystem)</td>
+</tr>
+<tr>
+<td><code>read_canonical()</code></td>
+<td>&lt; 1s</td>
+<td>Texto canonico completo</td>
 </tr>
 </tbody>
 </table>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">results</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;precise&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Busca semantica</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">results</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;O que e ETP?&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;precise&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Busca textual exata</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">matches</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">grep</span><span class="p">(</span><span class="s2">&quot;dispensa de licitacao&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Busca dual-path (maxima cobertura)</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">results</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">merged</span><span class="p">(</span><span class="s2">&quot;prazo para impugnacao do edital&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Texto canonico completo</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="n">doc</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">read_canonical</span><span class="p">(</span><span class="s2">&quot;LEI-14133-2021&quot;</span><span class="p">,</span> <span class="n">span_id</span><span class="o">=</span><span class="s2">&quot;ART-075&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="system-prompts">System Prompts<a class="headerlink" href="#system-prompts" title="Permanent link">&para;</a></h2>
 <p>Controle como o LLM responde suas perguntas:</p>

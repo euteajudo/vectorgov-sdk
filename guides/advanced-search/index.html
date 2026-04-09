@@ -863,6 +863,50 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#5-grep-busca-textual-exata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. grep() — Busca Textual Exata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-filesystem_search-indice-curado" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. filesystem_search() — Índice Curado
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-merged-busca-dual-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. merged() — Busca Dual-Path
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-read_canonical-texto-canonico" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. read_canonical() — Texto Canônico
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#formatacao-para-llms" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -905,7 +949,7 @@
 
 
 <h1 id="guia-de-busca-avancada">Guia de Busca Avançada<a class="headerlink" href="#guia-de-busca-avancada" title="Permanent link">&para;</a></h1>
-<p>O SDK oferece 4 métodos de busca, cada um otimizado para um cenário diferente.</p>
+<p>O SDK oferece 8 métodos de busca, cada um otimizado para um cenário diferente.</p>
 <h2 id="comparacao-rapida">Comparação Rápida<a class="headerlink" href="#comparacao-rapida" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -941,6 +985,30 @@
 <td>Baixo</td>
 <td>Referência exata ("Art. 75 da Lei X")</td>
 </tr>
+<tr>
+<td><code>grep()</code></td>
+<td>&lt; 1s</td>
+<td>Baixo</td>
+<td>Busca textual exata, palavras-chave</td>
+</tr>
+<tr>
+<td><code>filesystem_search()</code></td>
+<td>&lt; 1s</td>
+<td>Baixo</td>
+<td>Busca no índice curado, referências legais</td>
+</tr>
+<tr>
+<td><code>merged()</code></td>
+<td>2-5s</td>
+<td>Médio</td>
+<td>Busca completa dual-path (semântica + filesystem)</td>
+</tr>
+<tr>
+<td><code>read_canonical()</code></td>
+<td>&lt; 1s</td>
+<td>Mínimo</td>
+<td>Leitura de texto canônico completo</td>
+</tr>
 </tbody>
 </table>
 <h2 id="quando-usar-cada-metodo">Quando usar cada método<a class="headerlink" href="#quando-usar-cada-metodo" title="Permanent link">&para;</a></h2>
@@ -955,8 +1023,20 @@
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>  ├─ Precisa de normas relacionadas/cadeia regulatória?
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>  │  └─ SIM → hybrid()
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>  │
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>  └─ Busca simples por tema
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>     └─ search()
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>  ├─ Busca simples por tema
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>  │  └─ search()
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>  │
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>  ├─ Precisa encontrar texto exato/palavra-chave?
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>  │  └─ SIM → grep()
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>  │
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>  ├─ Quer buscar no índice curado (determinístico)?
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>  │  └─ SIM → filesystem_search()
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>  │
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>  ├─ Quer combinar semântica + filesystem (máxima cobertura)?
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>  │  └─ SIM → merged()
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>  │
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>  └─ Precisa ler o texto completo de um dispositivo?
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>     └─ read_canonical()
 </code></pre></div>
 <h2 id="1-search-busca-semantica">1. <code>search()</code> — Busca Semântica<a class="headerlink" href="#1-search-busca-semantica" title="Permanent link">&para;</a></h2>
 <p>Busca rápida por similaridade semântica. 3 modos: <code>fast</code> (~2s), <code>balanced</code> (~5s), <code>precise</code> (~7s).</p>
@@ -1038,24 +1118,66 @@
 </code></pre></div>
 <p><strong>Retorna:</strong> <code>LookupResult</code> com <code>status</code> (found/not_found/ambiguous), <code>matches</code> com <code>text</code>, <code>evidence</code>, <code>parent</code>, <code>siblings</code>, <code>children</code>.</p>
 <p><strong>Formatos aceitos:</strong> "Art. 75 da Lei 14.133/2021", "Art. 3 da IN 58/2022", "§ 2º do Art. 75 da Lei 14.133/2021".</p>
+<hr />
+<h2 id="5-grep-busca-textual-exata">5. <code>grep()</code> — Busca Textual Exata<a class="headerlink" href="#5-grep-busca-textual-exata" title="Permanent link">&para;</a></h2>
+<p>Busca textual exata via ripgrep. Ideal para encontrar palavras-chave ou trechos específicos.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Busca simples</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">grep</span><span class="p">(</span><span class="s2">&quot;dispensa de licitacao&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">span_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">matched_line</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># Filtrar por documento</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">grep</span><span class="p">(</span><span class="s2">&quot;art. 75&quot;</span><span class="p">,</span> <span class="n">document_id</span><span class="o">=</span><span class="s2">&quot;LEI-14133-2021&quot;</span><span class="p">,</span> <span class="n">max_results</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="6-filesystem_search-indice-curado">6. <code>filesystem_search()</code> — Índice Curado<a class="headerlink" href="#6-filesystem_search-indice-curado" title="Permanent link">&para;</a></h2>
+<p>Busca no índice PostgreSQL + ripgrep. O modo <code>auto</code> detecta se a query é referência legal ou texto livre.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Auto-detecta tipo de query</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">filesystem_search</span><span class="p">(</span><span class="s2">&quot;art. 75 da Lei 14.133&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">hit</span><span class="o">.</span><span class="n">source</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">hit</span><span class="o">.</span><span class="n">breadcrumb</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Forçar modo grep</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">filesystem_search</span><span class="p">(</span><span class="s2">&quot;dispensa&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;grep&quot;</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="7-merged-busca-dual-path">7. <code>merged()</code> — Busca Dual-Path<a class="headerlink" href="#7-merged-busca-dual-path" title="Permanent link">&para;</a></h2>
+<p>Combina busca híbrida (Milvus + Neo4j) com filesystem (PostgreSQL + ripgrep) em paralelo. Usa Reciprocal Rank Fusion (RRF) para unificar rankings.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">merged</span><span class="p">(</span><span class="s2">&quot;prazo para impugnacao do edital&quot;</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">sources</span><span class="p">)</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">hit</span><span class="o">.</span><span class="n">breadcrumb</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">hit</span><span class="o">.</span><span class="n">score</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Em ambas fontes: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">mutual_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="8-read_canonical-texto-canonico">8. <code>read_canonical()</code> — Texto Canônico<a class="headerlink" href="#8-read_canonical-texto-canonico" title="Permanent link">&para;</a></h2>
+<p>Lê o texto completo de um documento ou dispositivo específico. Sem busca — acesso direto.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Documento inteiro</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">doc</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">read_canonical</span><span class="p">(</span><span class="s2">&quot;LEI-14133-2021&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">doc</span><span class="o">.</span><span class="n">token_count</span><span class="si">}</span><span class="s2"> tokens&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># Dispositivo específico</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="n">art</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">read_canonical</span><span class="p">(</span><span class="s2">&quot;LEI-14133-2021&quot;</span><span class="p">,</span> <span class="n">span_id</span><span class="o">=</span><span class="s2">&quot;ART-075&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">art</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+</code></pre></div>
+<hr />
 <h2 id="formatacao-para-llms">Formatação para LLMs<a class="headerlink" href="#formatacao-para-llms" title="Permanent link">&para;</a></h2>
 <p>Todos os métodos retornam objetos com métodos de formatação:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Texto plano com contexto</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">result</span><span class="o">.</span><span class="n">to_context</span><span class="p">()</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># Messages prontas para OpenAI/Anthropic</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">result</span><span class="o">.</span><span class="n">to_messages</span><span class="p">(</span><span class="s2">&quot;Minha pergunta&quot;</span><span class="p">,</span> <span class="n">system_prompt</span><span class="o">=</span><span class="s2">&quot;Responda em PT-BR&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1"># Prompt completo (system + context + query)</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">result</span><span class="o">.</span><span class="n">to_prompt</span><span class="p">(</span><span class="s2">&quot;Minha pergunta&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="c1"># XML estruturado</span>
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="n">result</span><span class="o">.</span><span class="n">to_xml</span><span class="p">()</span>
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>
-<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="c1"># Markdown formatado</span>
-<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="n">result</span><span class="o">.</span><span class="n">to_markdown</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># Texto plano com contexto</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">result</span><span class="o">.</span><span class="n">to_context</span><span class="p">()</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="c1"># Messages prontas para OpenAI/Anthropic</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="n">result</span><span class="o">.</span><span class="n">to_messages</span><span class="p">(</span><span class="s2">&quot;Minha pergunta&quot;</span><span class="p">,</span> <span class="n">system_prompt</span><span class="o">=</span><span class="s2">&quot;Responda em PT-BR&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="c1"># Prompt completo (system + context + query)</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="n">result</span><span class="o">.</span><span class="n">to_prompt</span><span class="p">(</span><span class="s2">&quot;Minha pergunta&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="c1"># XML estruturado</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="n">result</span><span class="o">.</span><span class="n">to_xml</span><span class="p">()</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="c1"># Markdown formatado</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="n">result</span><span class="o">.</span><span class="n">to_markdown</span><span class="p">()</span>
 </code></pre></div>
 <h2 id="performance-e-custos">Performance e Custos<a class="headerlink" href="#performance-e-custos" title="Permanent link">&para;</a></h2>
 <table>
@@ -1106,6 +1228,30 @@
 </tr>
 <tr>
 <td><code>lookup([...])</code> (lote)</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td><code>grep()</code></td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td><code>filesystem_search()</code></td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td><code>merged()</code></td>
+<td>2-3</td>
+<td>0</td>
+<td>2</td>
+</tr>
+<tr>
+<td><code>read_canonical()</code></td>
 <td>1</td>
 <td>0</td>
 <td>1</td>
