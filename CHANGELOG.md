@@ -7,6 +7,28 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-04-09
+
+### Corrigido (API-side — refletido no SDK)
+
+- **`hybrid()` — stats completos**: Resposta agora inclui `seeds`, `graph_nodes`, `tokens`, `truncated` no objeto `stats` (antes retornava apenas `total_chunks`)
+- **`hybrid()` — hops=2 funciona**: Expansao de grafo com 2 saltos agora retorna nos de hop 1 e 2 (antes fixo em 1)
+- **`hybrid()` — graph nodes com metadados**: Nos expandidos agora incluem `node_id`, `span_id`, `tipo_documento` preenchidos (antes vinham vazios)
+- **`hybrid()` — score filter**: Hits diretos com score < 0.01 sao filtrados; queries sem sentido retornam lista vazia
+- **`merged()` — mutual_count**: Agora retorna `int >= 0` (antes retornava `None` para usuarios nao-admin)
+- **`merged()` — threshold adaptativo**: Queries sem sentido retornam lista vazia (threshold RRF adaptativo)
+- **`lookup()` — crash com "Inciso"**: `vg.lookup("Art. 24, Inciso 2o")` nao causa mais HTTP 500; retorna status `ambiguous`
+- **`search()` — score filter**: Resultados com score < 0.01 sao filtrados (queries nonsense retornam lista vazia)
+- **`grep()` — filtro document_id**: Aceita formato sem pontos (`LEI-14133-2021`) com fallback automatico
+- **`filesystem_search()` / `grep()` — max_length**: Validacao de 1000 caracteres padronizada
+
+### Notas de comportamento
+
+- Queries sem sentido (ex: "xyzzy12345qwerty") agora retornam `hits=[]` em todos endpoints
+- `hybrid().stats` sempre contem: `seeds`, `graph_nodes`, `tokens`, `truncated`, `total_chunks`
+- `merged().mutual_count` e sempre `int >= 0` (contrato garantido)
+- `lookup()` retorna `status="error"` em vez de HTTP 500 para erros internos
+
 ## [0.16.0] - 2026-03-30
 
 ### Adicionado
