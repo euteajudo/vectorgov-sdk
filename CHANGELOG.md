@@ -7,6 +7,33 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-04-11
+
+### Corrigido (API-side — refletido no SDK)
+
+- **`search().cached` e `smart_search().cached` agora funcionam**: Para usuarios
+  nao-admin, o campo `cached` era removido da resposta pelo strip interno,
+  fazendo o SDK sempre ver `cached=False` mesmo quando a resposta vinha do cache.
+  Correcao: `cached` removido dos sets `_SDK_SEARCH_ROOT_INTERNAL` e
+  `_SMART_SEARCH_ROOT_INTERNAL` — e agora campo publico legitimo.
+
+- **SearchService Lane C (cache semantico)**: A inicializacao do cache async
+  em `_ensure_async_resources()` chamava `get_semantic_cache_async()` SEM o
+  argumento obrigatorio `remote_embedder`, causando `TypeError` silencioso
+  e deixando `_semantic_cache=None`. Correcao: passa `self._remote_embedder`.
+
+- **`hybrid()` — queries nonsense retornavam graph_nodes**: Apos a reducao
+  do `MIN_HYBRID_SCORE` para 0.001, queries sem sentido continuavam retornando
+  graph_nodes porque o safety_net do reranker mantinha top-3 mesmo com score ~0.
+  Correcao: deteccao de nonsense via `rerank_score < 0.01` — se o reranker
+  considerou tudo irrelevante, retorna `hits=[]` E `graph_nodes=[]`.
+
+### Notas de comportamento
+
+- Cache semantico agora funciona: 2a chamada identica retorna `cached=True`
+  e latencia ~4x menor (~390ms vs ~1600ms).
+- `hybrid("xyzzy12345qwerty")` retorna listas vazias em vez de graph_nodes.
+
 ## [0.17.0] - 2026-04-09
 
 ### Corrigido (API-side — refletido no SDK)
