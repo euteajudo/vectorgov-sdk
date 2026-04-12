@@ -7,6 +7,42 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Unreleased]
 
+## [0.17.2] - 2026-04-12
+
+### Adicionado
+
+- `evidence_url` e `document_url` em **4 models** que faltavam:
+  - `GrepMatch` — matches de busca textual via ripgrep
+  - `FilesystemHit` — resultados do indice curado (PG + ripgrep)
+  - `MergedHit` — resultados da busca dual-path (hybrid + filesystem)
+  - `LookupResult` — resultado de lookup de dispositivo normativo
+
+- Parsers atualizados em `client.py` para extrair esses campos do
+  response JSON do backend em `grep()`, `filesystem_search()`,
+  `merged()` e `_parse_lookup_response()`
+
+### Notas
+
+Esses campos ja existiam em `Hit` (usado por `search()`, `smart_search()`,
+`hybrid()`). Com esta versao, **todos os 7 metodos de busca** retornam
+`evidence_url` e `document_url` quando o backend os popula:
+
+```python
+result = vg.grep("dispensa de licitacao", max_results=1)
+match = result.matches[0]
+print(match.evidence_url)   # /api/v1/evidence/leis%3AIN-65-2021%23ART-007
+print(match.document_url)   # /api/v1/evidence/download/source/IN-65-2021
+
+result = vg.lookup("Art. 75 da Lei 14.133")
+print(result.evidence_url)  # /api/v1/evidence/leis%3ALEI-14.133-2021%23ART-075
+```
+
+O campo `LookupResult.evidence_url` elimina a necessidade do
+workaround via `result._raw_response.get("evidence_url")` que o
+CLI v0.2.0 usava.
+
+Campos sao `Optional[str]` com default `None` — backwards compatible.
+
 ## [0.17.1] - 2026-04-11
 
 ### Corrigido (API-side — refletido no SDK)
