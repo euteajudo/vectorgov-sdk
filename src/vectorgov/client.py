@@ -744,6 +744,8 @@ class VectorGov:
             stitched_text=stitched_text,
             resolved=resolved,
             candidates=candidates,
+            evidence_url=response.get("evidence_url"),
+            document_url=response.get("document_url"),
             _raw_response=response,
         )
 
@@ -801,6 +803,8 @@ class VectorGov:
                 line_number=m.get("line_number", 0),
                 score=m.get("score", 1.0),
                 match_reason=m.get("match_reason"),
+                evidence_url=m.get("evidence_url"),
+                document_url=m.get("document_url"),
             )
             for m in response.get("matches", [])
         ]
@@ -867,6 +871,8 @@ class VectorGov:
                 source=r.get("source", ""),
                 breadcrumb=r.get("breadcrumb"),
                 match_reason=r.get("match_reason"),
+                evidence_url=r.get("evidence_url"),
+                document_url=r.get("document_url"),
             )
             for r in response.get("results", [])
         ]
@@ -944,6 +950,8 @@ class VectorGov:
                 has_specialist_note=r.get("has_specialist_note", False),
                 has_jurisprudence=r.get("has_jurisprudence", False),
                 token_count=r.get("token_count", 0),
+                evidence_url=r.get("evidence_url"),
+                document_url=r.get("document_url"),
             )
             for r in response.get("results", [])
         ]

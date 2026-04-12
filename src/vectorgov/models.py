@@ -1159,6 +1159,12 @@ class LookupResult(BaseResult):
     results: Optional[list["LookupResult"]] = field(default=None)
     """Lista de resultados individuais (quando status=batch)"""
 
+    evidence_url: Optional[str] = None
+    """URL proxy para ver o trecho destacado na norma"""
+
+    document_url: Optional[str] = None
+    """URL proxy para download do PDF original"""
+
     @property
     def endpoint_type(self) -> str:
         """Tipo do endpoint para billing: ``'lookup'``."""
@@ -1635,6 +1641,12 @@ class GrepMatch:
     match_reason: Optional[str] = None
     """Razao do match"""
 
+    evidence_url: Optional[str] = None
+    """URL proxy para ver o trecho destacado na norma"""
+
+    document_url: Optional[str] = None
+    """URL proxy para download do PDF original"""
+
 
 @dataclass(slots=True)
 class GrepResult:
@@ -1687,6 +1699,8 @@ class FilesystemHit:
 
     breadcrumb: Optional[str] = None
     match_reason: Optional[str] = None
+    evidence_url: Optional[str] = None
+    document_url: Optional[str] = None
 
 
 @dataclass(slots=True)
@@ -1743,6 +1757,8 @@ class MergedHit:
     has_specialist_note: bool = False
     has_jurisprudence: bool = False
     token_count: int = 0
+    evidence_url: Optional[str] = None
+    document_url: Optional[str] = None
 
 
 @dataclass(slots=True)
